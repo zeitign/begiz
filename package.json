@@ -1,0 +1,12 @@
+{
+  "name": "webs-archive",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "pnpm --parallel --filter \"./apps/*\" dev",
+    "typecheck": "pnpm -r typecheck",
+    "build": "pnpm -r build",
+    "db:generate": "pnpm --filter @webs/api db:generate",
+    "db:migrate": "pnpm --filter @webs/api db:migrate"
+  }
+}
