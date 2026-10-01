@@ -11,10 +11,25 @@ puesta en marcha en `README.md`.
 - **Front**: tiene más experiencia (Vue 3 + Vite + TS) pero no lo domina. Acompañar con
   explicaciones de lo que se hace y por qué, algo menos detalladas que en backend.
 - El alcance de producto lo decide ella.
+- **Explicar los cambios**: un resumen de alto nivel en cada paso.
+- **Seguir el progreso**: marcar las tareas como completadas a medida que se terminan.
 - Ir **en orden**: no saltar a una fase nueva sin cerrar y validar la anterior.
 - **Diseño visual aparcado**: estilo mínimo (fondo blanco, bordes negros finos, tipografía del
   sistema en negro) hasta que la plataforma esté validada. Reutilizar las clases de
   `apps/web/src/style.css`; no decorar ni proponer diseño hasta que ella abra esa fase.
+
+## Principios
+
+- **Simplicidad primero**: cada cambio, lo más simple posible y tocando el menor código posible.
+  Simple no es mínimo: el código tiene que explicar por sí solo lo que hace.
+- **Impacto mínimo**: modificar solo lo estrictamente necesario, sin introducir errores nuevos.
+- **Sin parches**: buscar la causa raíz. Nada de soluciones temporales; estándar de desarrollador
+  senior.
+- **Elegancia = legibilidad**: código que cualquier desarrollador entienda al leerlo, gracias a
+  buenos nombres y estructura, no a comentarios.
+- En cambios no triviales, parar y preguntarse "¿hay una forma más elegante?". Si una solución
+  parece un parche, rehacerla: "sabiendo todo lo que sé ahora, ¿cuál es la solución elegante?".
+- En arreglos sencillos u obvios, no hacer esa pausa: **evitar la sobreingeniería**.
 
 ## Escritura de código
 
@@ -26,6 +41,13 @@ puesta en marcha en `README.md`.
 - **Comentarios solo cuando algo necesita explicación**, y de forma concisa: el porqué de una
   decisión o qué hace una función cuya lógica no es evidente. No comentar lo que el código ya
   dice ni narrar lo que se hace o se va a hacer (nada de `// here the h1`).
+
+## Verificación
+
+- **Nunca dar una tarea por terminada sin demostrar que funciona**: ejecutar las pruebas, revisar
+  los logs y comprobar el resultado.
+- Mínimo antes de cerrar algo: `pnpm typecheck` (y `pnpm build` si toca el front).
+- Revisar el propio trabajo antes de presentarlo: "¿lo aprobaría un staff engineer?".
 
 ## Git
 
@@ -45,7 +67,6 @@ puesta en marcha en `README.md`.
   datos la gestiona ella: no pedirla ni mostrarla.
 - Cambios de esquema: editar `apps/api/src/db/schema.ts`, `pnpm db:generate` y `pnpm db:migrate`.
   Toda tabla nueva necesita `ENABLE ROW LEVEL SECURITY` en su migración.
-- Antes de dar algo por terminado: `pnpm typecheck` (y `pnpm build` si toca el front).
 
 ## Entorno
 
