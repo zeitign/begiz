@@ -85,7 +85,7 @@ Todas las rutas van bajo `/api` y exigen sesión.
 | Fase | Contenido | Estado |
 |---|---|---|
 | 1 · Base | Login, CRUD de webs, tags y colecciones, búsqueda, vista previa por `og:image` o imagen manual | Validada con el Supabase real (1-oct-2026) |
-| 1b · Tests de la API | Vitest en el monorepo. Tests de la API y de `shared` | **Siguiente** |
+| 1b · Tests de la API | Vitest en el monorepo. Tests de la API y de `shared` | **En curso**: tests hechos; falta revisar el código de la fase 1 |
 | Diseño | Diseño visual de la plataforma | Tras los tests |
 | 2 · Captura | Captura automática con Playwright en un worker (rellena `preview_key` / `full_key` con `preview_source = 'screenshot'`); requiere un contenedor con Chromium | Planificada |
 | 3 · Extensión | Extensión de navegador (WXT + Vue) usando la misma API | Planificada |
@@ -99,7 +99,9 @@ Todas las rutas van bajo `/api` y exigen sesión.
   - Las rutas se prueban con `app.request()` de Hono, sin levantar el servidor.
   - La base de datos es **PGlite** (Postgres en memoria, sin Docker), con las mismas migraciones
     de Drizzle. Los tests nunca tocan el Supabase real.
-  - El JWT se sustituye por una usuaria de prueba, y las descargas de páginas externas se simulan.
+  - Los tests firman tokens como los de Supabase, así que pasan por la validación real del JWT.
+  - Las descargas de páginas externas se simulan (`test/fake-web.ts`). La protección SSRF se prueba
+    aparte con el código real.
 - **Front**: tests de componentes (`@vue/test-utils`) solo para la lógica que no cambie con el
   diseño (filtros en la URL, pegado de imágenes). Se añaden al cerrar la fase de diseño.
 - **A partir de la fase 1b**, cada fase se cierra con sus tests y `pnpm test` en verde.

@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "pnpm --parallel --filter \"./apps/*\" dev",
+    "test": "pnpm -r --if-present test",
     "typecheck": "pnpm -r typecheck",
     "build": "pnpm -r build",
     "db:generate": "pnpm --filter @webs/api db:generate",

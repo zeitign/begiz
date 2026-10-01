@@ -46,7 +46,8 @@ puesta en marcha en `README.md`.
 
 - **Nunca dar una tarea por terminada sin demostrar que funciona**: ejecutar las pruebas, revisar
   los logs y comprobar el resultado.
-- Mínimo antes de cerrar algo: `pnpm typecheck` (y `pnpm build` si toca el front).
+- Mínimo antes de cerrar algo: `pnpm test` y `pnpm typecheck` (y `pnpm build` si toca el front).
+- Todo cambio en la API va con sus tests en `apps/api/test/`.
 - Revisar el propio trabajo antes de presentarlo: "¿lo aprobaría un staff engineer?".
 
 ## Git

@@ -36,6 +36,7 @@ Abre http://localhost:5173. La API corre en http://localhost:8787.
 | Comando | |
 |---|---|
 | `pnpm dev` | Front y API en modo desarrollo |
+| `pnpm test` | Tests de la API y de `shared` (no tocan Supabase ni internet) |
 | `pnpm typecheck` | Comprobación de tipos de todo el monorepo |
 | `pnpm build` | Build del front |
 | `pnpm db:generate` | Genera una migración tras cambiar `apps/api/src/db/schema.ts` |
