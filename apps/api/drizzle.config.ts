@@ -3,7 +3,7 @@ import { defineConfig } from 'drizzle-kit'
 try {
   process.loadEnvFile()
 } catch {
-  // Sin .env: se usan las variables del entorno.
+  // No .env file: the environment variables are used instead.
 }
 
 export default defineConfig({

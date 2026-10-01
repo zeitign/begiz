@@ -17,7 +17,7 @@ const faviconFailed = ref(false)
 
 <template>
   <img v-if="web.previewUrl" :src="web.previewUrl" alt="" class="thumb" loading="lazy" />
-  <!-- Sin imagen: tarjeta generada con favicon y dominio. -->
+  <!-- No image: a generated card with the favicon and domain. -->
   <div v-else class="thumb thumb-placeholder">
     <img
       v-if="web.faviconUrl && !faviconFailed"

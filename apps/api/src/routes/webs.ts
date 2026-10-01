@@ -5,15 +5,21 @@ import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
 import { idParam, normalizeTag, webCreate, webListQuery, webUpdate } from '@webs/shared'
 import type { AuthEnv } from '../auth.ts'
-import { db, type Tx } from '../db/client.ts'
+import { db, type Transaction } from '../db/client.ts'
 import { collections, collectionWebs, tags, webs, webTags } from '../db/schema.ts'
-import { downloadImage, fetchPageMeta, inspectUpload, makeThumb, type PageMeta } from '../lib/preview.ts'
+import {
+  createThumbnail,
+  detectUploadFormat,
+  downloadImage,
+  fetchPageMeta,
+  type PageMeta,
+} from '../lib/preview.ts'
 import { validate } from '../lib/validate.ts'
 import { deleteQuietly, fileUrl, storage } from '../storage/index.ts'
 
 type WebRow = typeof webs.$inferSelect
 
-function toCard(web: WebRow, tagNames: string[]) {
+function toWebCard(web: WebRow, tagNames: string[]) {
   return {
     id: web.id,
     url: web.url,
@@ -26,67 +32,69 @@ function toCard(web: WebRow, tagNames: string[]) {
   }
 }
 
-const escapeLike = (text: string) => text.replace(/[\\%_]/g, '\\$&')
+const escapeLikePattern = (text: string) => text.replace(/[\\%_]/g, '\\$&')
 
-async function tagsByWeb(webIds: string[]) {
-  const map = new Map<string, string[]>()
-  if (webIds.length === 0) return map
+async function findTagNamesByWebId(webIds: string[]) {
+  const tagNamesByWebId = new Map<string, string[]>()
+  if (webIds.length === 0) return tagNamesByWebId
   const rows = await db
     .select({ webId: webTags.webId, name: tags.name })
     .from(webTags)
     .innerJoin(tags, eq(tags.id, webTags.tagId))
     .where(inArray(webTags.webId, webIds))
     .orderBy(tags.name)
-  for (const row of rows) map.set(row.webId, [...(map.get(row.webId) ?? []), row.name])
-  return map
+  for (const row of rows) {
+    tagNamesByWebId.set(row.webId, [...(tagNamesByWebId.get(row.webId) ?? []), row.name])
+  }
+  return tagNamesByWebId
 }
 
-async function findOwnedWeb(userId: string, id: string) {
+async function findOwnedWeb(userId: string, webId: string) {
   const [web] = await db
     .select()
     .from(webs)
-    .where(and(eq(webs.id, id), eq(webs.userId, userId)))
-  if (!web) throw new HTTPException(404, { message: 'Web no encontrada' })
+    .where(and(eq(webs.id, webId), eq(webs.userId, userId)))
+  if (!web) throw new HTTPException(404, { message: 'Web not found' })
   return web
 }
 
-async function getDetail(userId: string, id: string) {
-  const web = await findOwnedWeb(userId, id)
-  const [tagMap, memberships] = await Promise.all([
-    tagsByWeb([id]),
+async function getWebDetail(userId: string, webId: string) {
+  const web = await findOwnedWeb(userId, webId)
+  const [tagNamesByWebId, memberships] = await Promise.all([
+    findTagNamesByWebId([webId]),
     db
-      .select({ id: collectionWebs.collectionId })
+      .select({ collectionId: collectionWebs.collectionId })
       .from(collectionWebs)
-      .where(eq(collectionWebs.webId, id)),
+      .where(eq(collectionWebs.webId, webId)),
   ])
   return {
-    ...toCard(web, tagMap.get(id) ?? []),
+    ...toWebCard(web, tagNamesByWebId.get(webId) ?? []),
     notes: web.notes,
     previewSource: web.previewSource,
     fullUrl: fileUrl(web.fullKey),
-    collectionIds: memberships.map((m) => m.id),
+    collectionIds: memberships.map((membership) => membership.collectionId),
   }
 }
 
-/** Sustituye los tags de una web, creando los que no existan y borrando los que queden sin uso. */
-async function setTags(tx: Tx, userId: string, webId: string, names: string[]) {
-  await tx.delete(webTags).where(eq(webTags.webId, webId))
-  if (names.length > 0) {
-    await tx
+/** Replaces the tags of a web, creating the missing ones and deleting those left unused. */
+async function replaceTags(transaction: Transaction, userId: string, webId: string, tagNames: string[]) {
+  await transaction.delete(webTags).where(eq(webTags.webId, webId))
+  if (tagNames.length > 0) {
+    await transaction
       .insert(tags)
-      .values(names.map((name) => ({ userId, name })))
+      .values(tagNames.map((name) => ({ userId, name })))
       .onConflictDoNothing()
-    const rows = await tx
+    const userTags = await transaction
       .select({ id: tags.id })
       .from(tags)
-      .where(and(eq(tags.userId, userId), inArray(tags.name, names)))
-    await tx.insert(webTags).values(rows.map((tag) => ({ webId, tagId: tag.id })))
+      .where(and(eq(tags.userId, userId), inArray(tags.name, tagNames)))
+    await transaction.insert(webTags).values(userTags.map((tag) => ({ webId, tagId: tag.id })))
   }
-  await deleteUnusedTags(tx, userId)
+  await deleteUnusedTags(transaction, userId)
 }
 
-async function deleteUnusedTags(tx: Tx, userId: string) {
-  await tx
+async function deleteUnusedTags(transaction: Transaction, userId: string) {
+  await transaction
     .delete(tags)
     .where(
       and(
@@ -96,60 +104,62 @@ async function deleteUnusedTags(tx: Tx, userId: string) {
     )
 }
 
-async function setCollections(tx: Tx, userId: string, webId: string, ids: string[]) {
-  if (ids.length > 0) {
-    const owned = await tx
+async function replaceCollections(transaction: Transaction, userId: string, webId: string, collectionIds: string[]) {
+  if (collectionIds.length > 0) {
+    const ownedCollections = await transaction
       .select({ id: collections.id })
       .from(collections)
-      .where(and(eq(collections.userId, userId), inArray(collections.id, ids)))
-    if (owned.length !== ids.length) throw new HTTPException(400, { message: 'Colección no encontrada' })
+      .where(and(eq(collections.userId, userId), inArray(collections.id, collectionIds)))
+    if (ownedCollections.length !== collectionIds.length) {
+      throw new HTTPException(400, { message: 'Collection not found' })
+    }
   }
-  await tx.delete(collectionWebs).where(eq(collectionWebs.webId, webId))
-  if (ids.length > 0) {
-    await tx.insert(collectionWebs).values(ids.map((collectionId) => ({ collectionId, webId })))
+  await transaction.delete(collectionWebs).where(eq(collectionWebs.webId, webId))
+  if (collectionIds.length > 0) {
+    await transaction.insert(collectionWebs).values(collectionIds.map((collectionId) => ({ collectionId, webId })))
   }
 }
 
-/** Descarga la og:image y la guarda como miniatura. Si algo falla, la web se queda sin imagen. */
-async function storePageImage(userId: string, webId: string, meta: PageMeta | null) {
-  if (!meta?.imageUrl) return null
+/** Downloads the og:image and stores it as the thumbnail. On failure the web just has no image. */
+async function storePageImage(userId: string, webId: string, pageMeta: PageMeta | null) {
+  if (!pageMeta?.imageUrl) return null
   try {
-    const thumb = await makeThumb(await downloadImage(meta.imageUrl))
-    const key = `${userId}/${webId}/${randomUUID()}.webp`
-    await storage.put(key, thumb, 'image/webp')
-    return key
-  } catch (err) {
-    console.warn(`No se pudo guardar la og:image de ${meta.imageUrl}: ${err}`)
+    const thumbnail = await createThumbnail(await downloadImage(pageMeta.imageUrl))
+    const previewKey = `${userId}/${webId}/${randomUUID()}.webp`
+    await storage.put(previewKey, thumbnail, 'image/webp')
+    return previewKey
+  } catch (error) {
+    console.warn(`Could not store the og:image of ${pageMeta.imageUrl}: ${error}`)
     return null
   }
 }
 
 export const websRoutes = new Hono<AuthEnv>()
-  .get('/', validate('query', webListQuery), async (c) => {
-    const userId = c.get('userId')
-    const { q, tags: tagParam, collection } = c.req.valid('query')
-    const tagNames = [...new Set((tagParam ?? '').split(',').map(normalizeTag).filter(Boolean))]
+  .get('/', validate('query', webListQuery), async (context) => {
+    const userId = context.get('userId')
+    const { search, tags: tagsParam, collection: collectionId } = context.req.valid('query')
+    const tagNames = [...new Set((tagsParam ?? '').split(',').map(normalizeTag).filter(Boolean))]
 
     const conditions = [eq(webs.userId, userId)]
-    if (q) conditions.push(ilike(webs.title, `%${escapeLike(q)}%`))
-    if (collection) {
+    if (search) conditions.push(ilike(webs.title, `%${escapeLikePattern(search)}%`))
+    if (collectionId) {
       conditions.push(
         inArray(
           webs.id,
           db
-            .select({ id: collectionWebs.webId })
+            .select({ webId: collectionWebs.webId })
             .from(collectionWebs)
-            .where(eq(collectionWebs.collectionId, collection)),
+            .where(eq(collectionWebs.collectionId, collectionId)),
         ),
       )
     }
     if (tagNames.length > 0) {
-      // Webs que tienen TODOS los tags seleccionados.
+      // Webs that have ALL the selected tags.
       conditions.push(
         inArray(
           webs.id,
           db
-            .select({ id: webTags.webId })
+            .select({ webId: webTags.webId })
             .from(webTags)
             .innerJoin(tags, eq(tags.id, webTags.tagId))
             .where(and(eq(tags.userId, userId), inArray(tags.name, tagNames)))
@@ -159,106 +169,106 @@ export const websRoutes = new Hono<AuthEnv>()
       )
     }
 
-    const rows = await db
+    const matchingWebs = await db
       .select()
       .from(webs)
       .where(and(...conditions))
       .orderBy(desc(webs.createdAt))
-    const tagMap = await tagsByWeb(rows.map((web) => web.id))
-    return c.json(rows.map((web) => toCard(web, tagMap.get(web.id) ?? [])))
+    const tagNamesByWebId = await findTagNamesByWebId(matchingWebs.map((web) => web.id))
+    return context.json(matchingWebs.map((web) => toWebCard(web, tagNamesByWebId.get(web.id) ?? [])))
   })
 
-  .get('/:id', validate('param', idParam), async (c) => {
-    return c.json(await getDetail(c.get('userId'), c.req.valid('param').id))
+  .get('/:id', validate('param', idParam), async (context) => {
+    return context.json(await getWebDetail(context.get('userId'), context.req.valid('param').id))
   })
 
-  .post('/', validate('json', webCreate), async (c) => {
-    const userId = c.get('userId')
-    const input = c.req.valid('json')
-    const id = randomUUID()
+  .post('/', validate('json', webCreate), async (context) => {
+    const userId = context.get('userId')
+    const input = context.req.valid('json')
+    const webId = randomUUID()
 
-    const meta = await fetchPageMeta(input.url).catch((err) => {
-      console.warn(`No se pudieron leer los metadatos de ${input.url}: ${err}`)
+    const pageMeta = await fetchPageMeta(input.url).catch((error) => {
+      console.warn(`Could not read the metadata of ${input.url}: ${error}`)
       return null
     })
-    const previewKey = input.usePageImage ? await storePageImage(userId, id, meta) : null
+    const previewKey = input.usePageImage ? await storePageImage(userId, webId, pageMeta) : null
 
     try {
-      await db.transaction(async (tx) => {
-        await tx.insert(webs).values({
-          id,
+      await db.transaction(async (transaction) => {
+        await transaction.insert(webs).values({
+          id: webId,
           userId,
           url: input.url,
           title: input.title,
           notes: input.notes,
-          siteTitle: meta?.siteTitle ?? null,
-          faviconUrl: meta?.faviconUrl ?? null,
+          siteTitle: pageMeta?.siteTitle ?? null,
+          faviconUrl: pageMeta?.faviconUrl ?? null,
           previewKey,
           previewSource: previewKey ? 'og' : null,
         })
-        await setTags(tx, userId, id, input.tags)
-        await setCollections(tx, userId, id, input.collectionIds)
+        await replaceTags(transaction, userId, webId, input.tags)
+        await replaceCollections(transaction, userId, webId, input.collectionIds)
       })
-    } catch (err) {
+    } catch (error) {
       await deleteQuietly(previewKey)
-      throw err
+      throw error
     }
-    return c.json(await getDetail(userId, id), 201)
+    return context.json(await getWebDetail(userId, webId), 201)
   })
 
-  .patch('/:id', validate('param', idParam), validate('json', webUpdate), async (c) => {
-    const userId = c.get('userId')
-    const { id } = c.req.valid('param')
-    const { tags: tagNames, collectionIds, ...fields } = c.req.valid('json')
-    await findOwnedWeb(userId, id)
+  .patch('/:id', validate('param', idParam), validate('json', webUpdate), async (context) => {
+    const userId = context.get('userId')
+    const { id: webId } = context.req.valid('param')
+    const { tags: tagNames, collectionIds, ...fields } = context.req.valid('json')
+    await findOwnedWeb(userId, webId)
 
-    await db.transaction(async (tx) => {
-      await tx
+    await db.transaction(async (transaction) => {
+      await transaction
         .update(webs)
         .set({ ...fields, updatedAt: new Date() })
-        .where(eq(webs.id, id))
-      if (tagNames) await setTags(tx, userId, id, tagNames)
-      if (collectionIds) await setCollections(tx, userId, id, collectionIds)
+        .where(eq(webs.id, webId))
+      if (tagNames) await replaceTags(transaction, userId, webId, tagNames)
+      if (collectionIds) await replaceCollections(transaction, userId, webId, collectionIds)
     })
-    return c.json(await getDetail(userId, id))
+    return context.json(await getWebDetail(userId, webId))
   })
 
   .put(
     '/:id/preview',
     validate('param', idParam),
     validate('form', z.object({ image: z.instanceof(File) })),
-    async (c) => {
-      const userId = c.get('userId')
-      const { id } = c.req.valid('param')
-      const web = await findOwnedWeb(userId, id)
+    async (context) => {
+      const userId = context.get('userId')
+      const { id: webId } = context.req.valid('param')
+      const web = await findOwnedWeb(userId, webId)
 
-      const original = Buffer.from(await c.req.valid('form').image.arrayBuffer())
-      const format = await inspectUpload(original)
-      const thumb = await makeThumb(original)
+      const originalImage = Buffer.from(await context.req.valid('form').image.arrayBuffer())
+      const uploadFormat = await detectUploadFormat(originalImage)
+      const thumbnail = await createThumbnail(originalImage)
 
-      const base = `${userId}/${id}/${randomUUID()}`
-      const previewKey = `${base}.webp`
-      const fullKey = `${base}-full.${format.ext}`
-      await storage.put(previewKey, thumb, 'image/webp')
-      await storage.put(fullKey, original, format.type)
+      const keyPrefix = `${userId}/${webId}/${randomUUID()}`
+      const previewKey = `${keyPrefix}.webp`
+      const fullKey = `${keyPrefix}-full.${uploadFormat.extension}`
+      await storage.put(previewKey, thumbnail, 'image/webp')
+      await storage.put(fullKey, originalImage, uploadFormat.mimeType)
 
       await db
         .update(webs)
         .set({ previewKey, fullKey, previewSource: 'manual', updatedAt: new Date() })
-        .where(eq(webs.id, id))
+        .where(eq(webs.id, webId))
       await deleteQuietly(web.previewKey, web.fullKey)
-      return c.json(await getDetail(userId, id))
+      return context.json(await getWebDetail(userId, webId))
     },
   )
 
-  .delete('/:id', validate('param', idParam), async (c) => {
-    const userId = c.get('userId')
-    const { id } = c.req.valid('param')
-    const web = await findOwnedWeb(userId, id)
-    await db.transaction(async (tx) => {
-      await tx.delete(webs).where(eq(webs.id, id))
-      await deleteUnusedTags(tx, userId)
+  .delete('/:id', validate('param', idParam), async (context) => {
+    const userId = context.get('userId')
+    const { id: webId } = context.req.valid('param')
+    const web = await findOwnedWeb(userId, webId)
+    await db.transaction(async (transaction) => {
+      await transaction.delete(webs).where(eq(webs.id, webId))
+      await deleteUnusedTags(transaction, userId)
     })
     await deleteQuietly(web.previewKey, web.fullKey)
-    return c.body(null, 204)
+    return context.body(null, 204)
   })

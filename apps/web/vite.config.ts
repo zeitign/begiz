@@ -4,9 +4,9 @@ import { defineConfig } from 'vite'
 export default defineConfig({
   plugins: [vue()],
   server: {
-    // Escuchar en todas las interfaces: si no, el navegador de Windows no llega a Vite dentro de WSL.
+    // Listen on every interface: otherwise the Windows browser cannot reach Vite inside WSL.
     host: true,
-    // En local, el front y la API comparten origen gracias al proxy: sin CORS.
+    // Locally the proxy gives the front and the API the same origin: no CORS needed.
     proxy: {
       '/api': 'http://localhost:8787',
       '/files': 'http://localhost:8787',

@@ -11,41 +11,41 @@ export class ApiError extends Error {
   }
 }
 
-const authedFetch: typeof fetch = async (input, init) => {
+const fetchWithSession: typeof fetch = async (input, init) => {
   const { data } = await supabase.auth.getSession()
   const headers = new Headers(init?.headers)
   if (data.session) headers.set('Authorization', `Bearer ${data.session.access_token}`)
 
-  const res = await fetch(input, { ...init, headers })
-  if (!res.ok) {
-    const body = (await res.json().catch(() => null)) as { message?: string } | null
-    throw new ApiError(res.status, body?.message ?? `Error ${res.status}`)
+  const response = await fetch(input, { ...init, headers })
+  if (!response.ok) {
+    const errorBody = (await response.json().catch(() => null)) as { message?: string } | null
+    throw new ApiError(response.status, errorBody?.message ?? `Error ${response.status}`)
   }
-  return res
+  return response
 }
 
-export const api = hc<AppType>(`${import.meta.env.VITE_API_URL ?? ''}/api`, { fetch: authedFetch })
+export const api = hc<AppType>(`${import.meta.env.VITE_API_URL ?? ''}/api`, { fetch: fetchWithSession })
 
-type Ok<R> =
-  R extends ClientResponse<infer T, infer S, string>
-    ? S extends 200 | 201
-      ? T
-      : S extends 204
+type SuccessBody<Response> =
+  Response extends ClientResponse<infer Body, infer Status, string>
+    ? Status extends 200 | 201
+      ? Body
+      : Status extends 204
         ? undefined
         : never
     : never
 
-/** Espera la respuesta y devuelve el cuerpo ya tipado (los errores los lanza authedFetch). */
-export async function call<R extends ClientResponse<unknown, number, string>>(
-  request: Promise<R>,
-): Promise<Ok<R>> {
-  const res = await request
-  if (res.status === 204) return undefined as Ok<R>
-  return (await res.json()) as Ok<R>
+/** Awaits an API request and returns its typed body. Errors are already thrown by fetchWithSession. */
+export async function responseBody<Response extends ClientResponse<unknown, number, string>>(
+  request: Promise<Response>,
+): Promise<SuccessBody<Response>> {
+  const response = await request
+  if (response.status === 204) return undefined as SuccessBody<Response>
+  return (await response.json()) as SuccessBody<Response>
 }
 
-export function errorMessage(err: unknown) {
-  return err instanceof Error ? err.message : 'Algo ha fallado'
+export function errorMessage(error: unknown) {
+  return error instanceof Error ? error.message : 'Something went wrong'
 }
 
 export type WebCard = InferResponseType<typeof api.webs.$get, 200>[number]

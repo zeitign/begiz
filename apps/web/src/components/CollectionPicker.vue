@@ -1,32 +1,34 @@
 <script setup lang="ts">
 import { useQueryClient } from '@tanstack/vue-query'
 import { ref } from 'vue'
-import { api, call, errorMessage } from '../lib/api'
+import { api, errorMessage, responseBody } from '../lib/api'
 import { useCollections } from '../lib/queries'
 
-const model = defineModel<string[]>({ required: true })
+const selectedCollectionIds = defineModel<string[]>({ required: true })
 
 const queryClient = useQueryClient()
 const { data: collections } = useCollections()
 
-const newName = ref('')
+const newCollectionName = ref('')
 const creating = ref(false)
-const error = ref('')
+const createError = ref('')
 
-function toggle(id: string, checked: boolean) {
-  model.value = checked ? [...model.value, id] : model.value.filter((current) => current !== id)
+function toggleCollection(collectionId: string, isChecked: boolean) {
+  selectedCollectionIds.value = isChecked
+    ? [...selectedCollectionIds.value, collectionId]
+    : selectedCollectionIds.value.filter((selectedId) => selectedId !== collectionId)
 }
 
-async function create() {
+async function createCollection() {
   creating.value = true
-  error.value = ''
+  createError.value = ''
   try {
-    const collection = await call(api.collections.$post({ json: { name: newName.value } }))
+    const collection = await responseBody(api.collections.$post({ json: { name: newCollectionName.value } }))
     await queryClient.invalidateQueries({ queryKey: ['collections'] })
-    model.value = [...model.value, collection.id]
-    newName.value = ''
-  } catch (err) {
-    error.value = errorMessage(err)
+    selectedCollectionIds.value = [...selectedCollectionIds.value, collection.id]
+    newCollectionName.value = ''
+  } catch (error) {
+    createError.value = errorMessage(error)
   } finally {
     creating.value = false
   }
@@ -35,25 +37,27 @@ async function create() {
 
 <template>
   <fieldset class="stack">
-    <legend>Colecciones</legend>
-    <p v-if="!collections?.length" class="muted">Todavía no hay colecciones.</p>
+    <legend>Collections</legend>
+    <p v-if="!collections?.length" class="muted">No collections yet.</p>
     <label v-for="collection in collections" :key="collection.id" class="check">
       <input
         type="checkbox"
-        :checked="model.includes(collection.id)"
-        @change="toggle(collection.id, ($event.target as HTMLInputElement).checked)"
+        :checked="selectedCollectionIds.includes(collection.id)"
+        @change="toggleCollection(collection.id, ($event.target as HTMLInputElement).checked)"
       />
       {{ collection.name }}
     </label>
     <div class="row">
       <input
-        v-model="newName"
+        v-model="newCollectionName"
         class="grow"
-        placeholder="Nueva colección"
-        @keydown.enter.prevent="newName.trim() && create()"
+        placeholder="New collection"
+        @keydown.enter.prevent="newCollectionName.trim() && createCollection()"
       />
-      <button type="button" :disabled="!newName.trim() || creating" @click="create">Crear</button>
+      <button type="button" :disabled="!newCollectionName.trim() || creating" @click="createCollection">
+        Create
+      </button>
     </div>
-    <p v-if="error" class="error">{{ error }}</p>
+    <p v-if="createError" class="error">{{ createError }}</p>
   </fieldset>
 </template>

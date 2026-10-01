@@ -35,6 +35,8 @@ puesta en marcha en `README.md`.
 
 - Todo el código **en inglés**: nombres, comentarios, mensajes de error y textos de log. Nada de
   español en el código.
+- La **interfaz de la app también en inglés**: textos de pantalla, mensajes y rutas (`/new`,
+  `/collections`). La documentación (`README.md`, `ARCHITECTURE.md`) sigue en español.
 - Nombres de variables y funciones **descriptivos**, que se entiendan por sí solos y en
   **camelCase**. Nada de letras sueltas ni abreviaturas sin lógica (`collectionName`, no `cn`
   ni `x`).

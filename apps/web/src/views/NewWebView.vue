@@ -4,7 +4,7 @@ import { useRouter } from 'vue-router'
 import CollectionPicker from '../components/CollectionPicker.vue'
 import ImagePicker from '../components/ImagePicker.vue'
 import TagInput from '../components/TagInput.vue'
-import { api, call, errorMessage } from '../lib/api'
+import { api, errorMessage, responseBody } from '../lib/api'
 import { useInvalidateAll } from '../lib/queries'
 
 const router = useRouter()
@@ -15,16 +15,16 @@ const title = ref('')
 const notes = ref('')
 const tags = ref<string[]>([])
 const collectionIds = ref<string[]>([])
-const image = ref<File | null>(null)
+const ownImage = ref<File | null>(null)
 
 const saving = ref(false)
-const error = ref('')
+const saveError = ref('')
 
-async function save() {
+async function saveWeb() {
   saving.value = true
-  error.value = ''
+  saveError.value = ''
   try {
-    const web = await call(
+    const savedWeb = await responseBody(
       api.webs.$post({
         json: {
           url: url.value.trim(),
@@ -32,18 +32,19 @@ async function save() {
           notes: notes.value,
           tags: tags.value,
           collectionIds: collectionIds.value,
-          // Con imagen propia no hace falta descargar la de la página.
-          usePageImage: !image.value,
+          usePageImage: !ownImage.value,
         },
       }),
     )
-    if (image.value) {
-      await call(api.webs[':id'].preview.$put({ param: { id: web.id }, form: { image: image.value } }))
+    if (ownImage.value) {
+      await responseBody(
+        api.webs[':id'].preview.$put({ param: { id: savedWeb.id }, form: { image: ownImage.value } }),
+      )
     }
     await invalidateAll()
-    await router.push({ name: 'web', params: { id: web.id } })
-  } catch (err) {
-    error.value = errorMessage(err)
+    await router.push({ name: 'web', params: { id: savedWeb.id } })
+  } catch (error) {
+    saveError.value = errorMessage(error)
   } finally {
     saving.value = false
   }
@@ -52,19 +53,19 @@ async function save() {
 
 <template>
   <main class="page narrow">
-    <form class="stack" @submit.prevent="save">
-      <h1>Guardar web</h1>
+    <form class="stack" @submit.prevent="saveWeb">
+      <h1>Save web</h1>
       <label>
-        Enlace
+        URL
         <input v-model="url" type="url" placeholder="https://…" required />
       </label>
       <label>
-        Título
+        Title
         <input v-model="title" required maxlength="200" />
       </label>
       <label>
-        Notas
-        <textarea v-model="notes" placeholder="¿Qué te interesa de esta web?" />
+        Notes
+        <textarea v-model="notes" placeholder="What do you like about this web?" />
       </label>
       <div class="stack">
         <span>Tags</span>
@@ -72,12 +73,12 @@ async function save() {
       </div>
       <CollectionPicker v-model="collectionIds" />
       <div class="stack">
-        <span>Imagen (opcional)</span>
-        <span class="muted">Si no subes ninguna, se usa la imagen de vista previa de la propia página.</span>
-        <ImagePicker v-model="image" />
+        <span>Image (optional)</span>
+        <span class="muted">Without one, the page's own preview image is used.</span>
+        <ImagePicker v-model="ownImage" />
       </div>
-      <button type="submit" :disabled="saving">{{ saving ? 'Guardando…' : 'Guardar' }}</button>
-      <p v-if="error" class="error">{{ error }}</p>
+      <button type="submit" :disabled="saving">{{ saving ? 'Saving…' : 'Save' }}</button>
+      <p v-if="saveError" class="error">{{ saveError }}</p>
     </form>
   </main>
 </template>

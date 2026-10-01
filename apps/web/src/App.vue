@@ -6,7 +6,7 @@ import { session, supabase } from './lib/supabase'
 const router = useRouter()
 const queryClient = useQueryClient()
 
-async function logout() {
+async function signOut() {
   await supabase.auth.signOut()
   queryClient.clear()
   await router.push({ name: 'login' })
@@ -17,11 +17,11 @@ async function logout() {
   <header v-if="session" class="header">
     <strong>Begiz</strong>
     <nav>
-      <RouterLink :to="{ name: 'home' }">Mosaico</RouterLink>
-      <RouterLink :to="{ name: 'new' }">Guardar web</RouterLink>
-      <RouterLink :to="{ name: 'collections' }">Colecciones</RouterLink>
+      <RouterLink :to="{ name: 'home' }">Mosaic</RouterLink>
+      <RouterLink :to="{ name: 'new' }">Save web</RouterLink>
+      <RouterLink :to="{ name: 'collections' }">Collections</RouterLink>
     </nav>
-    <button type="button" @click="logout">Salir</button>
+    <button type="button" @click="signOut">Sign out</button>
   </header>
   <RouterView />
 </template>

@@ -1,34 +1,34 @@
 <script setup lang="ts">
 import { onBeforeUnmount, onMounted, ref, watch } from 'vue'
 
-const model = defineModel<File | null>({ required: true })
+const selectedImage = defineModel<File | null>({ required: true })
 
 const previewUrl = ref<string | null>(null)
-const dragging = ref(false)
+const isDraggingOver = ref(false)
 
 watch(
-  model,
-  (file) => {
+  selectedImage,
+  (image) => {
     if (previewUrl.value) URL.revokeObjectURL(previewUrl.value)
-    previewUrl.value = file ? URL.createObjectURL(file) : null
+    previewUrl.value = image ? URL.createObjectURL(image) : null
   },
   { immediate: true },
 )
 
-function pick(files: FileList | null | undefined) {
+function selectFirstImage(files: FileList | null | undefined) {
   const image = [...(files ?? [])].find((file) => file.type.startsWith('image/'))
-  if (image) model.value = image
+  if (image) selectedImage.value = image
   return Boolean(image)
 }
 
-// Pegar con Ctrl+V en cualquier parte de la página, no solo sobre la caja.
+// Pasting with Ctrl+V works anywhere on the page, not only over the drop zone.
 function onPaste(event: ClipboardEvent) {
-  if (pick(event.clipboardData?.files)) event.preventDefault()
+  if (selectFirstImage(event.clipboardData?.files)) event.preventDefault()
 }
 
 function onDrop(event: DragEvent) {
-  dragging.value = false
-  pick(event.dataTransfer?.files)
+  isDraggingOver.value = false
+  selectFirstImage(event.dataTransfer?.files)
 }
 
 onMounted(() => window.addEventListener('paste', onPaste))
@@ -41,21 +41,21 @@ onBeforeUnmount(() => {
 <template>
   <div
     class="dropzone stack"
-    :class="{ dragging }"
-    @dragover.prevent="dragging = true"
-    @dragleave="dragging = false"
+    :class="{ dragging: isDraggingOver }"
+    @dragover.prevent="isDraggingOver = true"
+    @dragleave="isDraggingOver = false"
     @drop.prevent="onDrop"
   >
     <template v-if="previewUrl">
-      <img :src="previewUrl" alt="Imagen seleccionada" style="max-height: 240px; margin: 0 auto" />
+      <img :src="previewUrl" alt="Selected image" style="max-height: 240px; margin: 0 auto" />
       <div class="row" style="justify-content: center">
-        <button type="button" @click="model = null">Quitar imagen</button>
+        <button type="button" @click="selectedImage = null">Remove image</button>
       </div>
     </template>
     <template v-else>
-      <span>Pega una captura (Ctrl+V), arrástrala aquí o</span>
+      <span>Paste a screenshot (Ctrl+V), drag it here or</span>
       <label style="align-items: center">
-        <input type="file" accept="image/*" @change="pick(($event.target as HTMLInputElement).files)" />
+        <input type="file" accept="image/*" @change="selectFirstImage(($event.target as HTMLInputElement).files)" />
       </label>
     </template>
   </div>

@@ -6,33 +6,33 @@ import { env } from './env.ts'
 export type AuthEnv = { Variables: { userId: string } }
 
 const issuer = `${env.SUPABASE_URL}/auth/v1`
-const jwks = createRemoteJWKSet(new URL(`${issuer}/.well-known/jwks.json`))
-const legacySecret = env.SUPABASE_JWT_SECRET
+const supabaseSigningKeys = createRemoteJWKSet(new URL(`${issuer}/.well-known/jwks.json`))
+const legacyJwtSecret = env.SUPABASE_JWT_SECRET
   ? new TextEncoder().encode(env.SUPABASE_JWT_SECRET)
   : null
 
-async function verify(token: string): Promise<JWTPayload> {
+async function verifySessionToken(token: string): Promise<JWTPayload> {
   const options = { issuer, audience: 'authenticated' }
-  const { payload } = legacySecret
-    ? await jwtVerify(token, legacySecret, { ...options, algorithms: ['HS256'] })
-    : await jwtVerify(token, jwks, options)
+  const { payload } = legacyJwtSecret
+    ? await jwtVerify(token, legacyJwtSecret, { ...options, algorithms: ['HS256'] })
+    : await jwtVerify(token, supabaseSigningKeys, options)
   return payload
 }
 
-/** Valida el JWT de Supabase que envía el front y deja el id de la usuaria en c.var.userId. */
-export const requireAuth = createMiddleware<AuthEnv>(async (c, next) => {
-  const header = c.req.header('Authorization')
-  const token = header?.startsWith('Bearer ') ? header.slice(7) : undefined
-  if (!token) throw new HTTPException(401, { message: 'Falta iniciar sesión' })
+/** Validates the Supabase JWT sent by the front and exposes the user id as context.var.userId. */
+export const requireAuth = createMiddleware<AuthEnv>(async (context, next) => {
+  const authorizationHeader = context.req.header('Authorization')
+  const token = authorizationHeader?.startsWith('Bearer ') ? authorizationHeader.slice(7) : undefined
+  if (!token) throw new HTTPException(401, { message: 'Not signed in' })
 
   let payload: JWTPayload
   try {
-    payload = await verify(token)
+    payload = await verifySessionToken(token)
   } catch {
-    throw new HTTPException(401, { message: 'Sesión no válida o caducada' })
+    throw new HTTPException(401, { message: 'Invalid or expired session' })
   }
-  if (!payload.sub) throw new HTTPException(401, { message: 'Sesión no válida' })
+  if (!payload.sub) throw new HTTPException(401, { message: 'Invalid session' })
 
-  c.set('userId', payload.sub)
+  context.set('userId', payload.sub)
   await next()
 })

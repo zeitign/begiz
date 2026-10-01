@@ -5,9 +5,9 @@ import { safeFetch } from './safe-fetch.ts'
 
 const MAX_HTML_BYTES = 3 * 1024 * 1024
 const MAX_IMAGE_BYTES = 15 * 1024 * 1024
-const THUMB_WIDTH = 800
-/** Las capturas de página completa se recortan por arriba para la miniatura. */
-const THUMB_MAX_HEIGHT = 1200
+const THUMBNAIL_WIDTH = 800
+/** Full-page screenshots are cropped to their top part in the thumbnail. */
+const THUMBNAIL_MAX_HEIGHT = 1200
 
 export type PageMeta = {
   siteTitle: string | null
@@ -15,7 +15,7 @@ export type PageMeta = {
   imageUrl: string | null
 }
 
-/** Lee título, favicon y og:image de una página. */
+/** Reads the title, favicon and og:image of a page. */
 export async function fetchPageMeta(pageUrl: string): Promise<PageMeta> {
   const { url, contentType, body } = await safeFetch(pageUrl, {
     maxBytes: MAX_HTML_BYTES,
@@ -23,33 +23,33 @@ export async function fetchPageMeta(pageUrl: string): Promise<PageMeta> {
   })
   if (!contentType.includes('html')) return { siteTitle: null, faviconUrl: null, imageUrl: null }
 
-  const root = parse(body.toString('utf8'))
-  const meta = (selector: string) =>
-    root.querySelector(selector)?.getAttribute('content')?.trim() || undefined
-  const absolute = (href: string | undefined) => {
+  const document = parse(body.toString('utf8'))
+  const readMetaContent = (selector: string) =>
+    document.querySelector(selector)?.getAttribute('content')?.trim() || undefined
+  const toAbsoluteHttpUrl = (href: string | undefined) => {
     if (!href) return null
     try {
-      const resolved = new URL(href, url)
-      return resolved.protocol === 'http:' || resolved.protocol === 'https:' ? resolved.href : null
+      const resolvedUrl = new URL(href, url)
+      return resolvedUrl.protocol === 'http:' || resolvedUrl.protocol === 'https:' ? resolvedUrl.href : null
     } catch {
       return null
     }
   }
 
-  const iconHref = root
+  const iconHref = document
     .querySelectorAll('link[rel]')
     .find((link) => link.getAttribute('rel')?.toLowerCase().split(/\s+/).includes('icon'))
     ?.getAttribute('href')
 
   return {
     siteTitle:
-      meta('meta[property="og:title"]') ?? (root.querySelector('title')?.text.trim() || null),
-    faviconUrl: absolute(iconHref ?? '/favicon.ico'),
-    imageUrl: absolute(
-      meta('meta[property="og:image"]') ??
-        meta('meta[property="og:image:url"]') ??
-        meta('meta[name="twitter:image"]') ??
-        meta('meta[property="twitter:image"]'),
+      readMetaContent('meta[property="og:title"]') ?? (document.querySelector('title')?.text.trim() || null),
+    faviconUrl: toAbsoluteHttpUrl(iconHref ?? '/favicon.ico'),
+    imageUrl: toAbsoluteHttpUrl(
+      readMetaContent('meta[property="og:image"]') ??
+        readMetaContent('meta[property="og:image:url"]') ??
+        readMetaContent('meta[name="twitter:image"]') ??
+        readMetaContent('meta[property="twitter:image"]'),
     ),
   }
 }
@@ -59,39 +59,39 @@ export async function downloadImage(imageUrl: string) {
   return body
 }
 
-/** Miniatura WebP de 800 px de ancho, recortada por arriba si es muy alta. */
-export async function makeThumb(input: Buffer) {
-  const { data, info } = await sharp(input)
+/** 800px wide WebP thumbnail, cropped from the top when the image is very tall. */
+export async function createThumbnail(image: Buffer) {
+  const { data: resizedImage, info: resizedSize } = await sharp(image)
     .rotate()
-    .resize({ width: THUMB_WIDTH, withoutEnlargement: true })
+    .resize({ width: THUMBNAIL_WIDTH, withoutEnlargement: true })
     .toBuffer({ resolveWithObject: true })
 
-  const image = sharp(data)
-  if (info.height > THUMB_MAX_HEIGHT) {
-    image.extract({ left: 0, top: 0, width: info.width, height: THUMB_MAX_HEIGHT })
+  const thumbnail = sharp(resizedImage)
+  if (resizedSize.height > THUMBNAIL_MAX_HEIGHT) {
+    thumbnail.extract({ left: 0, top: 0, width: resizedSize.width, height: THUMBNAIL_MAX_HEIGHT })
   }
-  return image.webp({ quality: 80 }).toBuffer()
+  return thumbnail.webp({ quality: 80 }).toBuffer()
 }
 
-const UPLOAD_FORMATS: Record<string, { ext: string; type: string }> = {
-  png: { ext: 'png', type: 'image/png' },
-  jpeg: { ext: 'jpg', type: 'image/jpeg' },
-  webp: { ext: 'webp', type: 'image/webp' },
-  gif: { ext: 'gif', type: 'image/gif' },
-  avif: { ext: 'avif', type: 'image/avif' },
+const UPLOAD_FORMATS: Record<string, { extension: string; mimeType: string }> = {
+  png: { extension: 'png', mimeType: 'image/png' },
+  jpeg: { extension: 'jpg', mimeType: 'image/jpeg' },
+  webp: { extension: 'webp', mimeType: 'image/webp' },
+  gif: { extension: 'gif', mimeType: 'image/gif' },
+  avif: { extension: 'avif', mimeType: 'image/avif' },
 }
 
-/** Valida una imagen subida a mano y devuelve su formato real (no el que dice el navegador). */
-export async function inspectUpload(input: Buffer) {
-  let format: string | undefined
+/** Validates an uploaded image and returns its real format (not the one the browser claims). */
+export async function detectUploadFormat(image: Buffer) {
+  let detectedFormat: string | undefined
   try {
-    format = (await sharp(input).metadata()).format
+    detectedFormat = (await sharp(image).metadata()).format
   } catch {
-    // no es una imagen legible
+    // Unreadable as an image: rejected below.
   }
-  const known = format ? UPLOAD_FORMATS[format] : undefined
-  if (!known) {
-    throw new HTTPException(400, { message: 'El archivo no es una imagen válida (PNG, JPG, WebP, GIF o AVIF)' })
+  const uploadFormat = detectedFormat ? UPLOAD_FORMATS[detectedFormat] : undefined
+  if (!uploadFormat) {
+    throw new HTTPException(400, { message: 'The file is not a valid image (PNG, JPG, WebP, GIF or AVIF)' })
   }
-  return known
+  return uploadFormat
 }

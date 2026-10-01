@@ -3,69 +3,74 @@ import { keepPreviousData, useQuery } from '@tanstack/vue-query'
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter, type LocationQueryRaw } from 'vue-router'
 import WebCard from '../components/WebCard.vue'
-import { api, call } from '../lib/api'
+import { api, responseBody } from '../lib/api'
 import { useCollections, useTags } from '../lib/queries'
 
-// Los filtros viven en la URL: se pueden recargar, compartir y volver atrás.
+// Filters live in the URL, so they survive reloads, can be shared and work with the back button.
 const route = useRoute()
 const router = useRouter()
 
-const q = computed(() => (typeof route.query.q === 'string' ? route.query.q : ''))
+const searchFilter = computed(() => (typeof route.query.search === 'string' ? route.query.search : ''))
 const selectedTags = computed(() =>
   typeof route.query.tags === 'string' ? route.query.tags.split(',').filter(Boolean) : [],
 )
-const collection = computed(() =>
+const collectionFilter = computed(() =>
   typeof route.query.collection === 'string' ? route.query.collection : '',
 )
 
-function setFilters(patch: LocationQueryRaw) {
-  const query = { ...route.query, ...patch }
-  for (const key of Object.keys(query)) if (!query[key]) delete query[key]
-  router.replace({ query })
+function updateFilters(changedFilters: LocationQueryRaw) {
+  const nextQuery = { ...route.query, ...changedFilters }
+  for (const key of Object.keys(nextQuery)) if (!nextQuery[key]) delete nextQuery[key]
+  router.replace({ query: nextQuery })
 }
 
-const search = ref(q.value)
-let debounce: ReturnType<typeof setTimeout> | undefined
-watch(search, (value) => {
-  clearTimeout(debounce)
-  debounce = setTimeout(() => setFilters({ q: value.trim() }), 250)
+const searchInput = ref(searchFilter.value)
+let searchDebounceTimer: ReturnType<typeof setTimeout> | undefined
+watch(searchInput, (typedSearch) => {
+  clearTimeout(searchDebounceTimer)
+  searchDebounceTimer = setTimeout(() => updateFilters({ search: typedSearch.trim() }), 250)
 })
 
 function toggleTag(name: string) {
-  const tags = selectedTags.value.includes(name)
+  const nextTags = selectedTags.value.includes(name)
     ? selectedTags.value.filter((tag) => tag !== name)
     : [...selectedTags.value, name]
-  setFilters({ tags: tags.join(',') })
+  updateFilters({ tags: nextTags.join(',') })
 }
 
 const { data: tags } = useTags()
 const { data: collections } = useCollections()
 const { data: webs, isPending, error } = useQuery({
-  queryKey: ['webs', q, selectedTags, collection],
+  queryKey: ['webs', searchFilter, selectedTags, collectionFilter],
   queryFn: () =>
-    call(
+    responseBody(
       api.webs.$get({
         query: {
-          q: q.value || undefined,
+          search: searchFilter.value || undefined,
           tags: selectedTags.value.join(',') || undefined,
-          collection: collection.value || undefined,
+          collection: collectionFilter.value || undefined,
         },
       }),
     ),
   placeholderData: keepPreviousData,
 })
 
-const hasFilters = computed(() => Boolean(q.value || selectedTags.value.length || collection.value))
+const hasFilters = computed(() =>
+  Boolean(searchFilter.value || selectedTags.value.length || collectionFilter.value),
+)
 </script>
 
 <template>
   <main class="page stack">
     <div class="row">
-      <input v-model="search" type="search" class="grow" placeholder="Buscar por título" />
-      <select :value="collection" @change="setFilters({ collection: ($event.target as HTMLSelectElement).value })">
-        <option value="">Todas las colecciones</option>
-        <option v-for="item in collections" :key="item.id" :value="item.id">
-          {{ item.name }} ({{ item.webCount }})
+      <input v-model="searchInput" type="search" class="grow" placeholder="Search by title" />
+      <select
+        :value="collectionFilter"
+        @change="updateFilters({ collection: ($event.target as HTMLSelectElement).value })"
+      >
+        <option value="">All collections</option>
+        <option v-for="collection in collections" :key="collection.id" :value="collection.id">
+          {{ collection.name }} ({{ collection.webCount }})
         </option>
       </select>
     </div>
@@ -84,10 +89,10 @@ const hasFilters = computed(() => Boolean(q.value || selectedTags.value.length |
     </div>
 
     <p v-if="error" class="error">{{ error.message }}</p>
-    <p v-else-if="isPending">Cargando…</p>
-    <p v-else-if="!webs?.length && hasFilters">Ninguna web coincide con los filtros.</p>
+    <p v-else-if="isPending">Loading…</p>
+    <p v-else-if="!webs?.length && hasFilters">No webs match the filters.</p>
     <p v-else-if="!webs?.length">
-      Aún no hay webs guardadas. <RouterLink :to="{ name: 'new' }">Guarda la primera</RouterLink>.
+      No webs saved yet. <RouterLink :to="{ name: 'new' }">Save the first one</RouterLink>.
     </p>
 
     <div class="grid">

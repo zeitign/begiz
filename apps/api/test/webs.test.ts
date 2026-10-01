@@ -112,15 +112,15 @@ describe('listing webs', () => {
     await saveWeb(user, { title: 'Brutalist portfolio' })
     await saveWeb(user, { title: 'Pastel shop' })
 
-    expect(await listWebTitles('?q=PORTFOLIO')).toEqual(['Brutalist portfolio'])
+    expect(await listWebTitles('?search=PORTFOLIO')).toEqual(['Brutalist portfolio'])
   })
 
   it('treats % and _ in the search as plain text', async () => {
     await saveWeb(user, { title: '100% handmade' })
     await saveWeb(user, { title: 'Studio 1000' })
 
-    expect(await listWebTitles(`?q=${encodeURIComponent('100%')}`)).toEqual(['100% handmade'])
-    expect(await listWebTitles('?q=_')).toEqual([])
+    expect(await listWebTitles(`?search=${encodeURIComponent('100%')}`)).toEqual(['100% handmade'])
+    expect(await listWebTitles('?search=_')).toEqual([])
   })
 
   it('returns only the webs that have all the selected tags', async () => {
@@ -140,7 +140,7 @@ describe('listing webs', () => {
 
     expect(await listWebTitles(`?collection=${collection.id}`)).toEqual(['Light landing', 'Dark landing'])
     expect(await listWebTitles(`?collection=${collection.id}&tags=dark`)).toEqual(['Dark landing'])
-    expect(await listWebTitles(`?collection=${collection.id}&q=light`)).toEqual(['Light landing'])
+    expect(await listWebTitles(`?collection=${collection.id}&search=light`)).toEqual(['Light landing'])
   })
 })
 

@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-/** "  Paleta   de Color " → "paleta de color". Evita duplicados por mayúsculas o espacios. */
+/** "  Colour   Palette " → "colour palette". Avoids duplicates that differ only in case or spacing. */
 export function normalizeTag(name: string) {
   return name.trim().toLowerCase().replace(/\s+/g, ' ')
 }
@@ -22,7 +22,7 @@ export const webCreate = z.object({
   notes: webNotes.default(''),
   tags: tagList.default([]),
   collectionIds: collectionIds.default([]),
-  /** Si es false, no se descarga la og:image (p. ej. porque se va a subir una imagen propia). */
+  /** false skips downloading the og:image, e.g. because the user is about to upload her own image. */
   usePageImage: z.boolean().default(true),
 })
 
@@ -35,8 +35,8 @@ export const webUpdate = z.object({
 })
 
 export const webListQuery = z.object({
-  q: z.string().trim().max(200).optional(),
-  /** Nombres de tags separados por comas. Se devuelven las webs que tienen TODOS. */
+  search: z.string().trim().max(200).optional(),
+  /** Comma-separated tag names. Only webs that have ALL of them are returned. */
   tags: z.string().max(2000).optional(),
   collection: z.uuid().optional(),
 })

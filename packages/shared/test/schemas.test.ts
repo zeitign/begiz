@@ -3,7 +3,7 @@ import { collectionCreate, normalizeTag, webCreate, webListQuery } from '../src/
 
 describe('normalizeTag', () => {
   it('lowercases, trims and collapses inner spaces', () => {
-    expect(normalizeTag('  Paleta   de Color ')).toBe('paleta de color')
+    expect(normalizeTag('  Colour   Palette ')).toBe('colour palette')
   })
 })
 

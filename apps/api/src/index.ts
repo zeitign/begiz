@@ -3,5 +3,5 @@ import { app } from './app.ts'
 import { env } from './env.ts'
 
 serve({ fetch: app.fetch, port: env.PORT }, (info) => {
-  console.log(`API escuchando en http://localhost:${info.port}`)
+  console.log(`API listening on http://localhost:${info.port}`)
 })

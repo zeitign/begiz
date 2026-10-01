@@ -4,7 +4,7 @@ import { dirname, join, resolve } from 'node:path'
 import { DeleteObjectCommand, PutObjectCommand, S3Client } from '@aws-sdk/client-s3'
 import { env } from '../env.ts'
 
-/** Dónde viven las imágenes: disco local en desarrollo, R2 (o cualquier S3) en producción. */
+/** Where images live: local disk in development, R2 (or any S3) in production. */
 export interface Storage {
   put(key: string, body: Buffer, contentType: string): Promise<void>
   delete(key: string): Promise<void>
@@ -29,28 +29,28 @@ function createLocalStorage(): Storage {
 function createS3Storage(): Storage {
   const { S3_ENDPOINT, S3_REGION, S3_BUCKET, S3_ACCESS_KEY_ID, S3_SECRET_ACCESS_KEY } = env
   if (!S3_BUCKET || !S3_ACCESS_KEY_ID || !S3_SECRET_ACCESS_KEY) {
-    throw new Error('STORAGE_DRIVER=s3 requiere S3_BUCKET, S3_ACCESS_KEY_ID y S3_SECRET_ACCESS_KEY')
+    throw new Error('STORAGE_DRIVER=s3 requires S3_BUCKET, S3_ACCESS_KEY_ID and S3_SECRET_ACCESS_KEY')
   }
-  const client = new S3Client({
+  const s3Client = new S3Client({
     endpoint: S3_ENDPOINT,
     region: S3_REGION,
     credentials: { accessKeyId: S3_ACCESS_KEY_ID, secretAccessKey: S3_SECRET_ACCESS_KEY },
   })
   return {
     async put(key, body, contentType) {
-      await client.send(
+      await s3Client.send(
         new PutObjectCommand({
           Bucket: S3_BUCKET,
           Key: key,
           Body: body,
           ContentType: contentType,
-          // Las claves llevan un uuid nuevo en cada subida, así que nunca cambian de contenido.
+          // Every upload gets a new uuid in its key, so a key's content never changes.
           CacheControl: 'public, max-age=31536000, immutable',
         }),
       )
     },
     async delete(key) {
-      await client.send(new DeleteObjectCommand({ Bucket: S3_BUCKET, Key: key }))
+      await s3Client.send(new DeleteObjectCommand({ Bucket: S3_BUCKET, Key: key }))
     },
   }
 }
@@ -61,10 +61,10 @@ export function fileUrl(key: string | null) {
   return key ? `${env.FILES_PUBLIC_URL}/${key}` : null
 }
 
-/** Borrado sin romper la petición si falla: una imagen huérfana no es grave. */
+/** Deletes without failing the request: an orphan image is harmless. */
 export async function deleteQuietly(...keys: (string | null)[]) {
   for (const key of keys) {
     if (!key) continue
-    await storage.delete(key).catch((err) => console.warn(`No se pudo borrar ${key}`, err))
+    await storage.delete(key).catch((error) => console.warn(`Could not delete ${key}`, error))
   }
 }

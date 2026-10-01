@@ -62,7 +62,7 @@ Todas las rutas van bajo `/api` y exigen sesión.
 
 | Método | Ruta | |
 |---|---|---|
-| GET | `/webs?q=&tags=a,b&collection=` | Mosaico con filtros |
+| GET | `/webs?search=&tags=a,b&collection=` | Mosaico con filtros |
 | POST | `/webs` | Crear. Lee título, favicon y `og:image` de la página (`usePageImage: false` para no descargar la imagen) |
 | GET / PATCH / DELETE | `/webs/:id` | Detalle, edición (incluye tags y colecciones), borrado |
 | PUT | `/webs/:id/preview` | Subir imagen propia (multipart, campo `image`) |
@@ -85,11 +85,31 @@ Todas las rutas van bajo `/api` y exigen sesión.
 | Fase | Contenido | Estado |
 |---|---|---|
 | 1 · Base | Login, CRUD de webs, tags y colecciones, búsqueda, vista previa por `og:image` o imagen manual | Validada con el Supabase real (1-oct-2026) |
-| 1b · Tests de la API | Vitest en el monorepo. Tests de la API y de `shared` | **En curso**: tests hechos; falta revisar el código de la fase 1 |
-| Diseño | Diseño visual de la plataforma | Tras los tests |
+| 1b · Tests de la API | Vitest en el monorepo. Tests de la API y de `shared` | Hecha: tests y código de la fase 1 revisado (inglés, nombres, comentarios) |
+| Diseño | Diseño visual de la plataforma | **Siguiente** |
 | 2 · Captura | Captura automática con Playwright en un worker (rellena `preview_key` / `full_key` con `preview_source = 'screenshot'`); requiere un contenedor con Chromium | Planificada |
 | 3 · Extensión | Extensión de navegador (WXT + Vue) usando la misma API | Planificada |
 | 4 · Componentes | RF-F1: guardar componentes concretos (tabla `components` que apunta a `webs`) | Futuro |
+| Idiomas | Selector de idioma en la interfaz: inglés (por defecto) y español | Futuro |
+| Tema | Cambio entre tema claro y oscuro | Futuro |
+
+### Idiomas (futuro)
+
+- **Front**: `vue-i18n`, con un archivo de textos por idioma (`en`, `es`). El idioma elegido se
+  recuerda en el navegador.
+- **API**: los errores devolverían también un código (p. ej. `collection_name_taken`) además del
+  mensaje, para que el front muestre el texto en el idioma elegido. Los mensajes de validación de
+  Zod se traducirían igual en el front.
+- El código sigue siempre en inglés; solo cambian los textos de pantalla.
+- Mejor hacerlo **después de la fase de diseño**, cuando los textos de la interfaz sean estables.
+
+### Tema claro / oscuro (futuro)
+
+- Los colores se definen como variables CSS, con un juego para cada tema. Cambiar de tema solo
+  cambia qué juego se usa.
+- Por defecto se sigue la preferencia del sistema; si la usuaria elige uno a mano, se recuerda en el
+  navegador.
+- Encaja con la **fase de diseño**: al definir la paleta conviene definir las dos variantes a la vez.
 
 ### Tests
 

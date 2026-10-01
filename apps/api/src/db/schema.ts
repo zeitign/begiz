@@ -8,8 +8,8 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core'
 
-// user_id es el id de auth.users de Supabase. No se declara como clave foránea
-// para que el esquema no dependa de Supabase y se pueda llevar a cualquier Postgres.
+// user_id is the id from Supabase's auth.users. It is not a foreign key, so the schema
+// does not depend on Supabase and can move to any Postgres.
 
 export const webs = pgTable(
   'webs',
@@ -19,19 +19,19 @@ export const webs = pgTable(
     url: text().notNull(),
     title: text().notNull(),
     notes: text().notNull().default(''),
-    /** Miniatura del mosaico (WebP). null → el front pinta una tarjeta con favicon y dominio. */
+    /** Mosaic thumbnail (WebP). When null, the front draws a card with the favicon and domain. */
     previewKey: text('preview_key'),
     previewSource: text('preview_source', { enum: ['manual', 'og'] }),
-    /** Imagen original subida a mano (puede ser una captura de página completa). */
+    /** Original image uploaded by hand (it can be a full-page screenshot). */
     fullKey: text('full_key'),
     siteTitle: text('site_title'),
     faviconUrl: text('favicon_url'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [
-    index('webs_user_created_idx').on(t.userId, t.createdAt),
-    index('webs_title_trgm_idx').using('gin', t.title.op('gin_trgm_ops')),
+  (table) => [
+    index('webs_user_created_idx').on(table.userId, table.createdAt),
+    index('webs_title_trgm_idx').using('gin', table.title.op('gin_trgm_ops')),
   ],
 )
 
@@ -42,7 +42,7 @@ export const tags = pgTable(
     userId: uuid('user_id').notNull(),
     name: text().notNull(),
   },
-  (t) => [uniqueIndex('tags_user_name_idx').on(t.userId, t.name)],
+  (table) => [uniqueIndex('tags_user_name_idx').on(table.userId, table.name)],
 )
 
 export const webTags = pgTable(
@@ -55,7 +55,7 @@ export const webTags = pgTable(
       .notNull()
       .references(() => tags.id, { onDelete: 'cascade' }),
   },
-  (t) => [primaryKey({ columns: [t.webId, t.tagId] }), index('web_tags_tag_idx').on(t.tagId)],
+  (table) => [primaryKey({ columns: [table.webId, table.tagId] }), index('web_tags_tag_idx').on(table.tagId)],
 )
 
 export const collections = pgTable(
@@ -67,7 +67,7 @@ export const collections = pgTable(
     description: text(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
-  (t) => [uniqueIndex('collections_user_name_idx').on(t.userId, t.name)],
+  (table) => [uniqueIndex('collections_user_name_idx').on(table.userId, table.name)],
 )
 
 export const collectionWebs = pgTable(
@@ -80,8 +80,8 @@ export const collectionWebs = pgTable(
       .notNull()
       .references(() => webs.id, { onDelete: 'cascade' }),
   },
-  (t) => [
-    primaryKey({ columns: [t.collectionId, t.webId] }),
-    index('collection_webs_web_idx').on(t.webId),
+  (table) => [
+    primaryKey({ columns: [table.collectionId, table.webId] }),
+    index('collection_webs_web_idx').on(table.webId),
   ],
 )

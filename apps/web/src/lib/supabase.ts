@@ -1,7 +1,7 @@
 import { createClient, type Session } from '@supabase/supabase-js'
 import { ref } from 'vue'
 
-// Supabase solo se usa para el login. Los datos se piden siempre a nuestra API.
+// Supabase is only used to sign in. Data always comes from our API.
 export const supabase = createClient(
   import.meta.env.VITE_SUPABASE_URL,
   import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY,

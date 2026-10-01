@@ -3,8 +3,8 @@ import { isIP, type LookupFunction } from 'node:net'
 import ipaddr from 'ipaddr.js'
 import { Agent, fetch } from 'undici'
 
-// Protección SSRF: el servidor abre URLs que escribe la usuaria, así que no debe
-// poder alcanzar direcciones internas (localhost, red privada, metadatos del cloud…).
+// SSRF protection: the server opens URLs typed by the user, so it must not be able
+// to reach internal addresses (localhost, private networks, cloud metadata…).
 
 const MAX_REDIRECTS = 5
 const TIMEOUT_MS = 8000
@@ -13,45 +13,45 @@ const USER_AGENT = 'Mozilla/5.0 (compatible; WebsArchive/1.0; +preview)'
 export class BlockedAddressError extends Error {}
 
 function isPublicAddress(ip: string) {
-  // process() convierte ::ffff:127.0.0.1 en 127.0.0.1 antes de clasificar.
+  // process() turns ::ffff:127.0.0.1 into 127.0.0.1 before classifying it.
   return ipaddr.process(ip).range() === 'unicast'
 }
 
-// Se comprueba la IP en el momento de conectar (no antes), para que un DNS que
-// cambie de respuesta entre la comprobación y la conexión no pueda colarse.
-const guardedLookup = ((hostname, options, callback) => {
-  lookup(hostname, { ...options, all: true }, (err, addresses: LookupAddress[]) => {
-    if (err) return callback(err, '', 0)
-    const blocked = addresses.find((a) => !isPublicAddress(a.address))
-    if (blocked || addresses.length === 0) {
-      return callback(new BlockedAddressError(`Dirección no permitida: ${hostname}`), '', 0)
+// The IP is checked when connecting (not before), so a DNS answer that changes
+// between the check and the connection cannot slip through.
+const publicOnlyLookup = ((hostname, options, callback) => {
+  lookup(hostname, { ...options, all: true }, (error, addresses: LookupAddress[]) => {
+    if (error) return callback(error, '', 0)
+    const blockedAddress = addresses.find((resolved) => !isPublicAddress(resolved.address))
+    if (blockedAddress || addresses.length === 0) {
+      return callback(new BlockedAddressError(`Address not allowed: ${hostname}`), '', 0)
     }
-    if (options.all) return (callback as (e: null, a: LookupAddress[]) => void)(null, addresses)
-    const first = addresses[0]!
-    callback(null, first.address, first.family)
+    if (options.all) return (callback as (error: null, addresses: LookupAddress[]) => void)(null, addresses)
+    const firstAddress = addresses[0]!
+    callback(null, firstAddress.address, firstAddress.family)
   })
 }) as LookupFunction
 
-const agent = new Agent({ connect: { lookup: guardedLookup } })
+const publicOnlyAgent = new Agent({ connect: { lookup: publicOnlyLookup } })
 
 function assertAllowedUrl(url: URL) {
   if (url.protocol !== 'http:' && url.protocol !== 'https:') {
-    throw new BlockedAddressError(`Protocolo no permitido: ${url.protocol}`)
+    throw new BlockedAddressError(`Protocol not allowed: ${url.protocol}`)
   }
-  // Las IPs escritas tal cual no pasan por el lookup, así que se comprueban aquí.
+  // Literal IPs skip the DNS lookup, so they are checked here.
   const host = url.hostname.replace(/^\[|\]$/g, '')
   if (isIP(host) && !isPublicAddress(host)) {
-    throw new BlockedAddressError(`Dirección no permitida: ${host}`)
+    throw new BlockedAddressError(`Address not allowed: ${host}`)
   }
 }
 
-async function readLimited(body: AsyncIterable<Uint8Array> | null, maxBytes: number) {
+async function readWithSizeLimit(body: AsyncIterable<Uint8Array> | null, maxBytes: number) {
   const chunks: Uint8Array[] = []
-  let size = 0
+  let totalBytes = 0
   if (body) {
     for await (const chunk of body) {
-      size += chunk.byteLength
-      if (size > maxBytes) throw new Error(`Respuesta demasiado grande (> ${maxBytes} bytes)`)
+      totalBytes += chunk.byteLength
+      if (totalBytes > maxBytes) throw new Error(`Response too large (> ${maxBytes} bytes)`)
       chunks.push(chunk)
     }
   }
@@ -62,31 +62,31 @@ export async function safeFetch(input: string, { maxBytes, accept }: { maxBytes:
   let url = new URL(input)
   const signal = AbortSignal.timeout(TIMEOUT_MS)
 
-  for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+  for (let redirectCount = 0; redirectCount <= MAX_REDIRECTS; redirectCount++) {
     assertAllowedUrl(url)
-    const res = await fetch(url, {
-      dispatcher: agent,
+    const response = await fetch(url, {
+      dispatcher: publicOnlyAgent,
       redirect: 'manual',
       signal,
       headers: { 'user-agent': USER_AGENT, accept },
     })
 
-    const location = res.headers.get('location')
-    if (res.status >= 300 && res.status < 400 && location) {
-      await res.body?.cancel()
-      url = new URL(location, url)
+    const redirectLocation = response.headers.get('location')
+    if (response.status >= 300 && response.status < 400 && redirectLocation) {
+      await response.body?.cancel()
+      url = new URL(redirectLocation, url)
       continue
     }
-    if (!res.ok) {
-      await res.body?.cancel()
-      throw new Error(`HTTP ${res.status} al descargar ${url}`)
+    if (!response.ok) {
+      await response.body?.cancel()
+      throw new Error(`HTTP ${response.status} while downloading ${url}`)
     }
 
     return {
       url,
-      contentType: res.headers.get('content-type') ?? '',
-      body: await readLimited(res.body, maxBytes),
+      contentType: response.headers.get('content-type') ?? '',
+      body: await readWithSizeLimit(response.body, maxBytes),
     }
   }
-  throw new Error('Demasiadas redirecciones')
+  throw new Error('Too many redirects')
 }

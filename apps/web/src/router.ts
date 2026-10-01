@@ -11,9 +11,9 @@ export const router = createRouter({
   routes: [
     { path: '/', name: 'home', component: HomeView },
     { path: '/login', name: 'login', component: LoginView, meta: { public: true } },
-    { path: '/nueva', name: 'new', component: NewWebView },
+    { path: '/new', name: 'new', component: NewWebView },
     { path: '/webs/:id', name: 'web', component: WebDetailView, props: true },
-    { path: '/colecciones', name: 'collections', component: CollectionsView },
+    { path: '/collections', name: 'collections', component: CollectionsView },
   ],
 })
 
