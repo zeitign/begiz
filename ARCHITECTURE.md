@@ -84,8 +84,8 @@ Todas las rutas van bajo `/api` y exigen sesión.
 
 | Fase | Contenido | Estado |
 |---|---|---|
-| 1 · Base | Login, CRUD de webs, tags y colecciones, búsqueda, vista previa por `og:image` o imagen manual | Construida; **pendiente de validar** en el navegador con el Supabase real |
-| 1b · Tests de la API | Vitest en el monorepo. Tests de la API y de `shared` | Siguiente tras validar la fase 1 |
+| 1 · Base | Login, CRUD de webs, tags y colecciones, búsqueda, vista previa por `og:image` o imagen manual | Validada con el Supabase real (1-oct-2026) |
+| 1b · Tests de la API | Vitest en el monorepo. Tests de la API y de `shared` | **Siguiente** |
 | Diseño | Diseño visual de la plataforma | Tras los tests |
 | 2 · Captura | Captura automática con Playwright en un worker (rellena `preview_key` / `full_key` con `preview_source = 'screenshot'`); requiere un contenedor con Chromium | Planificada |
 | 3 · Extensión | Extensión de navegador (WXT + Vue) usando la misma API | Planificada |
