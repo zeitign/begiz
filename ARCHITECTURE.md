@@ -82,11 +82,27 @@ Todas las rutas van bajo `/api` y exigen sesión.
 
 ## Fases
 
-1. **v1 (actual)**: CRUD de webs, tags, colecciones, búsqueda, vista previa por `og:image` o imagen manual.
-2. **v2**: captura automática con Playwright en un worker (rellena `preview_key` / `full_key` con
-   `preview_source = 'screenshot'`); requiere un contenedor con Chromium.
-3. Extensión de navegador (WXT + Vue) usando la misma API.
-4. RF-F1: guardar componentes concretos (tabla `components` que apunta a `webs`).
+| Fase | Contenido | Estado |
+|---|---|---|
+| 1 · Base | Login, CRUD de webs, tags y colecciones, búsqueda, vista previa por `og:image` o imagen manual | Construida; **pendiente de validar** en el navegador con el Supabase real |
+| 1b · Tests de la API | Vitest en el monorepo. Tests de la API y de `shared` | Siguiente tras validar la fase 1 |
+| Diseño | Diseño visual de la plataforma | Tras los tests |
+| 2 · Captura | Captura automática con Playwright en un worker (rellena `preview_key` / `full_key` con `preview_source = 'screenshot'`); requiere un contenedor con Chromium | Planificada |
+| 3 · Extensión | Extensión de navegador (WXT + Vue) usando la misma API | Planificada |
+| 4 · Componentes | RF-F1: guardar componentes concretos (tabla `components` que apunta a `webs`) | Futuro |
+
+### Tests
+
+- **Herramienta**: Vitest en todos los paquetes, con un `pnpm test` en la raíz.
+- **Fase 1b**: convertir en tests automáticos las 34 comprobaciones manuales de la fase 1 (tags,
+  filtros, colecciones, imágenes, validaciones, SSRF, borrado y aislamiento entre usuarias).
+  - Las rutas se prueban con `app.request()` de Hono, sin levantar el servidor.
+  - La base de datos es **PGlite** (Postgres en memoria, sin Docker), con las mismas migraciones
+    de Drizzle. Los tests nunca tocan el Supabase real.
+  - El JWT se sustituye por una usuaria de prueba, y las descargas de páginas externas se simulan.
+- **Front**: tests de componentes (`@vue/test-utils`) solo para la lógica que no cambie con el
+  diseño (filtros en la URL, pegado de imágenes). Se añaden al cerrar la fase de diseño.
+- **A partir de la fase 1b**, cada fase se cierra con sus tests y `pnpm test` en verde.
 
 ## Despliegue previsto
 

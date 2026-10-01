@@ -16,6 +16,17 @@ puesta en marcha en `README.md`.
   sistema en negro) hasta que la plataforma esté validada. Reutilizar las clases de
   `apps/web/src/style.css`; no decorar ni proponer diseño hasta que ella abra esa fase.
 
+## Escritura de código
+
+- Todo el código **en inglés**: nombres, comentarios, mensajes de error y textos de log. Nada de
+  español en el código.
+- Nombres de variables y funciones **descriptivos**, que se entiendan por sí solos y en
+  **camelCase**. Nada de letras sueltas ni abreviaturas sin lógica (`collectionName`, no `cn`
+  ni `x`).
+- **Comentarios solo cuando algo necesita explicación**, y de forma concisa: el porqué de una
+  decisión o qué hace una función cuya lógica no es evidente. No comentar lo que el código ya
+  dice ni narrar lo que se hace o se va a hacer (nada de `// here the h1`).
+
 ## Git
 
 - **Nunca hacer commit ni push por iniciativa propia.** Lo pide ella.
