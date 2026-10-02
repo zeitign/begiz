@@ -7,6 +7,7 @@ import ImagePicker from '../components/ImagePicker.vue'
 import TagInput from '../components/TagInput.vue'
 import WebThumb from '../components/WebThumb.vue'
 import { api, errorMessage, responseBody, type WebDetail } from '../lib/api'
+import { closeInfoWindow } from '../lib/infoWindows'
 import { useInvalidateAll } from '../lib/queries'
 
 const props = defineProps<{ id: string }>()
@@ -80,6 +81,7 @@ async function deleteWeb() {
   if (!confirm('Delete this web? This cannot be undone.')) return
   await runWebAction(async () => {
     await responseBody(api.webs[':id'].$delete({ param: { id: props.id } }))
+    closeInfoWindow(props.id)
     queryClient.removeQueries({ queryKey: queryKey.value })
     await router.push({ name: 'home' })
     return undefined
