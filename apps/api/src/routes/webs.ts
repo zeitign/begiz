@@ -1,9 +1,9 @@
 import { randomUUID } from 'node:crypto'
-import { and, desc, eq, ilike, inArray, sql } from 'drizzle-orm'
+import { and, eq, ilike, inArray, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { z } from 'zod'
-import { idParam, normalizeTag, webCreate, webListQuery, webUpdate } from '@webs/shared'
+import { idParam, normalizeTag, webCreate, webListQuery, webPositionUpdate, webUpdate } from '@webs/shared'
 import type { AuthEnv } from '../auth.ts'
 import { db, type Transaction } from '../db/client.ts'
 import { collections, collectionWebs, tags, webs, webTags } from '../db/schema.ts'
@@ -15,6 +15,7 @@ import {
   type PageMeta,
 } from '../lib/preview.ts'
 import { validate } from '../lib/validate.ts'
+import { moveWebAfter, positionBeforeAllWebs, webOrderBy } from '../lib/web-order.ts'
 import { deleteQuietly, fileUrl, storage } from '../storage/index.ts'
 
 type WebRow = typeof webs.$inferSelect
@@ -137,7 +138,7 @@ async function storePageImage(userId: string, webId: string, pageMeta: PageMeta 
 export const websRoutes = new Hono<AuthEnv>()
   .get('/', validate('query', webListQuery), async (context) => {
     const userId = context.get('userId')
-    const { search, tags: tagsParam, collection: collectionId } = context.req.valid('query')
+    const { search, tags: tagsParam, collection: collectionId, sort, direction } = context.req.valid('query')
     const tagNames = [...new Set((tagsParam ?? '').split(',').map(normalizeTag).filter(Boolean))]
 
     const conditions = [eq(webs.userId, userId)]
@@ -173,7 +174,7 @@ export const websRoutes = new Hono<AuthEnv>()
       .select()
       .from(webs)
       .where(and(...conditions))
-      .orderBy(desc(webs.createdAt))
+      .orderBy(...webOrderBy(sort, direction))
     const tagNamesByWebId = await findTagNamesByWebId(matchingWebs.map((web) => web.id))
     return context.json(matchingWebs.map((web) => toWebCard(web, tagNamesByWebId.get(web.id) ?? [])))
   })
@@ -205,6 +206,7 @@ export const websRoutes = new Hono<AuthEnv>()
           faviconUrl: pageMeta?.faviconUrl ?? null,
           previewKey,
           previewSource: previewKey ? 'og' : null,
+          sortPosition: await positionBeforeAllWebs(transaction, userId),
         })
         await replaceTags(transaction, userId, webId, input.tags)
         await replaceCollections(transaction, userId, webId, input.collectionIds)
@@ -231,6 +233,15 @@ export const websRoutes = new Hono<AuthEnv>()
       if (collectionIds) await replaceCollections(transaction, userId, webId, collectionIds)
     })
     return context.json(await getWebDetail(userId, webId))
+  })
+
+  .put('/:id/position', validate('param', idParam), validate('json', webPositionUpdate), async (context) => {
+    const userId = context.get('userId')
+    const { id: webId } = context.req.valid('param')
+    const { afterWebId } = context.req.valid('json')
+    await findOwnedWeb(userId, webId)
+    await db.transaction((transaction) => moveWebAfter(transaction, userId, webId, afterWebId))
+    return context.body(null, 204)
   })
 
   .put(

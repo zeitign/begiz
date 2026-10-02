@@ -29,6 +29,7 @@ export async function createUserClient() {
     get: (path: string) => sendJson('GET', path),
     post: (path: string, body: unknown) => sendJson('POST', path, body),
     patch: (path: string, body: unknown) => sendJson('PATCH', path, body),
+    put: (path: string, body: unknown) => sendJson('PUT', path, body),
     delete: (path: string) => sendJson('DELETE', path),
     uploadImage: (path: string, image: Blob) => {
       const form = new FormData()

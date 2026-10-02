@@ -7,8 +7,8 @@ defineProps<{ web: WebCard }>()
 </script>
 
 <template>
-  <article class="card" :data-web-id="web.id" @click="openInfoWindow(web.id)">
-    <div class="card-media">
+  <article class="card" :data-web-id="web.id">
+    <div class="card-media" @click="openInfoWindow(web.id)">
       <WebThumb :web="web" />
     </div>
     <div class="card-body">
@@ -19,7 +19,7 @@ defineProps<{ web: WebCard }>()
           class="icon-button"
           title="View"
           aria-label="View"
-          @click.stop="openInfoWindow(web.id)"
+          @click="openInfoWindow(web.id)"
         >
           <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
             <path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z" />
@@ -31,7 +31,6 @@ defineProps<{ web: WebCard }>()
           class="icon-button"
           title="Edit"
           aria-label="Edit"
-          @click.stop
         >
           <svg viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
             <path d="M16.5 3.5l4 4L8 20H4v-4L16.5 3.5z" />
