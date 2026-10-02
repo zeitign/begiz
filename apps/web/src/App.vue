@@ -24,6 +24,7 @@ async function signOut() {
       <RouterLink :to="{ name: 'new' }">Save web</RouterLink>
       <RouterLink :to="{ name: 'collections' }">Collections</RouterLink>
     </nav>
+    <span class="muted">{{ session.user.email }}</span>
     <button type="button" @click="signOut">Sign out</button>
   </header>
   <RouterView />
