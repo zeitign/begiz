@@ -1,4 +1,5 @@
 import {
+  doublePrecision,
   index,
   pgTable,
   primaryKey,
@@ -26,11 +27,14 @@ export const webs = pgTable(
     fullKey: text('full_key'),
     siteTitle: text('site_title'),
     faviconUrl: text('favicon_url'),
+    /** Position in the custom mosaic order (ascending). Fractional, so a move only rewrites one web. */
+    sortPosition: doublePrecision('sort_position').notNull().default(0),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [
     index('webs_user_created_idx').on(table.userId, table.createdAt),
+    index('webs_user_sort_position_idx').on(table.userId, table.sortPosition),
     index('webs_title_trgm_idx').using('gin', table.title.op('gin_trgm_ops')),
   ],
 )

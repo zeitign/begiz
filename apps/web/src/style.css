@@ -146,7 +146,54 @@ fieldset {
   display: flex;
   flex-direction: column;
   border: 1px solid #000;
-  text-decoration: none;
+}
+
+/* Custom order: cards are dragged by their lower part (open hand), the image opens the info window.
+   forceFallback in the mosaic makes the drag a regular mouse move, so the cursor can be styled. */
+.grid.custom-order .card-body {
+  cursor: grab;
+}
+
+.grid.custom-order .sortable-chosen,
+.grid.dragging-card,
+.grid.dragging-card *,
+.sortable-fallback {
+  cursor: grabbing;
+}
+
+.card-media {
+  cursor: pointer;
+  overflow: hidden;
+  border-bottom: 1px solid #000;
+}
+
+.card-media > * {
+  transition: transform 0.3s ease;
+}
+
+.card:hover .card-media > * {
+  transform: scale(1.04);
+}
+
+.card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.icon-button {
+  display: inline-flex;
+  padding: 3px;
+  border: 1px solid #000;
+  background: #fff;
+}
+
+.icon-button svg {
+  fill: #fff;
+  stroke: #000;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
 }
 
 .card-body {
@@ -161,7 +208,6 @@ fieldset {
   width: 100%;
   object-fit: cover;
   object-position: top;
-  border-bottom: 1px solid #000;
 }
 
 .thumb-placeholder {
@@ -186,4 +232,98 @@ fieldset {
   border: 1px solid #000;
   max-height: 80vh;
   overflow: auto;
+}
+
+.window {
+  position: fixed;
+  display: flex;
+  flex-direction: column;
+  width: min(520px, calc(100vw - 32px));
+  max-height: calc(100vh - 32px);
+  background: #fff;
+  border: 1px solid #000;
+}
+
+.window.maximized {
+  inset: 0;
+  width: auto;
+  max-height: none;
+}
+
+.window-titlebar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 4px 4px 4px 8px;
+  border-bottom: 1px solid #000;
+  cursor: move;
+  user-select: none;
+  touch-action: none;
+}
+
+.window.maximized .window-titlebar {
+  cursor: default;
+}
+
+.window-title {
+  flex: 1;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.window-controls {
+  display: flex;
+  gap: 4px;
+}
+
+.window-controls button {
+  width: 24px;
+  height: 24px;
+  padding: 0;
+  line-height: 1;
+}
+
+.window-body {
+  overflow: auto;
+  padding: 16px;
+}
+
+.window-image {
+  width: 100%;
+  border: 1px solid #000;
+}
+
+.url-text {
+  overflow-wrap: anywhere;
+}
+
+.window-url-row {
+  font-size: 13px;
+}
+
+.reading-text {
+  margin: 0;
+  white-space: pre-line;
+}
+
+.window-tags {
+  margin-top: 16px;
+}
+
+.window-resize-handle {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 8px;
+  cursor: ew-resize;
+  touch-action: none;
+}
+
+.window-resize-handle.left {
+  left: -4px;
+}
+
+.window-resize-handle.right {
+  right: -4px;
 }
