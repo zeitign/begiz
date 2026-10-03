@@ -6,10 +6,29 @@
   box-sizing: border-box;
 }
 
+/* lib/theme.ts sets data-theme on <html>. color-scheme makes native controls and scrollbars follow it. */
+:root {
+  color-scheme: light;
+  --color-background: #fff;
+  --color-text: #000;
+  --color-border: #000;
+  --color-muted: #555;
+  --color-error: #b00020;
+}
+
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --color-background: #000;
+  --color-text: #fff;
+  --color-border: #fff;
+  --color-muted: #aaa;
+  --color-error: #ff6b81;
+}
+
 body {
   margin: 0;
-  background: #fff;
-  color: #000;
+  background: var(--color-background);
+  color: var(--color-text);
   font-family: system-ui, sans-serif;
   font-size: 15px;
   line-height: 1.4;
@@ -36,8 +55,8 @@ select,
 button {
   font: inherit;
   color: inherit;
-  background: #fff;
-  border: 1px solid #000;
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
   border-radius: 0;
   padding: 6px 8px;
 }
@@ -63,7 +82,7 @@ label {
 }
 
 fieldset {
-  border: 1px solid #000;
+  border: 1px solid var(--color-border);
   margin: 0;
   padding: 8px 12px 12px;
 }
@@ -82,7 +101,7 @@ fieldset {
   display: flex;
   gap: 16px;
   align-items: center;
-  border-bottom: 1px solid #000;
+  border-bottom: 1px solid var(--color-border);
   padding: 12px 16px;
 }
 
@@ -110,24 +129,24 @@ fieldset {
 }
 
 .muted {
-  color: #555;
+  color: var(--color-muted);
   font-size: 13px;
 }
 
 .error {
-  color: #b00020;
+  color: var(--color-error);
 }
 
 .chip {
-  border: 1px solid #000;
+  border: 1px solid var(--color-border);
   padding: 2px 6px;
   font-size: 13px;
-  background: #fff;
+  background: var(--color-background);
 }
 
 .chip.active {
-  background: #000;
-  color: #fff;
+  background: var(--color-text);
+  color: var(--color-background);
 }
 
 .check {
@@ -145,7 +164,7 @@ fieldset {
 .card {
   display: flex;
   flex-direction: column;
-  border: 1px solid #000;
+  border: 1px solid var(--color-border);
 }
 
 /* Custom order: cards are dragged by their lower part (open hand), the image opens the info window.
@@ -164,7 +183,7 @@ fieldset {
 .card-media {
   cursor: pointer;
   overflow: hidden;
-  border-bottom: 1px solid #000;
+  border-bottom: 1px solid var(--color-border);
 }
 
 .card-media > * {
@@ -184,13 +203,18 @@ fieldset {
 .icon-button {
   display: inline-flex;
   padding: 3px;
-  border: 1px solid #000;
-  background: #fff;
+  border: 1px solid var(--color-border);
+  background: var(--color-background);
+}
+
+.icon-button.round {
+  padding: 5px;
+  border-radius: 50%;
 }
 
 .icon-button svg {
-  fill: #fff;
-  stroke: #000;
+  fill: var(--color-background);
+  stroke: var(--color-text);
   stroke-width: 1.5;
   stroke-linejoin: round;
   stroke-linecap: round;
@@ -219,7 +243,7 @@ fieldset {
 }
 
 .dropzone {
-  border: 1px dashed #000;
+  border: 1px dashed var(--color-border);
   padding: 16px;
   text-align: center;
 }
@@ -229,7 +253,7 @@ fieldset {
 }
 
 .detail-image {
-  border: 1px solid #000;
+  border: 1px solid var(--color-border);
   max-height: 80vh;
   overflow: auto;
 }
@@ -240,8 +264,8 @@ fieldset {
   flex-direction: column;
   width: min(520px, calc(100vw - 32px));
   max-height: calc(100vh - 32px);
-  background: #fff;
-  border: 1px solid #000;
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
 }
 
 .window.maximized {
@@ -255,7 +279,7 @@ fieldset {
   align-items: center;
   gap: 8px;
   padding: 4px 4px 4px 8px;
-  border-bottom: 1px solid #000;
+  border-bottom: 1px solid var(--color-border);
   cursor: move;
   user-select: none;
   touch-action: none;
@@ -291,7 +315,7 @@ fieldset {
 
 .window-image {
   width: 100%;
-  border: 1px solid #000;
+  border: 1px solid var(--color-border);
 }
 
 .url-text {
