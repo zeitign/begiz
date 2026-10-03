@@ -118,6 +118,7 @@ async function saveDroppedPosition(event: DraggableEvent) {
     )
   } catch (error) {
     moveError.value = errorMessage(error)
+    orderedWebs.value = [...(webs.value ?? [])]
   }
   await queryClient.invalidateQueries({ queryKey: ['webs'] })
 }
