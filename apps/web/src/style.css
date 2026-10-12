@@ -87,6 +87,25 @@ fieldset {
   padding: 8px 12px 12px;
 }
 
+/* Lives in index.html, shown until Vue mounts (initAuth runs first). */
+.app-loading {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0;
+  font-size: 20px;
+  font-weight: bold;
+  animation: loading-pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes loading-pulse {
+  50% {
+    opacity: 0.15;
+  }
+}
+
 .page {
   max-width: 1200px;
   margin: 0 auto;

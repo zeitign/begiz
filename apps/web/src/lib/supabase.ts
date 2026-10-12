@@ -1,4 +1,4 @@
-import { createClient, type Session } from '@supabase/supabase-js'
+import { createClient, isAuthRetryableFetchError, type Session } from '@supabase/supabase-js'
 import { ref } from 'vue'
 
 // Supabase is only used to sign in. Data always comes from our API.
@@ -8,10 +8,33 @@ export const supabase = createClient(
 )
 
 export const session = ref<Session | null>(null)
+export const authStartupError = ref('')
 
+// getSession refreshes an expired token over the network, which can hang if Supabase never answers.
+const AUTH_STARTUP_TIMEOUT_MS = 10_000
+
+function rejectAfterTimeout(milliseconds: number) {
+  return new Promise<never>((_resolve, reject) =>
+    setTimeout(() => reject(new Error('Auth startup timed out')), milliseconds),
+  )
+}
+
+/**
+ * Never throws: if Supabase cannot be reached, the app still mounts and shows authStartupError.
+ * Any other error (e.g. a revoked refresh token) just means there is no session: the user signs in.
+ */
 export async function initAuth() {
-  const { data } = await supabase.auth.getSession()
-  session.value = data.session
+  try {
+    const { data, error } = await Promise.race([
+      supabase.auth.getSession(),
+      rejectAfterTimeout(AUTH_STARTUP_TIMEOUT_MS),
+    ])
+    if (error && isAuthRetryableFetchError(error)) throw error
+    session.value = data.session
+  } catch {
+    authStartupError.value = 'Could not connect to the sign-in service. Try again later.'
+    return
+  }
   supabase.auth.onAuthStateChange((_event, newSession) => {
     session.value = newSession
   })
