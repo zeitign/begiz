@@ -14,5 +14,7 @@ export default defineConfig({
       FILES_PUBLIC_URL: '/files',
     },
     setupFiles: ['./test/setup.ts'],
+    // Each test file runs its own in-memory Postgres (~1.2 GB); one per CPU runs WSL out of memory.
+    maxWorkers: 3,
   },
 })
