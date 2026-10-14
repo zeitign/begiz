@@ -2,7 +2,7 @@
 
 App personal para guardar webs de inspiración: enlace, título propio, imagen, notas, tags y colecciones.
 Requisitos, plan de arquitectura inicial, explicación de los procesos (instantánea del 1-oct-2026) y
-plan de despliegue (14-oct-2026) en `begiz-proyecto.pdf`.
+plan de despliegue (14-oct-2026) en `begiz-proyecto.pdf`, que se genera desde `docs/begiz-proyecto/`.
 
 ## Decisiones
 

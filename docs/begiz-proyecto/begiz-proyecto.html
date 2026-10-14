@@ -1,0 +1,1048 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Begiz — proyecto</title>
+<link rel="stylesheet" href="fonts-local.css">
+<style>
+@page { size: A4; margin: 16mm 16mm 18mm; }
+
+:root {
+  --ink: #000;
+  --paper: #fff;
+  --quiet: #555;
+  --code-background: #ececec;
+  --mono: 'IBM Plex Mono', 'DejaVu Sans Mono', monospace;
+  --sans: 'IBM Plex Sans', 'Liberation Sans', sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+
+body {
+  margin: 0;
+  background: var(--paper);
+  color: var(--ink);
+  font: 9.5pt/1.5 var(--sans);
+}
+
+p { margin: 0 0 8px; }
+strong, b { font-weight: 700; }
+em { font-style: italic; }
+
+code {
+  font-family: var(--mono);
+  font-size: 0.9em;
+  background: var(--code-background);
+  padding: 0 3px;
+}
+
+/* ---------- Cover ---------- */
+
+.cover {
+  height: 262mm;
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--ink);
+  break-after: page;
+}
+
+.cover-top {
+  padding: 14mm 12mm 12mm;
+}
+
+.cover-kicker {
+  font: 500 8.5pt var(--mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.cover-title {
+  margin: 10mm 0 2mm;
+  font: 700 64pt/0.9 var(--mono);
+  letter-spacing: -0.03em;
+  text-transform: uppercase;
+}
+
+.cover-subtitle {
+  font: 400 13pt/1.35 var(--sans);
+  max-width: 130mm;
+}
+
+.cover-parts {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.cover-part {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 34mm 1fr;
+  border-top: 1px solid var(--ink);
+}
+
+.cover-part-number {
+  border-right: 1px solid var(--ink);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font: 400 34pt var(--mono);
+}
+
+.cover-part-body {
+  padding: 6mm 8mm;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2mm;
+}
+
+.cover-part-name {
+  font: 700 16pt var(--mono);
+  text-transform: uppercase;
+}
+
+.cover-part-meta {
+  font: 500 8pt var(--mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.cover-part-sections {
+  color: var(--quiet);
+  font-size: 8.5pt;
+  line-height: 1.45;
+}
+
+.cover-bottom {
+  border-top: 1px solid var(--ink);
+  padding: 5mm 8mm;
+  display: flex;
+  justify-content: space-between;
+  gap: 8mm;
+  font: 500 7.5pt/1.5 var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* ---------- Part openers ---------- */
+
+.part {
+  break-before: page;
+  border-top: 1px solid var(--ink);
+  padding: 6mm 0 2mm;
+  margin-bottom: 8mm;
+}
+
+.part-kicker {
+  display: flex;
+  justify-content: space-between;
+  font: 500 8pt var(--mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.part h1 {
+  margin: 7mm 0 2mm;
+  font: 700 30pt/1 var(--mono);
+  letter-spacing: -0.02em;
+  text-transform: uppercase;
+}
+
+.part-subtitle {
+  font-size: 11pt;
+  margin: 0;
+}
+
+/* ---------- Headings ---------- */
+
+h2 {
+  display: flex;
+  align-items: stretch;
+  gap: 10px;
+  margin: 22px 0 10px;
+  padding-top: 8px;
+  border-top: 1px solid var(--ink);
+  font: 700 13pt/1.25 var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.01em;
+  break-after: avoid;
+}
+
+h2 .number {
+  flex: none;
+  border: 1px solid var(--ink);
+  padding: 0 6px;
+  font-weight: 400;
+}
+
+h2.first { margin-top: 0; }
+
+h3 {
+  margin: 16px 0 6px;
+  padding-left: 8px;
+  border-left: 2px solid var(--ink);
+  font: 700 9.5pt/1.3 var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  break-after: avoid;
+}
+
+.page-break { break-before: page; }
+
+/* ---------- Tables ---------- */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  border: 1px solid var(--ink);
+  margin: 6px 0 12px;
+  font-size: 8.8pt;
+  line-height: 1.4;
+}
+
+table { break-inside: avoid; }
+tr { break-inside: avoid; }
+thead { display: table-header-group; }
+
+th {
+  border-bottom: 1px solid var(--ink);
+  text-align: left;
+  vertical-align: bottom;
+  padding: 5px 7px;
+  font: 500 7.5pt var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+td {
+  border: 0.5px solid var(--ink);
+  padding: 5px 7px;
+  vertical-align: top;
+}
+
+td.key {
+  font: 700 8.5pt/1.35 var(--mono);
+}
+
+td.number {
+  font-family: var(--mono);
+  font-weight: 700;
+  text-align: center;
+}
+
+/* ---------- Tags (priority, status) ---------- */
+
+.tag {
+  display: inline-block;
+  padding: 1px 5px;
+  border: 0.75px solid var(--ink);
+  font: 500 7pt/1.4 var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+.tag.solid { font-weight: 700; }
+.tag.solid::before { content: '■ '; }
+.tag.dashed { border-style: dashed; }
+
+/* ---------- Notes ---------- */
+
+.note {
+  border: 1px solid var(--ink);
+  padding: 9px 12px 10px;
+  margin: 12px 0 14px;
+  break-inside: avoid;
+}
+
+.note.strong {
+  box-shadow: 3px 3px 0 var(--ink);
+  margin-right: 3px;
+}
+
+.note-label {
+  display: inline-block;
+  margin-bottom: 5px;
+  padding: 0 5px;
+  border: 0.75px solid var(--ink);
+  font: 500 7.5pt var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.note-title {
+  display: block;
+  margin-bottom: 3px;
+  font: 700 9.5pt var(--mono);
+}
+
+.note p:last-child { margin-bottom: 0; }
+
+/* ---------- Lists ---------- */
+
+ul, ol { margin: 4px 0 10px; padding-left: 26px; }
+li { margin-bottom: 3px; break-inside: avoid; }
+ol { break-inside: avoid; }
+p:has(+ ol), p:has(+ ul), p:has(+ table) { break-after: avoid; }
+ul { list-style: square; }
+ol li::marker { font-family: var(--mono); font-weight: 700; }
+
+.toc-columns {
+  columns: 2;
+  column-gap: 10mm;
+}
+
+/* ---------- Diagrams ---------- */
+
+pre {
+  margin: 8px 0 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--ink);
+  font: 7.6pt/1.45 var(--mono);
+  white-space: pre;
+  overflow: hidden;
+  break-inside: avoid;
+}
+
+.flow {
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  margin: 8px 0 12px;
+  break-inside: avoid;
+}
+
+.flow-step {
+  flex: 1;
+  border: 1px solid var(--ink);
+  padding: 7px 8px;
+  font-size: 8.5pt;
+  line-height: 1.4;
+}
+
+.flow-step b {
+  display: block;
+  margin-bottom: 3px;
+  font: 700 8pt var(--mono);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.flow-arrow {
+  display: flex;
+  align-items: center;
+  padding: 0 4px;
+  font: 700 12pt var(--mono);
+}
+
+.quiet { color: var(--quiet); font-size: 8.5pt; }
+
+.two-columns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6mm;
+}
+.two-columns > div { break-inside: avoid; }
+</style>
+</head>
+<body>
+
+<!-- ================= COVER ================= -->
+
+<section class="cover">
+  <div class="cover-top">
+    <div class="cover-kicker">Documento de proyecto · 29 sep – 14 oct 2026</div>
+    <div class="cover-title">Begiz</div>
+    <div class="cover-subtitle">App personal para guardar webs de inspiración. Requisitos, plan de arquitectura, procesos y despliegue, en un solo documento.</div>
+  </div>
+  <div class="cover-parts">
+    <div class="cover-part">
+      <div class="cover-part-number">01</div>
+      <div class="cover-part-body">
+        <div class="cover-part-meta">Documento de requisitos · v0.1 · 29 sep 2026</div>
+        <div class="cover-part-name">Requisitos</div>
+        <div class="cover-part-sections">Visión general · Requisitos funcionales · Funcionalidades futuras · Modelo de datos orientativo · Dudas abiertas · Resumen de prioridades</div>
+      </div>
+    </div>
+    <div class="cover-part">
+      <div class="cover-part-number">02</div>
+      <div class="cover-part-body">
+        <div class="cover-part-meta">Plan de arquitectura · v1.0 · 30 sep 2026</div>
+        <div class="cover-part-name">Plan de arquitectura</div>
+        <div class="cover-part-sections">Resumen · Punto de partida · Cómo se llegó a cada decisión · Arquitectura final · Seguridad · Despliegue y costes · Estado de la fase 1 · Hoja de ruta</div>
+      </div>
+    </div>
+    <div class="cover-part">
+      <div class="cover-part-number">03</div>
+      <div class="cover-part-body">
+        <div class="cover-part-meta">Documento de referencia · 1 oct 2026</div>
+        <div class="cover-part-name">Cómo funciona Begiz</div>
+        <div class="cover-part-sections">Piezas de la app · Iniciar sesión · Guardar una web · Imagen · Mosaico y filtros · Detalle, edición y borrado · Datos · Seguridad · Cómo trabajamos · Publicación y costes · Hoja de ruta</div>
+      </div>
+    </div>
+    <div class="cover-part">
+      <div class="cover-part-number">04</div>
+      <div class="cover-part-body">
+        <div class="cover-part-meta">Plan de despliegue · 14 oct 2026</div>
+        <div class="cover-part-name">Plan de despliegue</div>
+        <div class="cover-part-sections">Resumen · Etapa 1 · Gratuita · Etapa 2 · Profesional</div>
+      </div>
+    </div>
+  </div>
+  <div class="cover-bottom">
+    <span>Partes 01–03: instantánea del inicio, no se actualizan.</span>
+    <span>Estado al día: ARCHITECTURE.md</span>
+  </div>
+</section>
+
+<!-- ================= PART 01 · REQUIREMENTS ================= -->
+
+<header class="part">
+  <div class="part-kicker"><span>Parte 01</span><span>Documento de requisitos · v0.1 · 29 sep 2026</span></div>
+  <h1>Requisitos</h1>
+  <p class="part-subtitle">App de guardado de webs de inspiración. Estilo Moodmark, en versión sencilla.</p>
+</header>
+
+<h2 class="first"><span class="number">01</span>Visión general</h2>
+<p>La aplicación permite guardar páginas web que resultan interesantes (por su diseño, sus componentes o su estilo) para consultarlas más adelante como fuente de inspiración. Cada web guardada se representa con una captura de pantalla, su enlace, un título propio, etiquetas (tags) y notas personales.</p>
+<p>El objetivo de la primera versión (MVP) es cubrir el ciclo básico: guardar, visualizar en mosaico, buscar y agrupar. Funcionalidades más avanzadas, como guardar componentes concretos, quedan para versiones futuras.</p>
+
+<h3>Alcance</h3>
+<table>
+  <thead><tr><th style="width:26%">Ámbito</th><th>Contenido</th></tr></thead>
+  <tr><td><span class="tag solid">Dentro del MVP</span></td><td>Ficha de cada web, mosaico principal, búsqueda por tags y por título, colecciones.</td></tr>
+  <tr><td><span class="tag">Deseable en el MVP</span></td><td>Si es viable: captura de la página completa (no solo la parte visible).</td></tr>
+  <tr><td><span class="tag dashed">Fuera del MVP</span></td><td>Futuro: guardado de componentes concretos de una web.</td></tr>
+</table>
+
+<h2><span class="number">02</span>Requisitos funcionales</h2>
+
+<h3>A. Guardado de webs (ficha de cada web)</h3>
+<table>
+  <thead><tr><th style="width:9%">ID</th><th style="width:22%">Requisito</th><th>Descripción</th><th style="width:17%">Prioridad</th></tr></thead>
+  <tr><td class="key">RF-01</td><td>Enlace a la página</td><td>Cada web guardada almacena la URL de la página concreta y permite abrirla desde la app.</td><td><span class="tag solid">Imprescindible</span></td></tr>
+  <tr><td class="key">RF-02</td><td>Título personalizado</td><td>La usuaria asigna un título propio a cada web guardada (no necesariamente el título original de la página).</td><td><span class="tag solid">Imprescindible</span></td></tr>
+  <tr><td class="key">RF-03</td><td>Captura de pantalla</td><td>Al guardar una web, la app hace automáticamente un pantallazo de la parte visible de la página, que se usa como miniatura.</td><td><span class="tag solid">Imprescindible</span></td></tr>
+  <tr><td class="key">RF-04</td><td>Captura de página completa</td><td>Opción de capturar la página entera de arriba abajo, como la herramienta «Hacer captura de pantalla» de Firefox.</td><td><span class="tag">Deseable</span></td></tr>
+  <tr><td class="key">RF-05</td><td>Notas</td><td>Campo de texto libre para escribir qué aspectos de la web resultan interesantes.</td><td><span class="tag solid">Imprescindible</span></td></tr>
+  <tr><td class="key">RF-06</td><td>Tags</td><td>Añadir una o varias etiquetas a cada web para indicar las características concretas por las que se ha guardado (p. ej. «tipografía», «animaciones», «paleta de color»).</td><td><span class="tag solid">Imprescindible</span></td></tr>
+</table>
+
+<div class="note">
+  <span class="note-label">Nota de viabilidad · RF-04</span>
+  <p><strong>Sí es posible.</strong> Hay dos caminos habituales: (1) desde un servidor, con un navegador «headless» como Playwright o Puppeteer, que tienen una opción <code>fullPage</code> para capturar la página entera; (2) desde una extensión de navegador, que captura la página tal como la ve la usuaria (incluidas sesiones iniciadas). Algunas webs con carga perezosa (lazy loading) o animaciones al hacer scroll pueden necesitar desplazarse por la página antes de capturar.</p>
+</div>
+
+<h3>B. Página principal</h3>
+<table>
+  <thead><tr><th style="width:9%">ID</th><th style="width:22%">Requisito</th><th>Descripción</th><th style="width:17%">Prioridad</th></tr></thead>
+  <tr><td class="key">RF-07</td><td>Mosaico de webs</td><td>La página principal muestra las webs guardadas en una cuadrícula tipo mosaico, con la captura como miniatura, el título y sus tags.</td><td><span class="tag solid">Imprescindible</span></td></tr>
+  <tr><td class="key">RF-08</td><td>Vista de detalle</td><td>Al pulsar una tarjeta del mosaico se abre la previsualización con la captura (completa si existe), enlace, notas, tags y colecciones.</td><td><span class="tag solid">Imprescindible</span></td></tr>
+</table>
+
+<h3>C. Búsqueda y filtrado</h3>
+<table>
+  <thead><tr><th style="width:9%">ID</th><th style="width:22%">Requisito</th><th>Descripción</th><th style="width:17%">Prioridad</th></tr></thead>
+  <tr><td class="key">RF-09</td><td>Buscador por tags</td><td>Filtrar el mosaico seleccionando uno o varios tags.</td><td><span class="tag solid">Imprescindible</span></td></tr>
+  <tr><td class="key">RF-10</td><td>Buscador por título</td><td>Buscar las webs guardadas por el título que les ha puesto la usuaria.</td><td><span class="tag solid">Imprescindible</span></td></tr>
+</table>
+
+<h3>D. Agrupaciones (colecciones)</h3>
+<table>
+  <thead><tr><th style="width:9%">ID</th><th style="width:22%">Requisito</th><th>Descripción</th><th style="width:17%">Prioridad</th></tr></thead>
+  <tr><td class="key">RF-11</td><td>Crear colecciones</td><td>Desde el menú de previsualización se pueden crear agrupaciones o «familias» de páginas, p. ej. «Minimalistas», «Brutalistas» o «Botones que me gustan».</td><td><span class="tag solid">Imprescindible</span></td></tr>
+  <tr><td class="key">RF-12</td><td>Gestionar pertenencia</td><td>Añadir o quitar una web de una o varias colecciones, y ver el mosaico filtrado por colección.</td><td><span class="tag solid">Imprescindible</span></td></tr>
+</table>
+
+<div class="note">
+  <span class="note-label">Tags vs. colecciones</span>
+  <p>Los <strong>tags</strong> describen el porqué de cada web (sus características) y sirven para buscar. Las <strong>colecciones</strong> son agrupaciones que crea la usuaria de forma intencionada, como carpetas o tableros temáticos. Una misma web puede tener varios tags y estar en varias colecciones.</p>
+</div>
+
+<h2><span class="number">03</span>Funcionalidades futuras</h2>
+<table>
+  <thead><tr><th style="width:9%">ID</th><th style="width:22%">Requisito</th><th>Descripción</th><th style="width:17%">Prioridad</th></tr></thead>
+  <tr><td class="key">RF-F1</td><td>Guardar componentes</td><td>Guardar partes concretas de una web (un botón, una cabecera, un formulario…) y no solo la página completa, con su propia captura, tags y notas.</td><td><span class="tag dashed">Futuro</span></td></tr>
+</table>
+
+<h2><span class="number">04</span>Modelo de datos orientativo</h2>
+<table>
+  <thead><tr><th style="width:24%">Entidad</th><th>Campos</th></tr></thead>
+  <tr><td class="key">Web</td><td>id, url, título, captura (miniatura), captura completa (opcional), notas, tags, colecciones, fecha de guardado</td></tr>
+  <tr><td class="key">Tag</td><td>id, nombre</td></tr>
+  <tr><td class="key">Colección</td><td>id, nombre, descripción (opcional), webs</td></tr>
+  <tr><td class="key">Componente <span class="tag dashed">Futuro</span></td><td>id, web de origen, captura del recorte, título, notas, tags</td></tr>
+</table>
+
+<h2><span class="number">05</span>Dudas abiertas y decisiones pendientes</h2>
+<ol>
+  <li><strong>Captura completa:</strong> ¿se hace desde un servidor (headless) o desde una extensión del navegador?</li>
+  <li><strong>Tipo de app:</strong> ¿aplicación web, extensión de navegador, app de escritorio o una combinación (p. ej. web + extensión para guardar)?</li>
+  <li><strong>Almacenamiento:</strong> ¿solo en local o en la nube para acceder desde varios dispositivos?</li>
+  <li><strong>Captura fallida:</strong> si la captura automática falla (web bloqueada, requiere login…), ¿se permite subir una captura manual?</li>
+  <li><strong>Tags:</strong> ¿lista libre o sugerencias a partir de los tags ya usados?</li>
+</ol>
+<p class="quiet">Las respuestas están en la parte 02, sección 3.2.</p>
+
+<h2><span class="number">06</span>Resumen de prioridades</h2>
+<table>
+  <thead><tr><th style="width:26%">Prioridad</th><th>Requisitos</th></tr></thead>
+  <tr><td><span class="tag solid">Imprescindible (MVP)</span></td><td>RF-01 Enlace · RF-02 Título · RF-03 Captura · RF-05 Notas · RF-06 Tags · RF-07 Mosaico · RF-08 Detalle · RF-09 Buscador por tags · RF-10 Buscador por título · RF-11 Crear colecciones · RF-12 Gestionar colecciones</td></tr>
+  <tr><td><span class="tag">Deseable</span></td><td>RF-04 Captura de página completa</td></tr>
+  <tr><td><span class="tag dashed">Futuro</span></td><td>RF-F1 Guardar componentes concretos</td></tr>
+</table>
+
+<!-- ================= PART 02 · ARCHITECTURE PLAN ================= -->
+
+<header class="part">
+  <div class="part-kicker"><span>Parte 02</span><span>Plan de arquitectura · v1.0 · 30 sep 2026</span></div>
+  <h1>Plan de arquitectura</h1>
+  <p class="part-subtitle">De la concepción inicial a las decisiones tomadas.</p>
+</header>
+
+<h2 class="first"><span class="number">01</span>Resumen</h2>
+<p>Este documento recoge el recorrido completo del proyecto: la idea de partida (documento de requisitos v0.1), las decisiones de arquitectura que se han ido tomando, con sus motivos y las alternativas descartadas, y el estado en el que queda la primera versión.</p>
+<table>
+  <thead><tr><th style="width:22%">Aspecto</th><th>Decisión final</th></tr></thead>
+  <tr><td class="key">Producto</td><td>App personal para guardar webs de inspiración: enlace, título propio, imagen, notas, tags y colecciones.</td></tr>
+  <tr><td class="key">Front</td><td>Vue 3 + Vite + TypeScript, como SPA (sin renderizado en servidor).</td></tr>
+  <tr><td class="key">Backend</td><td>Node + Hono + Drizzle ORM, en TypeScript.</td></tr>
+  <tr><td class="key">Datos y login</td><td>Supabase: PostgreSQL + Supabase Auth (email y contraseña, registro público desactivado).</td></tr>
+  <tr><td class="key">Imágenes</td><td>Disco local en desarrollo; Cloudflare R2 en producción.</td></tr>
+  <tr><td class="key">Vista previa v1</td><td>Imagen subida a mano → <code>og:image</code> de la página → tarjeta con favicon y dominio. La captura automática pasa a la v2.</td></tr>
+  <tr><td class="key">Diseño</td><td>Mínimo y provisional (fondo blanco, bordes negros finos, tipografía básica) hasta validar la plataforma.</td></tr>
+  <tr><td class="key">Estado</td><td>Fase 1 construida. API verificada de punta a punta; pendiente de probar con el proyecto real de Supabase.</td></tr>
+</table>
+
+<h2><span class="number">02</span>Punto de partida: la idea</h2>
+<p>La aplicación permite guardar páginas web interesantes por su diseño, sus componentes o su estilo, para consultarlas después como fuente de inspiración. Es una versión sencilla al estilo de Moodmark. Cada web guardada se representa con una imagen, su enlace, un título propio, tags y notas personales.</p>
+<p>El objetivo del MVP es cubrir el ciclo básico: guardar, visualizar en mosaico, buscar y agrupar.</p>
+
+<h3>Requisitos y su estado tras las decisiones</h3>
+<table>
+  <thead><tr><th style="width:9%">ID</th><th style="width:33%">Requisito</th><th style="width:19%">Prioridad original</th><th>Estado en el plan</th></tr></thead>
+  <tr><td class="key">RF-01</td><td>Enlace a la página</td><td><span class="tag solid">Imprescindible</span></td><td>v1 · hecho</td></tr>
+  <tr><td class="key">RF-02</td><td>Título personalizado</td><td><span class="tag solid">Imprescindible</span></td><td>v1 · hecho</td></tr>
+  <tr><td class="key">RF-03</td><td>Captura automática de la parte visible</td><td><span class="tag solid">Imprescindible</span></td><td><strong>Movido a v2.</strong> En v1 se sustituye por <code>og:image</code> + imagen manual</td></tr>
+  <tr><td class="key">RF-04</td><td>Captura de página completa</td><td><span class="tag">Deseable</span></td><td><strong>v2 automática.</strong> En v1 se cubre subiendo la captura a mano</td></tr>
+  <tr><td class="key">RF-05</td><td>Notas</td><td><span class="tag solid">Imprescindible</span></td><td>v1 · hecho</td></tr>
+  <tr><td class="key">RF-06</td><td>Tags</td><td><span class="tag solid">Imprescindible</span></td><td>v1 · hecho (con autocompletado)</td></tr>
+  <tr><td class="key">RF-07</td><td>Mosaico de webs</td><td><span class="tag solid">Imprescindible</span></td><td>v1 · hecho</td></tr>
+  <tr><td class="key">RF-08</td><td>Vista de detalle</td><td><span class="tag solid">Imprescindible</span></td><td>v1 · hecho (muestra la imagen completa si existe)</td></tr>
+  <tr><td class="key">RF-09</td><td>Buscador por tags</td><td><span class="tag solid">Imprescindible</span></td><td>v1 · hecho (varios tags a la vez)</td></tr>
+  <tr><td class="key">RF-10</td><td>Buscador por título</td><td><span class="tag solid">Imprescindible</span></td><td>v1 · hecho</td></tr>
+  <tr><td class="key">RF-11</td><td>Crear colecciones</td><td><span class="tag solid">Imprescindible</span></td><td>v1 · hecho (desde el formulario y el detalle)</td></tr>
+  <tr><td class="key">RF-12</td><td>Gestionar pertenencia a colecciones</td><td><span class="tag solid">Imprescindible</span></td><td>v1 · hecho (y mosaico filtrado por colección)</td></tr>
+  <tr><td class="key">RF-F1</td><td>Guardar componentes concretos</td><td><span class="tag dashed">Futuro</span></td><td>Fase 4</td></tr>
+</table>
+
+<h2><span class="number">03</span>Cómo se llegó a cada decisión</h2>
+<p>Las decisiones se tomaron en este orden. Varias cambiaron por el camino al aparecer información nueva; se deja constancia de la opción inicial y del motivo del cambio.</p>
+
+<h3>3.1 Sistema de front</h3>
+<ul>
+  <li><strong>Análisis de los requisitos:</strong> es una herramienta privada detrás de un login (nadie llega desde Google), casi toda la interacción ocurre en el cliente (mosaico, filtros combinados, detalle, colecciones) y probablemente habrá una extensión de navegador.</li>
+  <li><strong>Conclusión técnica:</strong> una SPA con Vite. Se descartan Next.js, Nuxt, Astro y SvelteKit en modo servidor porque resuelven problemas que aquí no existen (SEO, primera carga, contenido público).</li>
+  <li><strong>Recomendación inicial:</strong> React + Vite, por el tamaño de su ecosistema (masonry, recorte de imágenes para RF-F1, extensiones).</li>
+  <li><strong>Decisión final: Vue 3 + Vite + TypeScript</strong>, porque es el framework que mejor conoce la usuaria. Para una app de este tamaño, la soltura con la herramienta pesa más que la diferencia de ecosistema, y Vue cubre todo lo que pide el MVP.</li>
+</ul>
+
+<h3>3.2 Backend y dudas abiertas del documento</h3>
+<p>La usuaria pidió que el backend lo liderase un perfil de ingeniería backend. Las cinco dudas abiertas del documento de requisitos se resolvieron así:</p>
+<table>
+  <thead><tr><th style="width:27%">Duda abierta</th><th style="width:22%">Respuesta</th><th>Motivo</th></tr></thead>
+  <tr><td>¿Local o en la nube?</td><td class="key">Nube</td><td>Acceso desde varios dispositivos y un único origen de datos para la web y la futura extensión.</td></tr>
+  <tr><td>¿Web, extensión, escritorio o combinación?</td><td class="key">Web ahora; extensión después</td><td>La web da una app usable antes. La extensión se añade usando la misma API.</td></tr>
+  <tr><td>¿Captura desde servidor o extensión?</td><td class="key">Pospuesta a v2</td><td>Inicialmente: servidor con Playwright y extensión en una segunda fase. Después se decidió aplazar la captura automática (ver 3.4).</td></tr>
+  <tr><td>¿Subida manual si la captura falla?</td><td class="key">Sí</td><td>Siempre habrá webs que bloqueen bots o pidan login. En v1 además es la forma principal de tener una buena imagen.</td></tr>
+  <tr><td>¿Tags libres o sugeridos?</td><td class="key">Libres con autocompletado</td><td>Flexibilidad sin duplicados: se normalizan (minúsculas, espacios) y se sugieren los ya usados.</td></tr>
+</table>
+<p><strong>Lenguaje:</strong> TypeScript también en el backend, para compartir tipos y validaciones con el front sin aprender otro lenguaje. <strong>Framework:</strong> Hono, cuyo cliente tipado permite que el front Vue conozca exactamente qué devuelve cada ruta.</p>
+
+<h3>3.3 Login y base de datos</h3>
+<ul>
+  <li><strong>Propuesta inicial:</strong> Better Auth para el login y Neon como Postgres.</li>
+  <li><strong>Cambio:</strong> la usuaria ya conocía Supabase. Se pasa a Supabase Auth y, de paso, a Supabase como base de datos: menos proveedores, y la parte delicada de seguridad (contraseñas, tokens, límites de intentos) resuelta.</li>
+  <li>Supabase se usa solo para el login y como Postgres. <strong>El front nunca consulta la base de datos directamente:</strong> toda la lógica pasa por la API, que valida el token (JWT) de Supabase.</li>
+  <li><strong>Método:</strong> email y contraseña (los magic links son incómodos en una extensión). Registro público desactivado: la usuaria se crea desde el panel.</li>
+  <li><strong>Imágenes fuera de Supabase Storage:</strong> el plan gratuito da 1 GB, frente a los 10 GB sin coste de descarga de Cloudflare R2.</li>
+</ul>
+<div class="note strong">
+  <span class="note-label">Pega conocida</span>
+  <span class="note-title">El plan gratuito de Supabase se pausa</span>
+  <p>Los proyectos gratuitos se pausan tras unos 7 días sin actividad. Se reactivan desde el panel sin perder datos. Si llega a molestar, las opciones son el plan Pro (25 $/mes) o migrar la base de datos, que es un Postgres estándar.</p>
+</div>
+
+<h3>3.4 Captura de pantalla: aplazada a la v2</h3>
+<p>La captura automática necesita un navegador sin interfaz (Playwright + Chromium) en un servidor, una cola de trabajos, control de páginas enormes, banners de cookies y memoria. La usuaria propuso dejarla para una segunda versión, y se aceptó: reduce mucho la complejidad y el riesgo de la v1.</p>
+<table>
+  <thead><tr><th style="width:9%">Orden</th><th>Fuente de la vista previa en v1</th></tr></thead>
+  <tr><td class="number">1</td><td><strong>Imagen subida por la usuaria:</strong> pegada con Ctrl+V en cualquier parte de la página, arrastrada o elegida del disco. Permite subir capturas de página completa hechas con Firefox.</td></tr>
+  <tr><td class="number">2</td><td><strong><code>og:image</code> de la página:</strong> la imagen que muestran las webs al compartir un enlace. Se copia a nuestro almacenamiento para que no se rompa.</td></tr>
+  <tr><td class="number">3</td><td><strong>Tarjeta generada</strong> con el favicon y el dominio. El mosaico nunca tiene huecos.</td></tr>
+</table>
+<div class="note">
+  <span class="note-label">Limitación asumida</span>
+  <p>La <code>og:image</code> suele ser una imagen de marketing, no una captura del diseño. Por eso la subida manual se ha hecho lo más cómoda posible.</p>
+</div>
+<p><strong>Consecuencias:</strong> desaparecen Playwright, la cola de trabajos y los estados de captura, y ya no es obligatorio un contenedor con Chromium. La v2 solo tendrá que añadir un proceso que rellene los mismos campos de imagen.</p>
+
+<h3>3.5 Diseño visual</h3>
+<p>Se deja para después de validar la plataforma. La v1 usa un estilo mínimo y provisional: fondo blanco, bordes negros finos y tipografía del sistema en negro.</p>
+
+<h3>3.6 Entorno de desarrollo</h3>
+<p>El equipo de la usuaria no tiene Docker ni la CLI de Supabase. En lugar de exigir instalarlos, se ajustó el plan: en desarrollo, la base de datos y el login van contra un proyecto de Supabase en la nube (gratis), y las imágenes se guardan en disco local. El mismo código usa R2 en producción cambiando solo la configuración.</p>
+
+<h2><span class="number">04</span>Arquitectura final</h2>
+
+<h3>4.1 Tecnologías</h3>
+<table>
+  <thead><tr><th style="width:18%">Pieza</th><th style="width:36%">Elección</th><th>Por qué</th></tr></thead>
+  <tr><td class="key">Front</td><td>Vue 3, Vite, TypeScript, Vue Router, TanStack Query</td><td>SPA ligera; caché de datos y filtros guardados en la URL.</td></tr>
+  <tr><td class="key">API</td><td>Hono sobre Node</td><td>Ligero, moderno y con cliente tipado para el front.</td></tr>
+  <tr><td class="key">Validación</td><td>Zod (paquete compartido)</td><td>Los mismos esquemas en front, API y futura extensión.</td></tr>
+  <tr><td class="key">ORM</td><td>Drizzle</td><td>Tipado, cercano a SQL, migraciones sencillas.</td></tr>
+  <tr><td class="key">Base de datos</td><td>PostgreSQL (Supabase) + <code>pg_trgm</code></td><td>Relacional para tags y colecciones; búsqueda por título rápida.</td></tr>
+  <tr><td class="key">Login</td><td>Supabase Auth</td><td>Conocido por la usuaria; la API valida el JWT.</td></tr>
+  <tr><td class="key">Imágenes</td><td>Disco local / Cloudflare R2 + sharp</td><td>Conversión a WebP y miniaturas; R2 sin coste de descarga.</td></tr>
+  <tr><td class="key">Repositorio</td><td>Monorepo con pnpm workspaces</td><td>Front, API y código compartido juntos y tipados entre sí.</td></tr>
+</table>
+
+<h3>4.2 Flujo de datos</h3>
+<pre>
+ Vue ── supabase-js (solo login) ──► Supabase Auth ──► devuelve un JWT
+  │
+  └── cliente de Hono + "Authorization: Bearer &lt;JWT&gt;" ──► API /api/*
+                                                          │ valida el JWT de Supabase
+                                                          ├─► PostgreSQL (Supabase)
+                                                          └─► Imágenes (disco local / R2)
+</pre>
+<p><strong>Al guardar una web:</strong></p>
+<ol>
+  <li>La API descarga el HTML de la página (con protección SSRF) y lee título, favicon y <code>og:image</code>.</li>
+  <li>Si no hay imagen propia, copia la <code>og:image</code>, la convierte a WebP y crea la miniatura.</li>
+  <li>Guarda la web con sus tags y colecciones en una única transacción.</li>
+  <li>Si la usuaria adjuntó una imagen, el front la sube después y sustituye a la anterior.</li>
+</ol>
+
+<h3>4.3 Estructura del repositorio</h3>
+<pre>
+ webs-archive/
+ ├── apps/
+ │   ├── api/          Hono + Drizzle · rutas en src/routes · migraciones en drizzle/
+ │   └── web/          Vue 3 + Vite · vistas en src/views · componentes en src/components
+ ├── packages/
+ │   └── shared/       esquemas Zod y utilidades comunes
+ ├── ARCHITECTURE.md   resumen técnico de este documento
+ └── README.md         puesta en marcha
+</pre>
+
+<h3>4.4 Modelo de datos</h3>
+<table>
+  <thead><tr><th style="width:18%">Tabla</th><th style="width:40%">Campos</th><th>Notas</th></tr></thead>
+  <tr><td class="key">webs</td><td>id, user_id, url, title, notes, preview_key, preview_source, full_key, site_title, favicon_url, created_at, updated_at</td><td><code>preview_key</code>: miniatura WebP del mosaico. <code>full_key</code>: imagen original subida a mano (p. ej. página completa).</td></tr>
+  <tr><td class="key">tags</td><td>id, user_id, name</td><td>Nombre único por usuaria, normalizado. Los tags sin webs se borran solos.</td></tr>
+  <tr><td class="key">web_tags</td><td>web_id, tag_id</td><td>Relación muchos a muchos.</td></tr>
+  <tr><td class="key">collections</td><td>id, user_id, name, description</td><td>Nombre único por usuaria.</td></tr>
+  <tr><td class="key">collection_webs</td><td>collection_id, web_id</td><td>Una web puede estar en varias colecciones.</td></tr>
+</table>
+<p><code>user_id</code> es el identificador de la usuaria en Supabase. Se preparó desde el principio para que un futuro paso a multiusuario no requiera migraciones. Al buscar por varios tags se devuelven las webs que tienen <strong>todos</strong> (Y), que es lo útil para buscar inspiración concreta.</p>
+
+<h3>4.5 API</h3>
+<table>
+  <thead><tr><th style="width:20%">Método</th><th style="width:38%">Ruta</th><th>Función</th></tr></thead>
+  <tr><td class="key">GET</td><td><code>/api/webs?q=&amp;tags=a,b&amp;collection=</code></td><td>Mosaico con búsqueda y filtros</td></tr>
+  <tr><td class="key">POST</td><td><code>/api/webs</code></td><td>Guardar web (lee metadatos y <code>og:image</code>)</td></tr>
+  <tr><td class="key">GET · PATCH · DELETE</td><td><code>/api/webs/:id</code></td><td>Detalle, edición (incluye tags y colecciones) y borrado</td></tr>
+  <tr><td class="key">PUT</td><td><code>/api/webs/:id/preview</code></td><td>Subir imagen propia</td></tr>
+  <tr><td class="key">GET · POST</td><td><code>/api/collections</code></td><td>Listar con contador y crear</td></tr>
+  <tr><td class="key">PATCH · DELETE</td><td><code>/api/collections/:id</code></td><td>Renombrar y borrar (las webs se conservan)</td></tr>
+  <tr><td class="key">GET</td><td><code>/api/tags</code></td><td>Tags en uso con contador (filtro y autocompletado)</td></tr>
+</table>
+
+<h2><span class="number">05</span>Seguridad</h2>
+<table>
+  <thead><tr><th style="width:22%">Riesgo</th><th>Medida</th></tr></thead>
+  <tr><td class="key">SSRF</td><td>El servidor abre URLs que escribe la usuaria. Se bloquean las direcciones no públicas (localhost, redes privadas, metadatos del cloud), comprobándolas al conectar y en cada redirección, con tiempo y tamaño máximos.</td></tr>
+  <tr><td class="key">API REST de Supabase</td><td>La clave pública del front podría leer las tablas. Se activa RLS en todas ellas sin políticas: ese acceso queda cerrado y la API propia no se ve afectada.</td></tr>
+  <tr><td class="key">Acceso ajeno</td><td>Registro público desactivado. Cada consulta filtra por usuaria y no se pueden usar colecciones de otra persona.</td></tr>
+  <tr><td class="key">Archivos subidos</td><td>Se valida el contenido real de la imagen (no la extensión). Tamaño máximo de 25 MB.</td></tr>
+  <tr><td class="key">Imágenes públicas</td><td>Se sirven sin login, pero con rutas aleatorias imposibles de adivinar.</td></tr>
+</table>
+
+<h2><span class="number">06</span>Despliegue y costes previstos</h2>
+<table>
+  <thead><tr><th style="width:22%">Pieza</th><th>Servicio</th><th style="width:28%">Coste estimado</th></tr></thead>
+  <tr><td class="key">Front</td><td>Cloudflare Pages (estático)</td><td>Gratis</td></tr>
+  <tr><td class="key">API</td><td>Railway, Fly.io o Render (Node). Sin Chromium en v1 caben opciones más baratas</td><td>0–5 $/mes</td></tr>
+  <tr><td class="key">Base de datos + login</td><td>Supabase</td><td>Gratis (Pro: 25 $/mes si se necesita)</td></tr>
+  <tr><td class="key">Imágenes</td><td>Cloudflare R2</td><td>Gratis hasta 10 GB</td></tr>
+</table>
+<div class="note">
+  <span class="note-label">En la v2</span>
+  <p>La captura automática sí exigirá un contenedor con Chromium (unos 5 $/mes). No sirven las plataformas serverless.</p>
+</div>
+
+<h2><span class="number">07</span>Estado actual de la fase 1</h2>
+<div class="two-columns">
+  <div>
+    <h3>Construido</h3>
+    <ul>
+      <li>Login, mosaico con buscador por título, filtro por varios tags y por colección.</li>
+      <li>Guardar web con tags (autocompletado), colecciones creadas sobre la marcha e imagen por pegado, arrastre o archivo.</li>
+      <li>Detalle con edición completa, cambio de imagen y borrado. Página de colecciones para renombrar y borrar.</li>
+      <li>Migraciones de base de datos (extensión de búsqueda, tablas y RLS). Documentación: <code>ARCHITECTURE.md</code> y <code>README.md</code>.</li>
+    </ul>
+  </div>
+  <div>
+    <h3>Verificado</h3>
+    <ul>
+      <li>Recorrido completo de la API contra un PostgreSQL de prueba y webs reales: <strong>34 comprobaciones superadas</strong> (tags, filtros, colecciones, imágenes, validaciones, SSRF, borrado y aislamiento entre usuarias).</li>
+      <li>Tipos correctos en los tres paquetes, compilación del front para producción y conexión del front con la API a través del proxy de desarrollo.</li>
+    </ul>
+  </div>
+  <div>
+    <h3>Pendiente de verificar</h3>
+    <ul>
+      <li>El front en el navegador con un login real de Supabase.</li>
+      <li>La validación de tokens con las claves de un proyecto nuevo de Supabase (en las pruebas se usó el sistema de claves antiguo).</li>
+      <li>El almacenamiento en R2 (solo se ha usado el disco local).</li>
+    </ul>
+  </div>
+  <div>
+    <h3>Decisiones técnicas menores</h3>
+    <ul>
+      <li>TypeScript 6 en el front: la herramienta de tipos de Vue aún no es compatible con TypeScript 7.</li>
+      <li>Sin Pinia: los filtros viven en la URL y no hace falta otro estado global.</li>
+    </ul>
+  </div>
+</div>
+
+<h2><span class="number">08</span>Hoja de ruta</h2>
+<table>
+  <thead><tr><th style="width:20%">Fase</th><th>Contenido</th><th style="width:22%">Estado</th></tr></thead>
+  <tr><td class="key">1 · Base</td><td>Login, CRUD de webs, tags y colecciones, búsqueda, vista previa por <code>og:image</code> o imagen manual</td><td><span class="tag solid">Construida</span></td></tr>
+  <tr><td class="key">Diseño</td><td>Diseño visual de la plataforma, una vez validado su funcionamiento</td><td><span class="tag">Siguiente tras validar</span></td></tr>
+  <tr><td class="key">2 · Captura</td><td>Captura automática visible y de página completa (Playwright en un worker)</td><td><span class="tag">Planificada</span></td></tr>
+  <tr><td class="key">3 · Extensión</td><td>Extensión de navegador (WXT + Vue) para guardar con un clic, usando la misma API</td><td><span class="tag">Planificada</span></td></tr>
+  <tr><td class="key">4 · Componentes</td><td>RF-F1: guardar partes concretas de una web con su propia imagen, tags y notas</td><td><span class="tag dashed">Futuro</span></td></tr>
+</table>
+
+<h3>Próximos pasos inmediatos</h3>
+<ol>
+  <li>Crear el proyecto de Supabase, desactivar el registro público y crear la usuaria.</li>
+  <li>Rellenar los archivos <code>.env</code> de la API y del front, aplicar las migraciones (<code>pnpm db:migrate</code>) y arrancar (<code>pnpm dev</code>).</li>
+  <li>Probar la app en el navegador con el login real.</li>
+  <li>Una vez validada, abrir la fase de diseño visual.</li>
+</ol>
+
+<!-- ================= PART 03 · HOW BEGIZ WORKS ================= -->
+
+<header class="part">
+  <div class="part-kicker"><span>Parte 03</span><span>Documento de referencia · 1 oct 2026</span></div>
+  <h1>Cómo funciona Begiz</h1>
+  <p class="part-subtitle">Todos los procesos de la app explicados: qué haces tú, qué pasa por dentro y dónde queda guardado.</p>
+</header>
+
+<h2 class="first"><span class="number">00</span>Contenido</h2>
+<ol class="toc-columns">
+  <li>Las piezas de la app</li>
+  <li>Iniciar sesión</li>
+  <li>Guardar una web</li>
+  <li>Subir o cambiar la imagen</li>
+  <li>El mosaico y los filtros</li>
+  <li>Detalle, edición y borrado</li>
+  <li>Dónde se guarda cada dato</li>
+  <li>Seguridad</li>
+  <li>Cómo trabajamos</li>
+  <li>Publicación y costes</li>
+  <li>Hoja de ruta</li>
+</ol>
+
+<h2><span class="number">01</span>Las piezas de la app</h2>
+<p>Begiz se compone de cinco piezas. Tú solo ves la primera; el resto trabaja por detrás.</p>
+<table>
+  <thead><tr><th style="width:20%">Pieza</th><th style="width:28%">Dónde está</th><th>Qué hace</th></tr></thead>
+  <tr><td class="key">Front</td><td><code>apps/web</code> · Vue 3 + Vite</td><td>La app que ves en el navegador: el mosaico, los formularios, los filtros. No guarda datos: se los pide a la API.</td></tr>
+  <tr><td class="key">API</td><td><code>apps/api</code> · Hono + Drizzle</td><td>Un programa en un servidor que recibe las peticiones del front, comprueba quién eres, lee las páginas que guardas, procesa las imágenes y habla con la base de datos.</td></tr>
+  <tr><td class="key">Supabase Auth</td><td>Tu proyecto de Supabase</td><td>Gestiona las cuentas: email, contraseña cifrada y las sesiones.</td></tr>
+  <tr><td class="key">Base de datos</td><td>Postgres en Supabase</td><td>Guarda las webs, tags y colecciones de cada usuaria.</td></tr>
+  <tr><td class="key">Imágenes</td><td>Disco local / Cloudflare R2</td><td>Guarda los archivos de imagen. En la base de datos solo queda la ruta de cada uno.</td></tr>
+</table>
+<p>Además hay un paquete compartido, <code>packages/shared</code>, con las reglas de validación (qué es una URL válida, cuánto puede medir un título, cómo se normaliza un tag). Lo usan el front y la API, así que las reglas son siempre las mismas en los dos lados.</p>
+<pre>
+ Navegador (front)
+   │
+   ├── login ──────────────────────────► Supabase Auth ──► devuelve un token (JWT)
+   │
+   └── peticiones + "Authorization: Bearer &lt;token&gt;" ──► API  /api/*
+                                                          │ 1. valida el token
+                                                          ├─► Postgres (Supabase)
+                                                          ├─► Imágenes (disco / R2)
+                                                          └─► Webs externas (título, favicon, og:image)
+</pre>
+<div class="note strong">
+  <span class="note-label">La regla de oro</span>
+  <span class="note-title">El front nunca toca la base de datos</span>
+  <p>Todo pasa por la API, que es la única que sabe las reglas. Así la futura extensión del navegador podrá usar la misma API sin repetir nada.</p>
+</div>
+
+<h2><span class="number">02</span>Iniciar sesión</h2>
+<div class="flow">
+  <div class="flow-step"><b>Tú</b>Escribes email y contraseña en <code>/login</code>.</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-step"><b>Supabase Auth</b>Comprueba la contraseña y devuelve un token firmado (JWT).</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-step"><b>Navegador</b>Guarda la sesión para que no tengas que volver a entrar.</div>
+  <div class="flow-arrow">→</div>
+  <div class="flow-step"><b>API</b>En cada petición valida el token y saca tu identificador.</div>
+</div>
+<ul>
+  <li><strong>El token</strong> es como un pase firmado por Supabase que dice «esta persona es la usuaria X» y caduca pasado un tiempo. La API comprueba la firma con las claves públicas de tu proyecto (<code>apps/api/src/auth.ts</code>), así que nadie puede fabricar uno falso.</li>
+  <li>Si el token falta, es falso o ha caducado, la API responde <strong>401</strong> y el front te devuelve al login.</li>
+  <li>El <strong>registro público está desactivado</strong>: las cuentas solo se crean desde el panel de Supabase.</li>
+  <li>El router del front (<code>apps/web/src/router.ts</code>) también te manda al login si intentas abrir una página sin sesión, y al volver te lleva a donde ibas.</li>
+</ul>
+
+<h2><span class="number">03</span>Guardar una web</h2>
+<p>Es el proceso más completo de la app. Empieza en <code>/new</code> (<code>NewWebView.vue</code>) y lo resuelve la ruta <code>POST /api/webs</code> (<code>apps/api/src/routes/webs.ts</code>).</p>
+<table>
+  <thead><tr><th style="width:6%">#</th><th style="width:15%">Quién</th><th>Qué pasa</th></tr></thead>
+  <tr><td class="number">1</td><td class="key">Tú</td><td>Rellenas enlace, título, notas, tags y colecciones. Opcionalmente pegas, arrastras o eliges una imagen.</td></tr>
+  <tr><td class="number">2</td><td class="key">Front</td><td>Envía los datos a la API. Si has puesto imagen propia, le dice que <em>no</em> descargue la de la página (<code>usePageImage: false</code>).</td></tr>
+  <tr><td class="number">3</td><td class="key">API</td><td><strong>Valida</strong> los datos con las reglas de <code>packages/shared</code>: URL http/https, título no vacío (máx. 200), notas (máx. 5000), hasta 30 tags de 40 caracteres. Los tags se normalizan: «&nbsp;Dark&nbsp;&nbsp;Mode » pasa a «dark mode», y los repetidos se quitan.</td></tr>
+  <tr><td class="number">4</td><td class="key">API</td><td><strong>Lee la página</strong> con protección SSRF (ver sección 8): título (<code>og:title</code> o <code>&lt;title&gt;</code>), favicon y <code>og:image</code>. Si la página no responde, no pasa nada: la web se guarda igual, sin esos datos.</td></tr>
+  <tr><td class="number">5</td><td class="key">API</td><td>Si toca usar la imagen de la página, la <strong>descarga y crea la miniatura</strong> WebP (<code>createThumbnail</code>, en <code>lib/preview.ts</code>) y la guarda en el almacenamiento. Si falla, la web queda sin imagen.</td></tr>
+  <tr><td class="number">6</td><td class="key">Base de datos</td><td>En <strong>una sola transacción</strong> guarda la web, crea los tags que no existían, los enlaza y añade la web a sus colecciones. Si algo falla (p. ej. una colección que no es tuya), no se guarda nada y se borra la miniatura que se acababa de crear.</td></tr>
+  <tr><td class="number">7</td><td class="key">Front</td><td>Si elegiste imagen propia, ahora la sube (ver sección 4). Después refresca el mosaico, los tags y los contadores, y te lleva al detalle de la web.</td></tr>
+</table>
+<div class="note">
+  <span class="note-label">Concepto</span>
+  <span class="note-title">¿Qué es una transacción?</span>
+  <p>Un grupo de operaciones en la base de datos que se hacen todas o ninguna. Así nunca queda una web a medias, por ejemplo guardada pero sin sus tags.</p>
+</div>
+
+<h3>Prioridad de la imagen de vista previa</h3>
+<table>
+  <thead><tr><th style="width:9%">Orden</th><th>Fuente</th></tr></thead>
+  <tr><td class="number">1</td><td><strong>Tu imagen</strong>, subida a mano. Puede ser una captura de página completa.</td></tr>
+  <tr><td class="number">2</td><td>La <strong><code>og:image</code></strong> de la página: la imagen que muestran las webs al compartir un enlace. Se copia a nuestro almacenamiento para que no se rompa si la web la cambia.</td></tr>
+  <tr><td class="number">3</td><td>Una <strong>tarjeta generada</strong> con el favicon y el dominio (<code>WebThumb.vue</code>). El mosaico nunca tiene huecos.</td></tr>
+</table>
+
+<h2><span class="number">04</span>Subir o cambiar la imagen</h2>
+<p>Ocurre al guardar una web con imagen propia o con «Change image» en el detalle. Ruta: <code>PUT /api/webs/:id/preview</code>.</p>
+<ol>
+  <li><strong>Tú</strong> pegas una imagen con Ctrl+V (funciona en cualquier parte de la página), la arrastras o la eliges del disco (<code>ImagePicker.vue</code>).</li>
+  <li>La <strong>API comprueba que la web es tuya</strong>; si no, responde 404.</li>
+  <li><strong>Valida el contenido real</strong> del archivo con la librería <code>sharp</code> (<code>detectUploadFormat</code>). No se fía de la extensión ni de lo que dice el navegador. Acepta PNG, JPG, WebP, GIF y AVIF, hasta 25 MB.</li>
+  <li><strong>Crea la miniatura</strong>: WebP de 800 px de ancho. Si la imagen es muy alta (una captura de página completa), la miniatura se recorta a los 1200 px de arriba.</li>
+  <li><strong>Guarda dos archivos</strong>: la miniatura (para el mosaico) y el original (para el detalle, a tamaño completo).</li>
+  <li>Actualiza la web en la base de datos y <strong>borra las imágenes anteriores</strong>, para no acumular archivos huérfanos.</li>
+</ol>
+<p class="quiet">Cada archivo lleva un identificador aleatorio nuevo en su nombre, así que una imagen nunca se sobrescribe: se crea otra y se borra la vieja. Esto permite que el navegador las guarde en caché para siempre.</p>
+
+<h2><span class="number">05</span>El mosaico y los filtros</h2>
+<p>La página principal (<code>HomeView.vue</code>) pide las webs a <code>GET /api/webs</code> con los filtros activos.</p>
+<table>
+  <thead><tr><th style="width:20%">Filtro</th><th style="width:24%">En la URL</th><th>Cómo funciona</th></tr></thead>
+  <tr><td class="key">Buscar por título</td><td><code>?search=portfolio</code></td><td>Busca el texto dentro del título, sin distinguir mayúsculas. Los caracteres especiales (<code>%</code>, <code>_</code>) se tratan como texto normal. Un índice especial (<code>pg_trgm</code>) mantiene la búsqueda rápida aunque haya miles de webs.</td></tr>
+  <tr><td class="key">Tags</td><td><code>?tags=dark,serif</code></td><td>Devuelve solo las webs que tienen <strong>todos</strong> los tags elegidos (Y), que es lo útil para buscar inspiración concreta.</td></tr>
+  <tr><td class="key">Colección</td><td><code>?collection=&lt;id&gt;</code></td><td>Solo las webs de esa colección. Se combina con los demás filtros.</td></tr>
+</table>
+<ul>
+  <li><strong>Los filtros viven en la URL</strong>: si recargas, compartes el enlace o vas hacia atrás, se mantienen.</li>
+  <li>El buscador espera <strong>250 ms</strong> después de la última tecla antes de pedir resultados, para no lanzar una petición por cada letra.</li>
+  <li>Las webs salen <strong>de la más nueva a la más antigua</strong>.</li>
+  <li><strong>Caché (TanStack Query)</strong>: el front recuerda las respuestas de la API. Al volver a una página ya vista, la muestra al instante. Al cambiar un filtro, mantiene el resultado anterior en pantalla hasta que llega el nuevo, sin parpadeos. Después de guardar, editar o borrar, invalida esa caché para que todo se vuelva a pedir actualizado.</li>
+  <li>La lista de tags del filtro (<code>GET /api/tags</code>) muestra solo los que están en uso, <strong>ordenados por cuántas webs los usan</strong>. La misma lista sirve para el autocompletado al escribir tags.</li>
+</ul>
+
+<h2><span class="number">06</span>Detalle, edición y borrado</h2>
+<h3>Ver y editar una web</h3>
+<ul>
+  <li>El detalle (<code>/webs/:id</code>) muestra la imagen a tamaño completo si existe, el enlace a la web, el título original de la página y el formulario de edición.</li>
+  <li>Al guardar cambios (<code>PATCH /api/webs/:id</code>) solo se actualiza lo que envías. Los <strong>tags se reemplazan</strong> por la lista nueva, y los que ya no usa ninguna web <strong>se borran solos</strong>. Las <strong>colecciones también se reemplazan</strong>, comprobando que todas son tuyas.</li>
+</ul>
+<h3>Qué se borra y qué se conserva</h3>
+<table>
+  <thead><tr><th style="width:24%">Acción</th><th style="width:38%">Se borra</th><th>Se conserva</th></tr></thead>
+  <tr><td class="key">Borrar una web</td><td>La web, sus enlaces con tags y colecciones, sus imágenes y los tags que quedan sin uso.</td><td>Las colecciones (con una web menos) y los tags que usan otras webs.</td></tr>
+  <tr><td class="key">Borrar una colección</td><td>La colección y la lista de sus webs.</td><td><strong>Todas las webs</strong>. Solo dejan de pertenecer a esa colección.</td></tr>
+  <tr><td class="key">Quitar un tag de una web</td><td>El enlace; y el tag, si ya no lo usa ninguna web.</td><td>La web y el resto de sus tags.</td></tr>
+</table>
+<h3>Colecciones</h3>
+<ul>
+  <li>Se crean desde el formulario de guardar o editar una web (<code>CollectionPicker.vue</code>).</li>
+  <li>En <code>/collections</code> se listan con su número de webs y se pueden renombrar o borrar.</li>
+  <li>No puede haber dos colecciones con el mismo nombre: la API responde <strong>409</strong> con un mensaje que se muestra en pantalla.</li>
+</ul>
+
+<h2><span class="number">07</span>Dónde se guarda cada dato</h2>
+<table>
+  <thead><tr><th style="width:18%">Dato</th><th style="width:32%">Dónde</th><th>Detalles</th></tr></thead>
+  <tr><td class="key">Cuenta</td><td>Supabase Auth<br><span class="quiet">Panel → Authentication → Users</span></td><td>Email y contraseña cifrada. Cada usuaria tiene un identificador único (uuid).</td></tr>
+  <tr><td class="key">Webs</td><td>Tabla <code>webs</code></td><td>Enlace, título, notas, título y favicon de la página, rutas de la miniatura y del original, origen de la imagen y fechas.</td></tr>
+  <tr><td class="key">Tags</td><td>Tablas <code>tags</code> y <code>web_tags</code></td><td>Los nombres de los tags y qué tags tiene cada web. Un nombre no se repite dentro de la misma usuaria.</td></tr>
+  <tr><td class="key">Colecciones</td><td>Tablas <code>collections</code> y <code>collection_webs</code></td><td>Nombre y descripción de cada colección, y qué webs contiene.</td></tr>
+  <tr><td class="key">Imágenes</td><td>Desarrollo: <code>apps/api/.data/uploads/</code><br>Producción: Cloudflare R2</td><td>Organizadas como <code>&lt;usuaria&gt;/&lt;web&gt;/&lt;id&gt;.webp</code>. La base de datos solo guarda la ruta.</td></tr>
+  <tr><td class="key">Sesión</td><td>Tu navegador</td><td>Solo el token de login. Ningún dato de la app se guarda en el navegador.</td></tr>
+</table>
+<p>Todas las usuarias comparten las mismas tablas. Cada fila lleva una columna <code>user_id</code> con su dueña, y la API filtra por ella en <strong>todas</strong> las consultas.</p>
+<div class="note strong">
+  <span class="note-label">Ojo</span>
+  <span class="note-title">Las imágenes en local solo están en tu ordenador</span>
+  <p>Mientras se trabaja en local, las imágenes solo existen en tu ordenador, y la carpeta <code>.data</code> no se sube a GitHub. Si se borra o cambias de equipo, las webs siguen en Supabase pero salen con la tarjeta de favicon. Al publicar, estas imágenes no pasan solas a R2: habrá que copiarlas si se quieren conservar.</p>
+</div>
+
+<h2><span class="number">08</span>Seguridad</h2>
+<table>
+  <thead><tr><th style="width:22%">Riesgo</th><th>Cómo se evita</th></tr></thead>
+  <tr><td class="key">Ver datos de otra persona</td><td>Cada consulta filtra por tu <code>user_id</code>. Si pides una web o colección que no es tuya, la API responde 404 como si no existiera, y no puedes meter tus webs en colecciones ajenas. Los tests de aislamiento lo comprueban en cada cambio.</td></tr>
+  <tr><td class="key">Acceso directo a la base de datos</td><td>Supabase permite leer tablas con la clave pública que usa el front. Por eso todas las tablas tienen <strong>RLS</strong> (Row Level Security) activado y sin permisos: ese acceso queda cerrado. La API se conecta como propietaria y no le afecta.</td></tr>
+  <tr><td class="key">SSRF</td><td>La API abre las URLs que escribes. Alguien podría usarla para alcanzar direcciones internas del servidor (<code>localhost</code>, redes privadas, metadatos del proveedor cloud). <code>lib/safe-fetch.ts</code> bloquea las direcciones no públicas <strong>en el momento de conectar</strong> y en cada redirección, con un tiempo máximo de 8 s y un tamaño máximo de descarga.</td></tr>
+  <tr><td class="key">Archivos maliciosos</td><td>Las imágenes se validan por su contenido real, no por la extensión. Un archivo que no es imagen se rechaza aunque se llame <code>.png</code>.</td></tr>
+  <tr><td class="key">Imágenes públicas</td><td>Se sirven sin login, pero sus rutas llevan identificadores aleatorios imposibles de adivinar.</td></tr>
+  <tr><td class="key">Cuentas ajenas</td><td>Registro público desactivado. Solo existen las cuentas creadas desde el panel.</td></tr>
+</table>
+
+<h2><span class="number">09</span>Cómo trabajamos</h2>
+<h3>Comandos</h3>
+<table>
+  <thead><tr><th style="width:24%">Comando</th><th>Para qué</th></tr></thead>
+  <tr><td><code>pnpm dev</code></td><td>Arranca el front (<code>localhost:5173</code>) y la API (<code>localhost:8787</code>). Los cambios en el código se recargan solos.</td></tr>
+  <tr><td><code>pnpm test</code></td><td>Ejecuta los tests de la API y de <code>shared</code>. Unos 25 segundos, sin Supabase ni internet.</td></tr>
+  <tr><td><code>pnpm typecheck</code></td><td>Comprueba los tipos de TypeScript en todo el proyecto.</td></tr>
+  <tr><td><code>pnpm build</code></td><td>Genera la versión de producción del front.</td></tr>
+  <tr><td><code>pnpm db:generate</code></td><td>Crea una migración después de cambiar el esquema (<code>apps/api/src/db/schema.ts</code>).</td></tr>
+  <tr><td><code>pnpm db:migrate</code></td><td>Aplica las migraciones pendientes a la base de datos de Supabase.</td></tr>
+</table>
+
+<h3>Los tests</h3>
+<ul>
+  <li>Usan <strong>PGlite</strong>, un Postgres de verdad que se ejecuta en memoria y se crea con las mismas migraciones. Cada test empieza con la base de datos vacía y nunca toca tu Supabase.</li>
+  <li>Firman tokens igual que Supabase, así que <strong>pasan por la validación real del login</strong>.</li>
+  <li>Las páginas externas se <strong>simulan</strong> (<code>test/fake-web.ts</code>): los tests no dependen de que una web real esté disponible.</li>
+  <li>Cubren login, guardado, filtros, edición, borrado, imágenes, colecciones, aislamiento entre usuarias y SSRF: 53 tests en la API y 11 en <code>shared</code>.</li>
+</ul>
+
+<h3>Cambiar la base de datos</h3>
+<ol>
+  <li>Se edita el esquema en <code>apps/api/src/db/schema.ts</code>.</li>
+  <li><code>pnpm db:generate</code> crea un archivo SQL con el cambio en <code>apps/api/drizzle/</code>. Toda tabla nueva lleva RLS activado.</li>
+  <li><code>pnpm test</code>: los tests crean su base de datos con esa migración, así que un error sale aquí antes de tocar Supabase.</li>
+  <li><code>pnpm db:migrate</code> la aplica en Supabase. Las migraciones aplicadas ya no se editan nunca.</li>
+</ol>
+
+<div class="note strong">
+  <span class="note-label">Antes de dar algo por terminado</span>
+  <span class="note-title">Verificación mínima</span>
+  <p><code>pnpm test</code> y <code>pnpm typecheck</code> en verde (y <code>pnpm build</code> si se toca el front). Cada cambio en la API lleva sus tests. Los commits se hacen cuando tú lo pides, con mensajes en inglés.</p>
+</div>
+
+<h2><span class="number">10</span>Publicación y costes</h2>
+<table>
+  <thead><tr><th style="width:18%">Pieza</th><th style="width:24%">Servicio</th><th style="width:30%">Gratis hasta</th><th>Cuándo se paga</th></tr></thead>
+  <tr><td class="key">Front</td><td>Cloudflare Pages (estático)</td><td>Prácticamente sin límite a esta escala</td><td>Nunca, para este uso</td></tr>
+  <tr><td class="key">API</td><td>Railway, Fly.io o Render (Node)</td><td>Sin plan gratuito útil (el de Render se duerme y tarda 30–60 s en despertar)</td><td>~0–5 $/mes desde el principio</td></tr>
+  <tr><td class="key">Base de datos + login</td><td>Supabase</td><td>500 MB (cientos de miles de webs)</td><td>Pro, 25 $/mes, solo si hiciera falta</td></tr>
+  <tr><td class="key">Imágenes</td><td>Cloudflare R2</td><td>10 GB, descargas siempre gratis</td><td>~0,015 $ por GB y mes por encima de 10 GB</td></tr>
+</table>
+<ul>
+  <li><strong>El límite real son las imágenes.</strong> Con miniaturas de <code>og:image</code> (50–150 KB) caben unas 100.000 webs en 10 GB. Con capturas de página completa subidas a mano (2–5 MB cada una), unas 2.000–5.000.</li>
+  <li><strong>Supabase gratuito se pausa</strong> tras 7 días sin uso. Se reactiva desde el panel sin perder datos.</li>
+  <li><strong>Sin copias de seguridad descargables</strong> en el plan gratuito: al publicar, conviene preparar una exportación periódica.</li>
+</ul>
+<p class="quiet">Cifras del plan de arquitectura (septiembre de 2026). Los proveedores cambian sus planes; se revisarán antes de publicar.</p>
+
+<h2><span class="number">11</span>Hoja de ruta</h2>
+<table>
+  <thead><tr><th style="width:20%">Fase</th><th>Contenido</th><th style="width:16%">Estado</th></tr></thead>
+  <tr><td class="key">1 · Base</td><td>Login, webs, tags, colecciones, búsqueda, vista previa por <code>og:image</code> o imagen manual</td><td><span class="tag solid">Validada</span></td></tr>
+  <tr><td class="key">1b · Tests</td><td>Vitest, tests de la API y de <code>shared</code>; código revisado (inglés, nombres, comentarios)</td><td><span class="tag solid">Hecha</span></td></tr>
+  <tr><td class="key">Diseño</td><td>Diseño visual de la plataforma</td><td><span class="tag">Siguiente</span></td></tr>
+  <tr><td class="key">2 · Captura</td><td>Captura automática con Playwright (necesita un servidor con Chromium, ~5 $/mes)</td><td><span class="tag">Planificada</span></td></tr>
+  <tr><td class="key">3 · Extensión</td><td>Extensión del navegador para guardar con un clic, usando la misma API</td><td><span class="tag">Planificada</span></td></tr>
+  <tr><td class="key">4 · Componentes</td><td>Guardar partes concretas de una web con su imagen, tags y notas</td><td><span class="tag dashed">Futuro</span></td></tr>
+  <tr><td class="key">Idiomas</td><td>Selector de idioma: inglés (por defecto) y español</td><td><span class="tag dashed">Futuro</span></td></tr>
+  <tr><td class="key">Tema</td><td>Cambio entre tema claro y oscuro</td><td><span class="tag dashed">Futuro</span></td></tr>
+</table>
+<p class="quiet">Para el detalle técnico de cada decisión: <code>ARCHITECTURE.md</code>. Para poner la app en marcha: <code>README.md</code>.</p>
+
+<!-- ================= PART 04 · DEPLOYMENT PLAN ================= -->
+
+<header class="part">
+  <div class="part-kicker"><span>Parte 04</span><span>Plan de despliegue · 14 oct 2026</span></div>
+  <h1>Plan de despliegue</h1>
+  <p class="part-subtitle">Publicar Begiz gratis para dos personas y, más adelante, prepararla para más gente.</p>
+</header>
+
+<h2 class="first"><span class="number">01</span>Resumen</h2>
+<p>El plan de arquitectura (parte 02) daba por hecho una API de pago desde el principio. Para empezar a usar Begiz entre dos personas, la usuaria y su compañera, no hace falta: se despliega en dos etapas. El código es el mismo en las dos; solo cambian los proveedores y la configuración.</p>
+<table>
+  <thead><tr><th style="width:22%">Etapa</th><th>Para qué</th><th style="width:24%">Coste</th></tr></thead>
+  <tr><td class="key">1 · Gratuita</td><td>Usarla entre dos personas y ver qué tal funciona</td><td>0 €</td></tr>
+  <tr><td class="key">2 · Profesional</td><td>Abrirla a más gente, la vista pública y la captura automática</td><td>~32 $/mes sin captura</td></tr>
+</table>
+<div class="note">
+  <span class="note-label">Sustituye</span>
+  <p>Esta parte sustituye a «Despliegue y costes previstos» (parte 02, apartado 06) y a «Publicación y costes» (parte 03, apartado 10), que se mantienen como estaban.</p>
+</div>
+
+<h2><span class="number">02</span>Etapa 1 · Gratuita (ahora)</h2>
+<table>
+  <thead><tr><th style="width:20%">Pieza</th><th style="width:28%">Servicio</th><th>Por qué</th></tr></thead>
+  <tr><td class="key">Front</td><td>Cloudflare Pages</td><td>Gratis para webs estáticas.</td></tr>
+  <tr><td class="key">API</td><td>Render, plan gratuito</td><td>Ejecuta Node tal cual, con <code>sharp</code>, y no pide tarjeta.</td></tr>
+  <tr><td class="key">Login y base de datos</td><td>Segundo proyecto de Supabase, solo para producción</td><td>El plan gratuito permite dos proyectos. Los datos reales no se mezclan con los de desarrollo y las migraciones se prueban antes en desarrollo.</td></tr>
+  <tr><td class="key">Imágenes</td><td>Supabase Storage, bucket público</td><td>Compatible con S3: la API ya tiene ese modo. Sin otra cuenta ni tarjeta.</td></tr>
+</table>
+<p><strong>Por qué no Cloudflare Workers para la API.</strong> Es gratis y Hono funciona ahí, pero <code>sharp</code> (imágenes) y la descarga segura de páginas dependen de Node. Habría que reescribir parte del backend, y para dos personas no compensa.</p>
+<p><strong>Por qué ahora Supabase Storage y no R2.</strong> En la parte 02 se eligió R2 porque da 10 GB frente a 1 GB. Para dos personas, 1 GB basta (las miniaturas ya salen redimensionadas), y así no hace falta abrir otra cuenta. R2 vuelve en la etapa 2.</p>
+
+<h3>Peajes del plan gratuito</h3>
+<ul>
+  <li><strong>Render duerme la API</strong> tras unos 15 minutos sin uso. La primera petición después tarda unos 30–60 s; mientras, se ve la pantalla de carga.</li>
+  <li><strong>Supabase pausa el proyecto</strong> tras unos 7 días sin uso. Con uso habitual no pasa.</li>
+  <li><strong>Límites aproximados:</strong> 500 MB de base de datos, 1 GB de archivos y 5 GB de descarga al mes en Supabase; 512 MB de memoria en Render. Se comprueban al desplegar, porque cambian.</li>
+  <li><strong>Sin copias de seguridad automáticas</strong> de la base de datos.</li>
+  <li><strong>La fase 2 (captura) no cabe:</strong> Chromium necesita más memoria de la que da Render gratis.</li>
+</ul>
+
+<h3>Pasos</h3>
+<ol>
+  <li>Arreglar antes los pendientes que afectan a otra persona: la sesión caducada (401) y el error de carga de colecciones. Añadir un mensaje de respaldo en <code>index.html</code>.</li>
+  <li>Crear el proyecto de Supabase de producción, aplicar las migraciones y crear a mano las dos cuentas.</li>
+  <li>Crear el bucket público de imágenes y sus claves S3. El cliente S3 de la API necesita <code>forcePathStyle</code>, que Supabase exige y R2 también acepta.</li>
+  <li>Crear el servicio en Render con la conexión del pooler de Supabase (la conexión directa solo es IPv6).</li>
+  <li>Publicar el front en Cloudflare Pages, enlazado con la API (<code>VITE_API_URL</code> y <code>CORS_ORIGIN</code>).</li>
+  <li>Probarlo de punta a punta con las dos cuentas.</li>
+</ol>
+
+<h2><span class="number">03</span>Etapa 2 · Profesional (futuro)</h2>
+<p>Se da el salto con cualquiera de estas señales: entra gente de fuera o se activa la vista pública; el arranque lento molesta; empieza la fase 2 (captura); o los datos ya importan lo suficiente como para necesitar copias de seguridad.</p>
+<table>
+  <thead><tr><th style="width:22%">Pieza</th><th>Servicio</th><th style="width:24%">Coste aproximado</th></tr></thead>
+  <tr><td class="key">Front</td><td>Cloudflare Pages, con dominio propio</td><td>Gratis</td></tr>
+  <tr><td class="key">API</td><td>Render de pago (no se duerme) o Railway</td><td>~7 $/mes</td></tr>
+  <tr><td class="key">Worker de captura</td><td>Servicio aparte con Chromium y 1–2 GB de memoria (fase 2)</td><td>~7–25 $/mes</td></tr>
+  <tr><td class="key">Login y base de datos</td><td>Supabase Pro: sin pausas, copias diarias y más espacio</td><td>25 $/mes</td></tr>
+  <tr><td class="key">Imágenes</td><td>Cloudflare R2: 10 GB gratis, descargas siempre gratis</td><td>Gratis al principio</td></tr>
+  <tr><td class="key">Dominio</td><td>Uno propio, con <code>api.</code> y <code>files.</code></td><td>~10–15 €/año</td></tr>
+</table>
+<p>Se puede subir por partes: lo primero suele ser la API de pago (~7 $/mes) para quitar el arranque lento, con Supabase todavía gratuito.</p>
+
+<h3>Qué cambia al pasar</h3>
+<ul>
+  <li><strong>Imágenes a R2:</strong> copiar los archivos y cambiar la configuración. La base de datos guarda la clave de cada imagen, no su URL, así que no se toca.</li>
+  <li><strong>Supabase Pro:</strong> se sube de plan el mismo proyecto, sin migrar nada.</li>
+  <li><strong>Altas de cuentas:</strong> crearlas a mano no escala. Decisión de producto pendiente: invitaciones o registro abierto.</li>
+  <li><strong>Vigilancia:</strong> aviso si la API cae y registro de errores del front y la API, con herramientas que tienen plan gratuito.</li>
+</ul>
+<p class="quiet">Estado al día y detalle técnico: <code>ARCHITECTURE.md</code>, sección «Despliegue».</p>
+
+</body>
+</html>
