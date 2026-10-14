@@ -34,6 +34,8 @@ function createS3Storage(): Storage {
   const s3Client = new S3Client({
     endpoint: S3_ENDPOINT,
     region: S3_REGION,
+    // Supabase Storage needs the bucket in the path; R2 accepts both styles.
+    forcePathStyle: true,
     credentials: { accessKeyId: S3_ACCESS_KEY_ID, secretAccessKey: S3_SECRET_ACCESS_KEY },
   })
   return {

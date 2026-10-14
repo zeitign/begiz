@@ -131,14 +131,13 @@ Todas las rutas van bajo `/api` y exigen sesión.
 | Idiomas | Selector de idioma en la interfaz: inglés (por defecto) y español | Futuro |
 | Vista pública | Que otras personas puedan ver tu mosaico y tus colecciones con un enlace, sin cuenta | Futuro |
 
-### Pendiente conocido
+### Arranque y sesión
 
-- **Colecciones**: si falla la carga de la lista, la página la muestra vacía en lugar del error.
-- **Sesión caducada**: si la API responde 401 a mitad de uso, se ve su mensaje de error en lugar de
-  volver al login.
-- **Antes de arrancar**: si el JavaScript no llega a cargarse, la pantalla queda en blanco; la
-  página de error forma parte de la app. Se puede cubrir con un mensaje de respaldo en
-  `index.html` al publicar.
+- **Sesión rechazada**: si la API responde 401 (sesión caducada o revocada), el front borra la
+  sesión guardada y vuelve al login. Cerrar sesión, hacerlo en otra pestaña o un 401 acaban en el
+  mismo sitio (un `watch` sobre la sesión en `App.vue`).
+- **Si el JavaScript no carga**: `index.html` lleva un mensaje dentro de `#app` que Vue sustituye al
+  arrancar; si la app no llega a montarse, aparece a los 8 segundos.
 
 ### Vista pública (futuro)
 
@@ -219,15 +218,16 @@ descarga segura de páginas (`safe-fetch`) dependen de Node, y habría que reesc
 
 **Pasos**
 
-1. Arreglar antes los pendientes que afectan a otra persona: la sesión caducada (401) y el error de
-   carga de colecciones. Añadir el mensaje de respaldo en `index.html`.
+1. ~~Preparar el código~~ (hecho): sesión rechazada → login, error de carga en colecciones,
+   mensaje de respaldo en `index.html`, `forcePathStyle` en el cliente S3 (con test) y versiones
+   de Node y pnpm fijadas en `package.json`.
 2. Crear el proyecto de Supabase de producción, aplicar las migraciones (`pnpm db:migrate` con su
    `DATABASE_URL`) y crear a mano las dos cuentas.
-3. Crear el bucket público de Supabase Storage y sus claves S3. El cliente S3 de la API necesita
-   `forcePathStyle: true`, que Supabase exige y R2 también acepta.
+3. Crear el bucket público de Supabase Storage y sus claves S3 (valores de ejemplo en
+   `apps/api/.env.example`).
 4. Crear el servicio en Render: instala con `pnpm install --frozen-lockfile` y arranca con
-   `pnpm --filter @webs/api start`. La `DATABASE_URL` es la del pooler de Supabase (en modo
-   transacción; el cliente ya usa `prepare: false`), porque la conexión directa solo es IPv6.
+   `pnpm --filter @webs/api start`. La `DATABASE_URL` es la del «Session pooler» de Supabase, igual
+   que en desarrollo, porque la conexión directa solo es IPv6.
 5. Publicar el front en Cloudflare Pages con `VITE_API_URL` apuntando a la API y `CORS_ORIGIN` en
    la API apuntando al front. La SPA tiene que servir `index.html` en todas las rutas.
 6. Probarlo de punta a punta con las dos cuentas.
