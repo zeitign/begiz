@@ -70,7 +70,8 @@ puesta en marcha en `README.md`.
 ## Proyecto
 
 - Monorepo pnpm: `apps/api` (Hono + Drizzle), `apps/web` (Vue 3 + Vite), `packages/shared` (Zod).
-- Supabase solo para login y Postgres; el front nunca consulta la base de datos directamente.
+- Supabase para login y Postgres (y, en la etapa gratuita del despliegue, para las imágenes); el
+  front nunca consulta la base de datos directamente.
 - Secretos en `apps/api/.env` y `apps/web/.env` (ignorados por git). La contraseña de la base de
   datos la gestiona ella: no pedirla ni mostrarla.
 - Cambios de esquema: editar `apps/api/src/db/schema.ts`, `pnpm db:generate` y `pnpm db:migrate`.
