@@ -9,7 +9,7 @@ Requisitos, plan de arquitectura inicial y explicación de los procesos (instant
 | Tema | Decisión | Motivo |
 |---|---|---|
 | Front | Vue 3 + Vite + TypeScript, SPA | Herramienta privada tras login: no necesita SSR ni SEO. |
-| Estilo | Mínimo y provisional (blanco, bordes negros, tipografía del sistema), con los colores en variables CSS y tema claro/oscuro | El diseño visual se hará cuando la plataforma funcione; con las variables, rediseñar solo cambia valores. |
+| Estilo | Mínimo y provisional (blanco, bordes negros, tipografía del sistema), con los colores en variables CSS y tema claro/oscuro. El login, la página de error y la pantalla de carga ya siguen un estilo brutalista: monoespaciada del sistema en títulos, línea fina y sombra dura | El diseño visual se hará cuando la plataforma funcione; con las variables, rediseñar solo cambia valores. Las fichas brutalistas son un primer paso, revisable en la fase de diseño. |
 | Backend | Node + Hono + Drizzle | Mismo lenguaje que el front; el cliente `hc` de Hono tipa las llamadas del front sin duplicar tipos. |
 | Base de datos | PostgreSQL en Supabase | Relacional (tags y colecciones son muchos a muchos); `pg_trgm` para buscar por título. |
 | Login | Supabase Auth (email + contraseña, registro público desactivado) | Una sola usuaria. La API valida el JWT de Supabase. |
@@ -95,6 +95,9 @@ Todas las rutas van bajo `/api` y exigen sesión.
   arrancar), `server` (la API no responde: `fetch` falla o el proxy devuelve 502, 503 o 504) y
   `unexpected` (un error en un componente, capturado por `app.config.errorHandler`). Se queda el
   primer error, porque los siguientes suelen ser consecuencia suya.
+- **Fichas a pantalla completa** (`ScreenCard.vue`): el login y la página de error comparten la
+  misma ficha de línea fina con sombra sobre el mosaico tenue. El login distingue entre
+  contraseña incorrecta y no poder contactar con Supabase.
 - **Pantalla de carga**: la misma maqueta al 30 % de opacidad, palpitando (sin animación si el
   sistema pide reducir el movimiento). Lo ya conocido sale como texto; lo que depende de los datos,
   como cajas vacías, y las imágenes, como su recuadro cruzado en aspa. `AppSkeleton` cubre el
@@ -118,12 +121,22 @@ Todas las rutas van bajo `/api` y exigen sesión.
 | 1b · Tests de la API | Vitest en el monorepo. Tests de la API y de `shared` | Hecha: tests y código de la fase 1 revisado (inglés, nombres, comentarios) |
 | Mejoras del mosaico | Ventanas de información, usuaria en la cabecera, ordenación y orden propio arrastrando (PR #1) | Hecha (3-oct-2026) |
 | Tema | Cambio entre tema claro y oscuro, colores en variables CSS (PR #2) | Hecha (12-oct-2026) |
-| Arranque | Pantalla de carga y error si Supabase no responde (rama `fix/auth-startup-error`) | Pendiente de PR |
+| Arranque y errores | Arranque sin pantalla en blanco, pantalla de carga y página de error única (PR #3, rama `fix/auth-startup-error`) | En revisión |
+| Login | Login con el mismo estilo que la página de error y errores claros (PR #4, rama `feature/sign-in-screen`, sobre la #3) | En revisión |
 | Diseño | Diseño visual de la plataforma | **Siguiente** |
 | 2 · Captura | Captura automática con Playwright en un worker (rellena `preview_key` / `full_key` con `preview_source = 'screenshot'`); requiere un contenedor con Chromium | Planificada |
 | 3 · Extensión | Extensión de navegador (WXT + Vue) usando la misma API | Planificada |
 | 4 · Componentes | RF-F1: guardar componentes concretos (tabla `components` que apunta a `webs`) | Futuro |
 | Idiomas | Selector de idioma en la interfaz: inglés (por defecto) y español | Futuro |
+
+### Pendiente conocido
+
+- **Colecciones**: si falla la carga de la lista, la página la muestra vacía en lugar del error.
+- **Sesión caducada**: si la API responde 401 a mitad de uso, se ve su mensaje de error en lugar de
+  volver al login.
+- **Antes de arrancar**: si el JavaScript no llega a cargarse, la pantalla queda en blanco; la
+  página de error forma parte de la app. Se puede cubrir con un mensaje de respaldo en
+  `index.html` al publicar.
 
 ### Idiomas (futuro)
 
@@ -139,7 +152,8 @@ Todas las rutas van bajo `/api` y exigen sesión.
 
 - Los colores están en variables CSS al principio de `apps/web/src/style.css`
   (`--color-background`, `--color-text`, `--color-border`, `--color-muted`, `--color-error`), con
-  un juego para cada tema. Cambiar de tema solo cambia qué juego se usa.
+  un juego para cada tema. Cambiar de tema solo cambia qué juego se usa. `--font-mono` es la
+  monoespaciada del sistema que usan los títulos de las fichas.
 - Por defecto se sigue la preferencia del sistema; si la usuaria elige uno a mano, se recuerda en el
   navegador.
 - En la **fase de diseño**, la paleta se define en las dos variantes sobre esas mismas variables.

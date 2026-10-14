@@ -1,6 +1,7 @@
 # Begiz
 
-Guarda webs de inspiración con su imagen, notas, tags y colecciones. Arquitectura en [ARCHITECTURE.md](ARCHITECTURE.md).
+Guarda webs de inspiración con su imagen, notas, tags y colecciones. Arquitectura, estado de las fases
+y pendientes en [ARCHITECTURE.md](ARCHITECTURE.md); requisitos y plan inicial en `begiz-proyecto.pdf`.
 
 ## Puesta en marcha (local)
 
