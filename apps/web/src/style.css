@@ -87,23 +87,67 @@ fieldset {
   padding: 8px 12px 12px;
 }
 
-/* Lives in index.html, shown until Vue mounts (initAuth runs first). */
-.app-loading {
-  position: fixed;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  margin: 0;
-  font-size: 20px;
-  font-weight: bold;
-  animation: loading-pulse 1.2s ease-in-out infinite;
+/* Loading placeholders: the real layout at low opacity, pulsing until the data arrives.
+   Boxes stand for content not known yet; an image is its frame crossed corner to corner. */
+.skeleton {
+  opacity: 0.3;
+  animation: skeleton-pulse 1.6s ease-in-out infinite;
+  pointer-events: none;
 }
 
-@keyframes loading-pulse {
+@keyframes skeleton-pulse {
   50% {
-    opacity: 0.15;
+    opacity: 0.14;
   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skeleton {
+    animation: none;
+  }
+}
+
+.skeleton-box {
+  display: block;
+  border: 1px solid var(--color-border);
+}
+
+.skeleton-field {
+  border: 1px solid var(--color-border);
+  padding: 6px 8px;
+}
+
+.skeleton-image {
+  display: block;
+  aspect-ratio: 4 / 3;
+  border-bottom: 1px solid var(--color-border);
+  background:
+    linear-gradient(to top right, transparent calc(50% - 0.5px), var(--color-border) 50%, transparent calc(50% + 0.5px)),
+    linear-gradient(to bottom right, transparent calc(50% - 0.5px), var(--color-border) 50%, transparent calc(50% + 0.5px));
+}
+
+.skeleton-text {
+  height: 14px;
+}
+
+.skeleton-chip {
+  height: 22px;
+}
+
+.skeleton-icon {
+  width: 26px;
+  height: 26px;
+}
+
+.skeleton-email {
+  width: 168px;
+  height: 12px;
+}
+
+.skeleton-round {
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
 }
 
 .page {

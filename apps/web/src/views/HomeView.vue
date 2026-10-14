@@ -9,6 +9,7 @@ import {
 import { computed, ref, watch } from 'vue'
 import { VueDraggable, type DraggableEvent } from 'vue-draggable-plus'
 import { useRoute, useRouter, type LocationQueryRaw } from 'vue-router'
+import SkeletonCards from '../components/SkeletonCards.vue'
 import WebCard from '../components/WebCard.vue'
 import { api, errorMessage, responseBody, type WebCard as WebCardData } from '../lib/api'
 import { useCollections, useTags } from '../lib/queries'
@@ -170,7 +171,7 @@ async function saveDroppedPosition(event: DraggableEvent) {
 
     <p v-if="error" class="error">{{ error.message }}</p>
     <p v-else-if="moveError" class="error">{{ moveError }}</p>
-    <p v-else-if="isPending">Loading…</p>
+    <SkeletonCards v-else-if="isPending" />
     <p v-else-if="!webs?.length && hasFilters">No webs match the filters.</p>
     <p v-else-if="!webs?.length">
       No webs saved yet. <RouterLink :to="{ name: 'new' }">Save the first one</RouterLink>.

@@ -86,10 +86,14 @@ Todas las rutas van bajo `/api` y exigen sesión.
   la vez, que se pueden mover, ensanchar, minimizar y maximizar.
 - **Tema** (`lib/theme.ts`): pone `data-theme` en `<html>`. Sigue el tema del sistema hasta que se
   elige uno con el botón de la cabecera, que se recuerda en `localStorage`.
-- **Arranque** (`lib/supabase.ts`): la app no se monta hasta saber si hay sesión. Mientras tanto,
-  `index.html` muestra «Begiz» palpitando. Si Supabase no responde en 10 segundos o da un error de
+- **Arranque** (`lib/supabase.ts`): la app se monta enseguida y el router espera a `authReady`, que
+  se resuelve al saber si hay sesión. Si Supabase no responde en 10 segundos o da un error de
   conexión, se muestra un mensaje en lugar de dejar la pantalla en blanco; cualquier otro error
   (p. ej. un token revocado) lleva al login.
+- **Pantalla de carga**: la misma maqueta al 30 % de opacidad, palpitando (sin animación si el
+  sistema pide reducir el movimiento). Lo ya conocido sale como texto; lo que depende de los datos,
+  como cajas vacías, y las imágenes, como su recuadro cruzado en aspa. `AppSkeleton` cubre el
+  arranque y `SkeletonCards` las tarjetas del mosaico mientras llegan las webs.
 
 ## Seguridad
 

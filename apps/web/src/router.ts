@@ -1,5 +1,5 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { session } from './lib/supabase'
+import { authReady, session } from './lib/supabase'
 import CollectionsView from './views/CollectionsView.vue'
 import HomeView from './views/HomeView.vue'
 import LoginView from './views/LoginView.vue'
@@ -17,7 +17,8 @@ export const router = createRouter({
   ],
 })
 
-router.beforeEach((to) => {
+router.beforeEach(async (to) => {
+  await authReady
   if (!to.meta.public && !session.value) {
     return { name: 'login', query: { redirect: to.fullPath } }
   }

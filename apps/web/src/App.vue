@@ -2,9 +2,10 @@
 import { useQueryClient } from '@tanstack/vue-query'
 import { computed } from 'vue'
 import { useRouter } from 'vue-router'
+import AppSkeleton from './components/AppSkeleton.vue'
 import WebInfoWindow from './components/WebInfoWindow.vue'
 import { closeAllInfoWindows, infoWindows } from './lib/infoWindows'
-import { authStartupError, session, supabase } from './lib/supabase'
+import { authStartupError, isAuthReady, session, supabase } from './lib/supabase'
 import { theme, toggleTheme } from './lib/theme'
 
 const router = useRouter()
@@ -23,7 +24,8 @@ async function signOut() {
 </script>
 
 <template>
-  <main v-if="authStartupError" class="page narrow stack">
+  <AppSkeleton v-if="!isAuthReady" />
+  <main v-else-if="authStartupError" class="page narrow stack">
     <h1>Begiz</h1>
     <p class="error">{{ authStartupError }}</p>
   </main>

@@ -20,10 +20,10 @@ function rejectAfterTimeout(milliseconds: number) {
 }
 
 /**
- * Never throws: if Supabase cannot be reached, the app still mounts and shows authStartupError.
+ * Never throws: if Supabase cannot be reached, the app shows authStartupError.
  * Any other error (e.g. a revoked refresh token) just means there is no session: the user signs in.
  */
-export async function initAuth() {
+async function initAuth() {
   try {
     const { data, error } = await Promise.race([
       supabase.auth.getSession(),
@@ -39,3 +39,10 @@ export async function initAuth() {
     session.value = newSession
   })
 }
+
+export const isAuthReady = ref(false)
+
+/** Settles once the saved session, or its absence, is known. The router waits for it. */
+export const authReady = initAuth().finally(() => {
+  isAuthReady.value = true
+})
