@@ -14,6 +14,7 @@
   --color-border: #000;
   --color-muted: #555;
   --color-error: #b00020;
+  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
 }
 
 :root[data-theme='dark'] {
@@ -89,6 +90,12 @@ fieldset {
 
 /* Loading placeholders: the real layout at low opacity, pulsing until the data arrives.
    Boxes stand for content not known yet; an image is its frame crossed corner to corner. */
+.crossed {
+  background:
+    linear-gradient(to top right, transparent calc(50% - 0.5px), var(--color-border) 50%, transparent calc(50% + 0.5px)),
+    linear-gradient(to bottom right, transparent calc(50% - 0.5px), var(--color-border) 50%, transparent calc(50% + 0.5px));
+}
+
 .skeleton {
   opacity: 0.3;
   animation: skeleton-pulse 1.6s ease-in-out infinite;
@@ -121,9 +128,6 @@ fieldset {
   display: block;
   aspect-ratio: 4 / 3;
   border-bottom: 1px solid var(--color-border);
-  background:
-    linear-gradient(to top right, transparent calc(50% - 0.5px), var(--color-border) 50%, transparent calc(50% + 0.5px)),
-    linear-gradient(to bottom right, transparent calc(50% - 0.5px), var(--color-border) 50%, transparent calc(50% + 0.5px));
 }
 
 .skeleton-text {
@@ -148,6 +152,119 @@ fieldset {
   width: 30px;
   height: 30px;
   border-radius: 50%;
+}
+
+/* Error page: the mosaic that never finished loading, with the error card on top. */
+.error-page {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  overflow: hidden;
+}
+
+.error-page-mosaic {
+  position: absolute;
+  inset: 0;
+  padding: 40px 56px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 16px;
+  align-content: start;
+  opacity: 0.12;
+}
+
+.error-page-frame {
+  display: block;
+  border: 1px solid var(--color-border);
+  padding-bottom: 48px;
+}
+
+.error-card {
+  position: relative;
+  width: min(600px, 100%);
+  background: var(--color-background);
+  border: 1px solid var(--color-border);
+  box-shadow: 4px 4px 0 var(--color-border);
+}
+
+.error-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--color-border);
+  font: 11px var(--font-mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.error-card-body {
+  padding: 28px 24px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+
+.error-card-body p {
+  margin: 0;
+}
+
+.error-card-heading {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+}
+
+.error-card-thumb {
+  flex: none;
+  width: 64px;
+  height: 48px;
+  border: 1px solid var(--color-border);
+}
+
+.error-card-title {
+  font: bold 30px/1.05 var(--font-mono);
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+}
+
+.error-card-details {
+  margin: 0;
+  display: grid;
+  grid-template-columns: 120px 1fr;
+  border-top: 1px solid var(--color-border);
+  font: 12px var(--font-mono);
+}
+
+.error-card-details dt,
+.error-card-details dd {
+  margin: 0;
+  padding: 7px 0;
+  border-bottom: 0.5px solid var(--color-border);
+}
+
+.error-card-details dt {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+.error-card-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.error-card-retry {
+  font: 500 13px var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 10px 18px;
+  min-height: 44px;
 }
 
 .page {

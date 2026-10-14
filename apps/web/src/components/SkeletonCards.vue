@@ -17,7 +17,7 @@ const placeholderCards = [
 <template>
   <div class="grid skeleton" role="status" aria-label="Loading webs">
     <article v-for="(card, cardIndex) in placeholderCards" :key="cardIndex" class="card" aria-hidden="true">
-      <span class="skeleton-image"></span>
+      <span class="skeleton-image crossed"></span>
       <div class="card-body">
         <div class="card-title-row">
           <span class="grow">

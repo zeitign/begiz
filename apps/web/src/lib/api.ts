@@ -1,5 +1,6 @@
 import type { AppType } from '@webs/api'
 import { hc, type ClientResponse, type InferResponseType } from 'hono/client'
+import { showAppError } from './appError'
 import { supabase } from './supabase'
 
 export class ApiError extends Error {
@@ -11,12 +12,28 @@ export class ApiError extends Error {
   }
 }
 
+// What a proxy in front of the API (Vite in development, the host in production) answers when it is down.
+const API_UNREACHABLE_STATUSES = new Set([502, 503, 504])
+
+function serverUnreachable(): never {
+  showAppError('server')
+  throw new ApiError(0, 'Could not connect to the server')
+}
+
 const fetchWithSession: typeof fetch = async (input, init) => {
   const { data } = await supabase.auth.getSession()
   const headers = new Headers(init?.headers)
   if (data.session) headers.set('Authorization', `Bearer ${data.session.access_token}`)
 
-  const response = await fetch(input, { ...init, headers })
+  let response: Response
+  try {
+    response = await fetch(input, { ...init, headers })
+  } catch (error) {
+    // fetch only throws when the request never reached the API (or was cancelled on purpose).
+    if (error instanceof DOMException && error.name === 'AbortError') throw error
+    serverUnreachable()
+  }
+  if (API_UNREACHABLE_STATUSES.has(response.status)) serverUnreachable()
   if (!response.ok) {
     const errorBody = (await response.json().catch(() => null)) as { message?: string } | null
     throw new ApiError(response.status, errorBody?.message ?? `Error ${response.status}`)

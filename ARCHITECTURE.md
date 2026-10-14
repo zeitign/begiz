@@ -88,8 +88,13 @@ Todas las rutas van bajo `/api` y exigen sesión.
   elige uno con el botón de la cabecera, que se recuerda en `localStorage`.
 - **Arranque** (`lib/supabase.ts`): la app se monta enseguida y el router espera a `authReady`, que
   se resuelve al saber si hay sesión. Si Supabase no responde en 10 segundos o da un error de
-  conexión, se muestra un mensaje en lugar de dejar la pantalla en blanco; cualquier otro error
-  (p. ej. un token revocado) lleva al login.
+  conexión, se muestra la página de error en lugar de dejar la pantalla en blanco; cualquier otro
+  error (p. ej. un token revocado) lleva al login.
+- **Página de error** (`lib/appError.ts`, `ErrorPage.vue`): sustituye a toda la app cuando no se
+  puede usar, con un botón para recargar. Tres tipos: `sign-in` (Supabase no responde al
+  arrancar), `server` (la API no responde: `fetch` falla o el proxy devuelve 502, 503 o 504) y
+  `unexpected` (un error en un componente, capturado por `app.config.errorHandler`). Se queda el
+  primer error, porque los siguientes suelen ser consecuencia suya.
 - **Pantalla de carga**: la misma maqueta al 30 % de opacidad, palpitando (sin animación si el
   sistema pide reducir el movimiento). Lo ya conocido sale como texto; lo que depende de los datos,
   como cajas vacías, y las imágenes, como su recuadro cruzado en aspa. `AppSkeleton` cubre el
