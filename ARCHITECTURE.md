@@ -95,6 +95,9 @@ Todas las rutas van bajo `/api` y exigen sesión.
   arrancar), `server` (la API no responde: `fetch` falla o el proxy devuelve 502, 503 o 504) y
   `unexpected` (un error en un componente, capturado por `app.config.errorHandler`). Se queda el
   primer error, porque los siguientes suelen ser consecuencia suya.
+- **Fichas a pantalla completa** (`ScreenCard.vue`): el login y la página de error comparten la
+  misma ficha de línea fina con sombra sobre el mosaico tenue. El login distingue entre
+  contraseña incorrecta y no poder contactar con Supabase.
 - **Pantalla de carga**: la misma maqueta al 30 % de opacidad, palpitando (sin animación si el
   sistema pide reducir el movimiento). Lo ya conocido sale como texto; lo que depende de los datos,
   como cajas vacías, y las imágenes, como su recuadro cruzado en aspa. `AppSkeleton` cubre el

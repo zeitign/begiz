@@ -154,8 +154,8 @@ fieldset {
   border-radius: 50%;
 }
 
-/* Error page: the mosaic that never finished loading, with the error card on top. */
-.error-page {
+/* Full-screen card (sign-in, error page) over the mosaic that is not shown yet. */
+.screen {
   position: fixed;
   inset: 0;
   display: flex;
@@ -165,7 +165,7 @@ fieldset {
   overflow: hidden;
 }
 
-.error-page-mosaic {
+.screen-mosaic {
   position: absolute;
   inset: 0;
   padding: 40px 56px;
@@ -176,13 +176,13 @@ fieldset {
   opacity: 0.12;
 }
 
-.error-page-frame {
+.screen-mosaic-frame {
   display: block;
   border: 1px solid var(--color-border);
   padding-bottom: 48px;
 }
 
-.error-card {
+.screen-card {
   position: relative;
   width: min(600px, 100%);
   background: var(--color-background);
@@ -190,48 +190,75 @@ fieldset {
   box-shadow: 4px 4px 0 var(--color-border);
 }
 
-.error-card-header {
-  display: flex;
-  justify-content: space-between;
-  gap: 16px;
-  padding: 10px 16px;
-  border-bottom: 1px solid var(--color-border);
+.screen-card.narrow {
+  width: min(440px, 100%);
+}
+
+.mono-label {
   font: 11px var(--font-mono);
   letter-spacing: 0.12em;
   text-transform: uppercase;
 }
 
-.error-card-body {
+.screen-card-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.screen-card-body {
   padding: 28px 24px 24px;
   display: flex;
   flex-direction: column;
   gap: 18px;
 }
 
-.error-card-body p {
+.screen-card-body p {
   margin: 0;
 }
 
-.error-card-heading {
+.screen-card-heading {
   display: flex;
   gap: 16px;
-  align-items: flex-start;
+  align-items: center;
 }
 
-.error-card-thumb {
+.screen-card-thumb {
   flex: none;
   width: 64px;
   height: 48px;
   border: 1px solid var(--color-border);
 }
 
-.error-card-title {
+.screen-card-title {
   font: bold 30px/1.05 var(--font-mono);
   letter-spacing: -0.01em;
   text-transform: uppercase;
 }
 
-.error-card-details {
+.screen-card-footer {
+  padding: 9px 16px;
+  border-top: 1px solid var(--color-border);
+  font: 11px var(--font-mono);
+  letter-spacing: 0.06em;
+  color: var(--color-muted);
+}
+
+.screen-card input {
+  padding: 9px 10px;
+}
+
+.screen-button {
+  font: 500 13px var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 10px 18px;
+  min-height: 44px;
+}
+
+.error-details {
   margin: 0;
   display: grid;
   grid-template-columns: 120px 1fr;
@@ -239,19 +266,19 @@ fieldset {
   font: 12px var(--font-mono);
 }
 
-.error-card-details dt,
-.error-card-details dd {
+.error-details dt,
+.error-details dd {
   margin: 0;
   padding: 7px 0;
   border-bottom: 0.5px solid var(--color-border);
 }
 
-.error-card-details dt {
+.error-details dt {
   text-transform: uppercase;
   letter-spacing: 0.08em;
 }
 
-.error-card-actions {
+.error-actions {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -259,12 +286,15 @@ fieldset {
   flex-wrap: wrap;
 }
 
-.error-card-retry {
-  font: 500 13px var(--font-mono);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  padding: 10px 18px;
-  min-height: 44px;
+.form-error {
+  display: flex;
+  gap: 10px;
+  align-items: baseline;
+  margin: 0;
+  padding: 8px 10px;
+  border: 1px solid var(--color-error);
+  color: var(--color-error);
+  font-size: 14px;
 }
 
 .page {
