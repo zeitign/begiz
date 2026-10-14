@@ -121,13 +121,14 @@ Todas las rutas van bajo `/api` y exigen sesión.
 | 1b · Tests de la API | Vitest en el monorepo. Tests de la API y de `shared` | Hecha: tests y código de la fase 1 revisado (inglés, nombres, comentarios) |
 | Mejoras del mosaico | Ventanas de información, usuaria en la cabecera, ordenación y orden propio arrastrando (PR #1) | Hecha (3-oct-2026) |
 | Tema | Cambio entre tema claro y oscuro, colores en variables CSS (PR #2) | Hecha (12-oct-2026) |
-| Arranque y errores | Arranque sin pantalla en blanco, pantalla de carga y página de error única (PR #3, rama `fix/auth-startup-error`) | En revisión |
-| Login | Login con el mismo estilo que la página de error y errores claros (PR #4, rama `feature/sign-in-screen`, sobre la #3) | En revisión |
+| Arranque y errores | Arranque sin pantalla en blanco, pantalla de carga y página de error única (PR #3) | Hecha (14-oct-2026) |
+| Login | Login con el mismo estilo que la página de error y errores claros (PR #4) | Hecha (14-oct-2026) |
 | Diseño | Diseño visual de la plataforma | **Siguiente** |
 | 2 · Captura | Captura automática con Playwright en un worker (rellena `preview_key` / `full_key` con `preview_source = 'screenshot'`); requiere un contenedor con Chromium | Planificada |
 | 3 · Extensión | Extensión de navegador (WXT + Vue) usando la misma API | Planificada |
 | 4 · Componentes | RF-F1: guardar componentes concretos (tabla `components` que apunta a `webs`) | Futuro |
 | Idiomas | Selector de idioma en la interfaz: inglés (por defecto) y español | Futuro |
+| Vista pública | Que otras personas puedan ver tu mosaico y tus colecciones con un enlace, sin cuenta | Futuro |
 
 ### Pendiente conocido
 
@@ -137,6 +138,19 @@ Todas las rutas van bajo `/api` y exigen sesión.
 - **Antes de arrancar**: si el JavaScript no llega a cargarse, la pantalla queda en blanco; la
   página de error forma parte de la app. Se puede cubrir con un mensaje de respaldo en
   `index.html` al publicar.
+
+### Vista pública (futuro)
+
+Idea aprobada para más adelante: que cualquiera con un enlace pueda ver el mosaico de la usuaria
+y sus colecciones, en solo lectura y sin iniciar sesión. El alcance exacto está por decidir.
+
+- **Qué se vería**: el mosaico y las colecciones con sus páginas. Por decidir si se muestran los
+  enlaces a las webs originales, las notas y los tags.
+- **Qué se comparte**: por decidir si es todo el mosaico o solo las colecciones que se marquen
+  como públicas.
+- **Requisito previo**: la app tiene que estar desplegada (ver «Despliegue previsto»).
+- **Cómo encajaría**: rutas públicas de solo lectura en la API, sin sesión, que solo devuelven lo
+  marcado como público. El front nunca leería la base de datos directamente, igual que ahora.
 
 ### Idiomas (futuro)
 
