@@ -17,6 +17,11 @@ puesta en marcha en `README.md`.
 - **Diseño visual aparcado**: estilo mínimo (fondo blanco, bordes negros finos, tipografía del
   sistema en negro) hasta que la plataforma esté validada. Reutilizar las clases de
   `apps/web/src/style.css`; no decorar ni proponer diseño hasta que ella abra esa fase.
+  Colores siempre con las variables CSS de `style.css` (`--color-*`), nunca valores fijos.
+- **Excepción ya aprobada**: el login, la página de error y la pantalla de carga siguen un estilo
+  brutalista (ficha `ScreenCard`, títulos en `--font-mono`, línea fina, sombra dura, mosaico tenue
+  de fondo), el mismo de `begiz-proyecto.pdf`. Antes de cambiar una pantalla, se le enseña una
+  propuesta en el lienzo de diseño.
 
 ## Principios
 
@@ -78,3 +83,5 @@ puesta en marcha en `README.md`.
 - `vue-tsc` no soporta TypeScript 7: el front usa TypeScript 6; la API y `shared`, TypeScript 7.
 - No hay Docker ni CLI de Supabase: en desarrollo se usa el proyecto de Supabase en la nube y las
   imágenes se guardan en disco (`apps/api/.data/uploads`).
+- El plan gratuito de Supabase pausa el proyecto tras unos 7 días sin uso. Si la app muestra el
+  error `E01 · Sign-in`, lo primero es comprobar si está pausado (se reactiva desde el panel).
