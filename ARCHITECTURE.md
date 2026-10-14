@@ -259,7 +259,13 @@ pago (~7 $/mes) para quitar el arranque lento, manteniendo Supabase gratuito.
   variables `S3_*` y `FILES_PUBLIC_URL`. La base de datos guarda la clave de cada imagen, no su URL,
   así que no hay que tocarla.
 - **Supabase Pro**: se sube de plan el mismo proyecto, sin migrar nada.
-- **Altas de cuentas**: con más gente, crearlas a mano no escala. Decisión de producto pendiente:
-  invitaciones desde Supabase o registro abierto.
+- **Registro de cuentas** (decidido el 14-oct-2026: se deja para esta etapa). Hasta entonces las
+  cuentas se crean a mano en el panel de Supabase. Cuando se abra:
+  - activar el registro público en Supabase y añadir una pantalla «Create account» enlazada desde
+    el login (con propuesta previa en el lienzo de diseño, porque sigue el estilo brutalista);
+  - confirmación por email y «Forgot password?», con un servicio de correo propio (p. ej. Resend,
+    con plan gratuito): el correo de Supabase gratuito tiene un límite muy bajo de envíos;
+  - la API no cambia: cada cuenta ya ve solo sus datos;
+  - por decidir: registro abierto a cualquiera o solo por invitación.
 - **Vigilancia**: aviso si la API cae (un comprobador de disponibilidad gratuito) y registro de
   errores del front y la API (p. ej. Sentry, que tiene plan gratuito).
