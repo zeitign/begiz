@@ -1,8 +1,8 @@
 # Arquitectura
 
 App personal para guardar webs de inspiración: enlace, título propio, imagen, notas, tags y colecciones.
-Requisitos, plan de arquitectura inicial y explicación de los procesos (instantánea del 1-oct-2026) en
-`begiz-proyecto.pdf`.
+Requisitos, plan de arquitectura inicial, explicación de los procesos (instantánea del 1-oct-2026) y
+plan de despliegue (14-oct-2026) en `begiz-proyecto.pdf`.
 
 ## Decisiones
 
@@ -12,8 +12,8 @@ Requisitos, plan de arquitectura inicial y explicación de los procesos (instant
 | Estilo | Mínimo y provisional (blanco, bordes negros, tipografía del sistema), con los colores en variables CSS y tema claro/oscuro. El login, la página de error y la pantalla de carga ya siguen un estilo brutalista: monoespaciada del sistema en títulos, línea fina y sombra dura | El diseño visual se hará cuando la plataforma funcione; con las variables, rediseñar solo cambia valores. Las fichas brutalistas son un primer paso, revisable en la fase de diseño. |
 | Backend | Node + Hono + Drizzle | Mismo lenguaje que el front; el cliente `hc` de Hono tipa las llamadas del front sin duplicar tipos. |
 | Base de datos | PostgreSQL en Supabase | Relacional (tags y colecciones son muchos a muchos); `pg_trgm` para buscar por título. |
-| Login | Supabase Auth (email + contraseña, registro público desactivado) | Una sola usuaria. La API valida el JWT de Supabase. |
-| Imágenes | Disco local en desarrollo, Cloudflare R2 en producción | Mismo código (interfaz `Storage`); R2 no cobra por descarga. |
+| Login | Supabase Auth (email + contraseña, registro público desactivado) | Cuentas creadas a mano en Supabase (de momento, la usuaria y su compañera). Cada cuenta ve solo sus datos. La API valida el JWT de Supabase. |
+| Imágenes | Disco local en desarrollo; Supabase Storage en la etapa gratuita y Cloudflare R2 cuando crezca | Mismo código (interfaz `Storage`, compatible con S3): cambiar de proveedor es cambiar la configuración. |
 | Vista previa (v1) | Imagen subida a mano → `og:image` de la página → tarjeta con favicon y dominio | La captura automática se deja para la v2. |
 | Validación | Zod, en `packages/shared` | Los mismos esquemas en el front, la API y la futura extensión. |
 
@@ -35,7 +35,7 @@ Vue ── supabase-js (solo login) ──► Supabase Auth ──► JWT
  └── cliente hc de Hono + "Authorization: Bearer <JWT>" ──► API /api/*
                                                              │ valida el JWT (JWKS de Supabase)
                                                              ├─► Postgres (Supabase)
-                                                             └─► Storage (disco / R2)
+                                                             └─► Storage (disco / S3)
 ```
 
 El front **nunca** lee la base de datos directamente: toda la lógica está en la API, que también usará la futura extensión.
@@ -123,7 +123,8 @@ Todas las rutas van bajo `/api` y exigen sesión.
 | Tema | Cambio entre tema claro y oscuro, colores en variables CSS (PR #2) | Hecha (12-oct-2026) |
 | Arranque y errores | Arranque sin pantalla en blanco, pantalla de carga y página de error única (PR #3) | Hecha (14-oct-2026) |
 | Login | Login con el mismo estilo que la página de error y errores claros (PR #4) | Hecha (14-oct-2026) |
-| Diseño | Diseño visual de la plataforma | **Siguiente** |
+| Despliegue gratuito | Publicar la app sin coste para usarla la usuaria y su compañera (ver «Despliegue») | **Siguiente** |
+| Diseño | Diseño visual de la plataforma | Planificada |
 | 2 · Captura | Captura automática con Playwright en un worker (rellena `preview_key` / `full_key` con `preview_source = 'screenshot'`); requiere un contenedor con Chromium | Planificada |
 | 3 · Extensión | Extensión de navegador (WXT + Vue) usando la misma API | Planificada |
 | 4 · Componentes | RF-F1: guardar componentes concretos (tabla `components` que apunta a `webs`) | Futuro |
@@ -148,7 +149,7 @@ y sus colecciones, en solo lectura y sin iniciar sesión. El alcance exacto est�
   enlaces a las webs originales, las notas y los tags.
 - **Qué se comparte**: por decidir si es todo el mosaico o solo las colecciones que se marquen
   como públicas.
-- **Requisito previo**: la app tiene que estar desplegada (ver «Despliegue previsto»).
+- **Requisito previo**: la app tiene que estar desplegada (ver «Despliegue»).
 - **Cómo encajaría**: rutas públicas de solo lectura en la API, sin sesión, que solo devuelven lo
   marcado como público. El front nunca leería la base de datos directamente, igual que ahora.
 
@@ -187,9 +188,78 @@ y sus colecciones, en solo lectura y sin iniciar sesión. El alcance exacto est�
   diseño (filtros en la URL, pegado de imágenes). Se añaden al cerrar la fase de diseño.
 - **A partir de la fase 1b**, cada fase se cierra con sus tests y `pnpm test` en verde.
 
-## Despliegue previsto
+## Despliegue
 
-- API: contenedor Node (Railway, Fly.io o Render). `pnpm --filter @webs/api start`.
-- Front: estático (`apps/web/dist`) en Cloudflare Pages, con `VITE_API_URL` apuntando a la API y
-  `CORS_ORIGIN` en la API apuntando al front. Configurar la SPA para que todas las rutas sirvan `index.html`.
-- Imágenes: bucket R2 con acceso público (dominio propio o `r2.dev`).
+El despliegue se hace en dos etapas. El código es el mismo en las dos: solo cambian los proveedores
+y las variables de entorno.
+
+### Etapa 1 · Gratuita (ahora)
+
+Para usarla la usuaria y su compañera y ver qué tal funciona. Coste: 0 €.
+
+| Pieza | Dónde | Por qué |
+|---|---|---|
+| Front | Cloudflare Pages | Gratis para webs estáticas; sirve `apps/web/dist`. |
+| API | Render, plan gratuito (servicio web Node) | Ejecuta Node tal cual, con `sharp`, y no pide tarjeta. |
+| Login y base de datos | Un **segundo proyecto de Supabase**, solo para producción | El plan gratuito permite dos proyectos. Así los datos reales no se mezclan con los de desarrollo y las migraciones se prueban antes en desarrollo. |
+| Imágenes | Supabase Storage del proyecto de producción, bucket público | Compatible con S3, así que la API usa el modo `STORAGE_DRIVER=s3` que ya existe. No hace falta otra cuenta ni tarjeta. |
+
+Se descartó Cloudflare Workers para la API, aunque es gratis y Hono funciona ahí: `sharp` y la
+descarga segura de páginas (`safe-fetch`) dependen de Node, y habría que reescribir esa parte.
+
+**Peajes del plan gratuito**
+
+- **Render duerme la API** tras unos 15 minutos sin peticiones. La primera petición después tarda
+  unos 30–60 s en despertarla; mientras, se ve la pantalla de carga.
+- **Supabase pausa el proyecto** tras unos 7 días sin uso. Con uso habitual no pasa.
+- **Límites aproximados** (se comprueban al desplegar, porque cambian): Supabase da 500 MB de base
+  de datos, 1 GB de archivos y 5 GB de descarga al mes; Render, 512 MB de memoria.
+- **Sin copias de seguridad automáticas** de la base de datos.
+- **La fase 2 (captura) no cabe**: Chromium necesita más memoria de la que da Render gratis.
+
+**Pasos**
+
+1. Arreglar antes los pendientes que afectan a otra persona: la sesión caducada (401) y el error de
+   carga de colecciones. Añadir el mensaje de respaldo en `index.html`.
+2. Crear el proyecto de Supabase de producción, aplicar las migraciones (`pnpm db:migrate` con su
+   `DATABASE_URL`) y crear a mano las dos cuentas.
+3. Crear el bucket público de Supabase Storage y sus claves S3. El cliente S3 de la API necesita
+   `forcePathStyle: true`, que Supabase exige y R2 también acepta.
+4. Crear el servicio en Render: instala con `pnpm install --frozen-lockfile` y arranca con
+   `pnpm --filter @webs/api start`. La `DATABASE_URL` es la del pooler de Supabase (en modo
+   transacción; el cliente ya usa `prepare: false`), porque la conexión directa solo es IPv6.
+5. Publicar el front en Cloudflare Pages con `VITE_API_URL` apuntando a la API y `CORS_ORIGIN` en
+   la API apuntando al front. La SPA tiene que servir `index.html` en todas las rutas.
+6. Probarlo de punta a punta con las dos cuentas.
+
+### Etapa 2 · Profesional (futuro)
+
+Cuando haya que abrirla a más gente. Se da el salto con cualquiera de estas señales:
+
+- entra gente de fuera, o se activa la vista pública;
+- el arranque lento de Render molesta;
+- se empieza la fase 2 (captura), que necesita un contenedor con Chromium;
+- los datos ya importan lo suficiente como para necesitar copias de seguridad.
+
+| Pieza | Dónde | Coste aproximado |
+|---|---|---|
+| Front | Cloudflare Pages, con dominio propio | Gratis |
+| API | Render de pago (no se duerme) o Railway | ~7 $/mes |
+| Worker de captura (fase 2) | Servicio aparte con Chromium y ~1–2 GB de memoria | ~7–25 $/mes |
+| Login y base de datos | Supabase Pro: sin pausas, copias de seguridad diarias y más espacio | 25 $/mes |
+| Imágenes | Cloudflare R2: 10 GB gratis y sin coste por descarga, que es lo que más crece con más gente | Gratis al principio |
+| Dominio | Uno propio, p. ej. `begiz.app` (`api.` para la API, `files.` para las imágenes) | ~10–15 €/año |
+
+En total, unos 32 $/mes sin la captura. Se puede subir por partes: lo primero suele ser la API de
+pago (~7 $/mes) para quitar el arranque lento, manteniendo Supabase gratuito.
+
+**Qué cambia al pasar**
+
+- **Imágenes a R2**: copiar los archivos del bucket (por ejemplo con `rclone`) y cambiar las
+  variables `S3_*` y `FILES_PUBLIC_URL`. La base de datos guarda la clave de cada imagen, no su URL,
+  así que no hay que tocarla.
+- **Supabase Pro**: se sube de plan el mismo proyecto, sin migrar nada.
+- **Altas de cuentas**: con más gente, crearlas a mano no escala. Decisión de producto pendiente:
+  invitaciones desde Supabase o registro abierto.
+- **Vigilancia**: aviso si la API cae (un comprobador de disponibilidad gratuito) y registro de
+  errores del front y la API (p. ej. Sentry, que tiene plan gratuito).
