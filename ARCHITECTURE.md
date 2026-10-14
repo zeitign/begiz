@@ -1,14 +1,15 @@
 # Arquitectura
 
 App personal para guardar webs de inspiración: enlace, título propio, imagen, notas, tags y colecciones.
-Requisitos completos en `requisitos-app-guardado-webs.pdf`.
+Requisitos, plan de arquitectura inicial y explicación de los procesos (instantánea del 1-oct-2026) en
+`begiz-proyecto.pdf`.
 
 ## Decisiones
 
 | Tema | Decisión | Motivo |
 |---|---|---|
 | Front | Vue 3 + Vite + TypeScript, SPA | Herramienta privada tras login: no necesita SSR ni SEO. |
-| Estilo | Mínimo y provisional (blanco, bordes negros, tipografía del sistema) | El diseño visual se hará cuando la plataforma funcione. |
+| Estilo | Mínimo y provisional (blanco, bordes negros, tipografía del sistema), con los colores en variables CSS y tema claro/oscuro | El diseño visual se hará cuando la plataforma funcione; con las variables, rediseñar solo cambia valores. |
 | Backend | Node + Hono + Drizzle | Mismo lenguaje que el front; el cliente `hc` de Hono tipa las llamadas del front sin duplicar tipos. |
 | Base de datos | PostgreSQL en Supabase | Relacional (tags y colecciones son muchos a muchos); `pg_trgm` para buscar por título. |
 | Login | Supabase Auth (email + contraseña, registro público desactivado) | Una sola usuaria. La API valida el JWT de Supabase. |
@@ -43,7 +44,7 @@ El front **nunca** lee la base de datos directamente: toda la lógica está en l
 
 ```
 webs            id, user_id, url, title, notes, preview_key, preview_source ('manual'|'og'),
-                full_key, site_title, favicon_url, created_at, updated_at
+                full_key, site_title, favicon_url, sort_position, created_at, updated_at
 tags            id, user_id, name                  (único por usuaria, normalizado en minúsculas)
 web_tags        web_id, tag_id
 collections     id, user_id, name, description     (nombre único por usuaria)
@@ -55,6 +56,10 @@ collection_webs collection_id, web_id
   `full_key` es la imagen original subida a mano, que puede ser una captura de página completa.
 - Los tags sin webs se borran solos.
 - Filtrar por varios tags devuelve las webs que tienen **todos** (Y).
+- `sort_position` guarda el orden propio del mosaico (migración `0003`). Es un número decimal con
+  huecos de 1024: mover una web solo cambia su posición, que pasa a estar entre la de sus vecinas. Si
+  el hueco se agota, se reparten de nuevo todas las posiciones de la usuaria. Las webs nuevas van
+  primero.
 
 ## API
 
@@ -62,13 +67,38 @@ Todas las rutas van bajo `/api` y exigen sesión.
 
 | Método | Ruta | |
 |---|---|---|
-| GET | `/webs?search=&tags=a,b&collection=` | Mosaico con filtros |
+| GET | `/webs?search=&tags=a,b&collection=&sort=&direction=` | Mosaico con filtros. `sort`: `custom` (por defecto), `date`, `title` o `collection`; `direction`: `asc` o `desc` (el orden propio no se invierte) |
 | POST | `/webs` | Crear. Lee título, favicon y `og:image` de la página (`usePageImage: false` para no descargar la imagen) |
 | GET / PATCH / DELETE | `/webs/:id` | Detalle, edición (incluye tags y colecciones), borrado |
 | PUT | `/webs/:id/preview` | Subir imagen propia (multipart, campo `image`) |
+| PUT | `/webs/:id/position` | Mover en el orden propio: `{ afterWebId }` (o `null` para ponerla la primera) |
 | GET / POST | `/collections` | Listar (con contador) y crear |
 | PATCH / DELETE | `/collections/:id` | Renombrar y borrar (las webs no se borran) |
 | GET | `/tags` | Tags en uso con contador, ordenados por uso |
+
+## Front
+
+- **Estado**: los filtros y el orden del mosaico viven en la URL; los datos, en la caché de TanStack
+  Query. No hay Pinia.
+- **Mosaico**: al arrastrar una tarjeta, una copia local cambia de orden al momento y la API guarda
+  la posición después. Si la API falla, se vuelve al orden de la caché.
+- **Ventanas de información** (`lib/infoWindows.ts`): ventanas flotantes de solo lectura, varias a
+  la vez, que se pueden mover, ensanchar, minimizar y maximizar.
+- **Tema** (`lib/theme.ts`): pone `data-theme` en `<html>`. Sigue el tema del sistema hasta que se
+  elige uno con el botón de la cabecera, que se recuerda en `localStorage`.
+- **Arranque** (`lib/supabase.ts`): la app se monta enseguida y el router espera a `authReady`, que
+  se resuelve al saber si hay sesión. Si Supabase no responde en 10 segundos o da un error de
+  conexión, se muestra la página de error en lugar de dejar la pantalla en blanco; cualquier otro
+  error (p. ej. un token revocado) lleva al login.
+- **Página de error** (`lib/appError.ts`, `ErrorPage.vue`): sustituye a toda la app cuando no se
+  puede usar, con un botón para recargar. Tres tipos: `sign-in` (Supabase no responde al
+  arrancar), `server` (la API no responde: `fetch` falla o el proxy devuelve 502, 503 o 504) y
+  `unexpected` (un error en un componente, capturado por `app.config.errorHandler`). Se queda el
+  primer error, porque los siguientes suelen ser consecuencia suya.
+- **Pantalla de carga**: la misma maqueta al 30 % de opacidad, palpitando (sin animación si el
+  sistema pide reducir el movimiento). Lo ya conocido sale como texto; lo que depende de los datos,
+  como cajas vacías, y las imágenes, como su recuadro cruzado en aspa. `AppSkeleton` cubre el
+  arranque y `SkeletonCards` las tarjetas del mosaico mientras llegan las webs.
 
 ## Seguridad
 
@@ -86,12 +116,14 @@ Todas las rutas van bajo `/api` y exigen sesión.
 |---|---|---|
 | 1 · Base | Login, CRUD de webs, tags y colecciones, búsqueda, vista previa por `og:image` o imagen manual | Validada con el Supabase real (1-oct-2026) |
 | 1b · Tests de la API | Vitest en el monorepo. Tests de la API y de `shared` | Hecha: tests y código de la fase 1 revisado (inglés, nombres, comentarios) |
+| Mejoras del mosaico | Ventanas de información, usuaria en la cabecera, ordenación y orden propio arrastrando (PR #1) | Hecha (3-oct-2026) |
+| Tema | Cambio entre tema claro y oscuro, colores en variables CSS (PR #2) | Hecha (12-oct-2026) |
+| Arranque | Pantalla de carga y error si Supabase no responde (rama `fix/auth-startup-error`) | Pendiente de PR |
 | Diseño | Diseño visual de la plataforma | **Siguiente** |
 | 2 · Captura | Captura automática con Playwright en un worker (rellena `preview_key` / `full_key` con `preview_source = 'screenshot'`); requiere un contenedor con Chromium | Planificada |
 | 3 · Extensión | Extensión de navegador (WXT + Vue) usando la misma API | Planificada |
 | 4 · Componentes | RF-F1: guardar componentes concretos (tabla `components` que apunta a `webs`) | Futuro |
 | Idiomas | Selector de idioma en la interfaz: inglés (por defecto) y español | Futuro |
-| Tema | Cambio entre tema claro y oscuro | Futuro |
 
 ### Idiomas (futuro)
 
@@ -103,13 +135,14 @@ Todas las rutas van bajo `/api` y exigen sesión.
 - El código sigue siempre en inglés; solo cambian los textos de pantalla.
 - Mejor hacerlo **después de la fase de diseño**, cuando los textos de la interfaz sean estables.
 
-### Tema claro / oscuro (futuro)
+### Tema claro / oscuro
 
-- Los colores se definen como variables CSS, con un juego para cada tema. Cambiar de tema solo
-  cambia qué juego se usa.
+- Los colores están en variables CSS al principio de `apps/web/src/style.css`
+  (`--color-background`, `--color-text`, `--color-border`, `--color-muted`, `--color-error`), con
+  un juego para cada tema. Cambiar de tema solo cambia qué juego se usa.
 - Por defecto se sigue la preferencia del sistema; si la usuaria elige uno a mano, se recuerda en el
   navegador.
-- Encaja con la **fase de diseño**: al definir la paleta conviene definir las dos variantes a la vez.
+- En la **fase de diseño**, la paleta se define en las dos variantes sobre esas mismas variables.
 
 ### Tests
 
