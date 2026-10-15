@@ -23,7 +23,7 @@ const errorTexts: Record<
     message: 'The Begiz server did not answer, so your webs cannot be fetched right now.',
     service: 'Begiz API',
     status: 'Could not connect',
-    hint: 'Check that the API is running.',
+    hint: 'It may be waking up: try again in a minute.',
   },
   unexpected: {
     code: 'E03 · Unexpected',

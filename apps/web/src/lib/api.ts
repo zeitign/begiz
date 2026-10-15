@@ -34,6 +34,8 @@ const fetchWithSession: typeof fetch = async (input, init) => {
     serverUnreachable()
   }
   if (API_UNREACHABLE_STATUSES.has(response.status)) serverUnreachable()
+  // The API rejected the session (expired or revoked): drop it so the app goes back to sign in.
+  if (response.status === 401) await supabase.auth.signOut({ scope: 'local' })
   if (!response.ok) {
     const errorBody = (await response.json().catch(() => null)) as { message?: string } | null
     throw new ApiError(response.status, errorBody?.message ?? `Error ${response.status}`)

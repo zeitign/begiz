@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { useQueryClient } from '@tanstack/vue-query'
-import { computed } from 'vue'
+import { computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import AppSkeleton from './components/AppSkeleton.vue'
 import ErrorPage from './components/ErrorPage.vue'
@@ -17,11 +17,16 @@ const themeToggleLabel = computed(() =>
   theme.value === 'dark' ? 'Switch to light theme' : 'Switch to dark theme',
 )
 
-async function signOut() {
-  await supabase.auth.signOut()
+// Signing out here, in another tab, or the API rejecting the session all end the same way.
+watch(session, (newSession, oldSession) => {
+  if (!oldSession || newSession) return
   closeAllInfoWindows()
   queryClient.clear()
-  await router.push({ name: 'login' })
+  router.replace({ name: 'login' })
+})
+
+function signOut() {
+  return supabase.auth.signOut()
 }
 </script>
 

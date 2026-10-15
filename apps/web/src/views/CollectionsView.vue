@@ -3,7 +3,7 @@ import { ref } from 'vue'
 import { api, errorMessage, responseBody, type Collection } from '../lib/api'
 import { useCollections, useInvalidateAll } from '../lib/queries'
 
-const { data: collections, isPending } = useCollections()
+const { data: collections, isPending, error: loadError } = useCollections()
 const invalidateAll = useInvalidateAll()
 const actionError = ref('')
 
@@ -35,13 +35,14 @@ function deleteCollection(collection: Collection) {
   <main class="page narrow stack">
     <h1>Collections</h1>
     <p class="muted">Collections are created when saving or editing a web.</p>
-    <p v-if="isPending">Loading…</p>
+    <p v-if="loadError" class="error">{{ loadError.message }}</p>
+    <p v-else-if="isPending">Loading…</p>
     <p v-else-if="!collections?.length">No collections yet.</p>
     <div v-for="collection in collections" :key="collection.id" class="row">
       <RouterLink class="grow" :to="{ name: 'home', query: { collection: collection.id } }">
         {{ collection.name }}
       </RouterLink>
-      <span class="muted">{{ collection.webCount }} webs</span>
+      <span class="muted">{{ collection.webCount }} {{ collection.webCount === 1 ? 'web' : 'webs' }}</span>
       <button type="button" @click="renameCollection(collection)">Rename</button>
       <button type="button" @click="deleteCollection(collection)">Delete</button>
     </div>
