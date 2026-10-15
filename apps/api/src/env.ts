@@ -6,7 +6,7 @@ const envSchema = z.object({
   SUPABASE_URL: z.url().transform((url) => url.replace(/\/$/, '')),
   /** Only for Supabase projects still on legacy JWT keys (HS256). New projects use JWKS. */
   SUPABASE_JWT_SECRET: z.string().optional(),
-  /** Front origin in production (e.g. https://webs.pages.dev). Not needed locally. */
+  /** Front origin in production (e.g. https://begiz.onrender.com). Not needed locally. */
   CORS_ORIGIN: z.string().optional(),
 
   STORAGE_DRIVER: z.enum(['local', 's3']).default('local'),
