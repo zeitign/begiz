@@ -4,6 +4,7 @@ import { computed, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import AppSkeleton from './components/AppSkeleton.vue'
 import ErrorPage from './components/ErrorPage.vue'
+import HeaderTab from './components/HeaderTab.vue'
 import WebInfoWindow from './components/WebInfoWindow.vue'
 import { appError } from './lib/appError'
 import { closeAllInfoWindows, infoWindows } from './lib/infoWindows'
@@ -35,16 +36,20 @@ function signOut() {
   <AppSkeleton v-else-if="!isAuthReady" />
   <template v-else>
     <header v-if="session" class="header">
-      <strong>Begiz</strong>
-      <nav>
-        <RouterLink :to="{ name: 'home' }">Mosaic</RouterLink>
-        <RouterLink :to="{ name: 'new' }">Save web</RouterLink>
-        <RouterLink :to="{ name: 'collections' }">Collections</RouterLink>
+      <strong class="header-cell header-brand">
+        <span class="header-logo crossed" aria-hidden="true"></span>
+        Begiz
+      </strong>
+      <nav class="header-tabs">
+        <HeaderTab :to="{ name: 'new' }" label="Save web" />
+        <HeaderTab :to="{ name: 'home' }" label="Mosaic" />
+        <HeaderTab :to="{ name: 'collections' }" label="Collections" />
       </nav>
-      <span class="muted">{{ session.user.email }}</span>
+      <span class="header-spacer"></span>
+      <span class="header-cell header-email">{{ session.user.email }}</span>
       <button
         type="button"
-        class="icon-button round"
+        class="header-cell header-theme"
         :title="themeToggleLabel"
         :aria-label="themeToggleLabel"
         @click="toggleTheme"
@@ -59,7 +64,7 @@ function signOut() {
           <path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" />
         </svg>
       </button>
-      <button type="button" @click="signOut">Sign out</button>
+      <button type="button" class="header-cell header-action" @click="signOut">Sign out</button>
     </header>
     <RouterView />
     <template v-if="session">

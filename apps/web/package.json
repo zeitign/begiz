@@ -9,6 +9,7 @@
     "typecheck": "vue-tsc -p ."
   },
   "dependencies": {
+    "@fontsource-variable/geist-mono": "^5.3.0",
     "@supabase/supabase-js": "^2.117.2",
     "@tanstack/vue-query": "^5.104.0",
     "@webs/shared": "workspace:*",

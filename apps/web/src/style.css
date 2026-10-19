@@ -1,4 +1,11 @@
-/* Minimal, temporary styling: the visual design comes once the platform is validated. */
+/* Format, by Nathan Laurent, under the SIL Open Font License (public/fonts/OFL.txt).
+   It only has capitals, lowercase, digits and a few signs: missing characters fall back to the mono. */
+@font-face {
+  font-family: 'Format';
+  src: url('/fonts/Format.woff2') format('woff2');
+  font-weight: 600;
+  font-display: swap;
+}
 
 *,
 *::before,
@@ -14,7 +21,18 @@
   --color-border: #000;
   --color-muted: #555;
   --color-error: #b00020;
-  --font-mono: ui-monospace, 'SF Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+  --font-mono: 'Geist Mono Variable', ui-monospace, 'SF Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+  --font-display: 'Format', var(--font-mono);
+  --header-height: 56px;
+  /* The active tab hangs below the header as the page title. Its capitals (0.7 em tall in
+     Format) are stretched by a fixed ratio, and the label box grows to fit them. */
+  --tab-label-font-size: 32px;
+  --tab-label-stretch: 5.6;
+  --tab-label-padding: 3px;
+  --tab-label-side-padding: 6px;
+  --tab-label-height: calc(
+    var(--tab-label-font-size) * 0.7 * var(--tab-label-stretch) + 2 * var(--tab-label-padding)
+  );
 }
 
 :root[data-theme='dark'] {
@@ -30,8 +48,8 @@ body {
   margin: 0;
   background: var(--color-background);
   color: var(--color-text);
-  font-family: system-ui, sans-serif;
-  font-size: 15px;
+  font-family: var(--font-mono);
+  font-size: 14px;
   line-height: 1.4;
 }
 
@@ -117,11 +135,6 @@ fieldset {
 .skeleton-box {
   display: block;
   border: 1px solid var(--color-border);
-}
-
-.skeleton-field {
-  border: 1px solid var(--color-border);
-  padding: 6px 8px;
 }
 
 .skeleton-image {
@@ -307,18 +320,190 @@ fieldset {
   max-width: 640px;
 }
 
-.header {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  border-bottom: 1px solid var(--color-border);
-  padding: 12px 16px;
+/* The mosaic uses the whole window, so the cards get the width instead of empty side margins. */
+.page.wide {
+  max-width: none;
+  padding-inline: 32px;
 }
 
-.header nav {
+.header {
+  position: relative;
+  z-index: 1;
   display: flex;
-  gap: 16px;
+  flex-wrap: wrap;
+  align-items: stretch;
+  border-bottom: 1px solid var(--color-border);
+  background: var(--color-background);
+}
+
+.header-cell {
+  display: flex;
+  align-items: center;
+  min-height: var(--header-height);
+  padding: 0 24px;
+  border: none;
+  background: transparent;
+  font-size: 13px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.header-brand {
+  gap: 10px;
+  padding: 0 20px;
+  border-right: 1px solid var(--color-border);
+  font-size: 17px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+}
+
+.header-logo {
+  width: 22px;
+  height: 16px;
+  border: 1px solid var(--color-border);
+}
+
+.header-tabs {
+  display: flex;
+}
+
+.header-tab {
+  position: relative;
+  border-right: 1px solid var(--color-border);
+}
+
+.header-spacer {
   flex: 1;
+}
+
+.header-action {
+  border-left: 1px solid var(--color-border);
+}
+
+.header-email {
+  padding: 0 16px;
+  border-left: 1px solid var(--color-border);
+  font-size: 12px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--color-muted);
+}
+
+.header-theme {
+  justify-content: center;
+  width: var(--header-height);
+  padding: 0;
+  border-left: 1px solid var(--color-border);
+}
+
+.header-theme svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.header-tab-label {
+  display: none;
+}
+
+/* On narrow screens the active tab is just inverted: the header wraps and a hanging label would cover it. */
+.header-tab[aria-current='page'] {
+  background: var(--color-text);
+  color: var(--color-background);
+}
+
+@media (min-width: 761px) {
+  /* The tab keeps its text in the flow, transparent, to size the cell and give the link its name;
+     the visible text is the stretched copy in the label box. */
+  .header-tab[aria-current='page'] {
+    align-items: flex-start;
+    padding: 0 var(--tab-label-side-padding);
+    background: transparent;
+    color: transparent;
+    font: 600 var(--tab-label-font-size) / 1 var(--font-display);
+    letter-spacing: 0;
+  }
+
+  .header-tab[aria-current='page'] .header-tab-label {
+    display: block;
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--tab-label-height);
+    padding: var(--tab-label-padding) var(--tab-label-side-padding);
+    overflow: hidden;
+    background: var(--color-text);
+    color: var(--color-background);
+    animation: tab-label-grow 320ms cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  .header-tab-label-text {
+    display: block;
+    text-box: trim-both cap alphabetic;
+    transform-origin: top;
+    transform: scaleY(var(--tab-label-stretch));
+    animation: tab-label-text-glitch 420ms steps(1, end);
+  }
+
+  .header:has(.header-tab[aria-current='page']) ~ .page {
+    padding-top: calc(var(--tab-label-height) - var(--header-height) + 24px);
+  }
+}
+
+/* When a tab becomes the current page, its label grows down out of the header while the
+   letters flicker in like a bad signal: jumps between slices, small sideways shifts and blinks. */
+@keyframes tab-label-grow {
+  from {
+    height: var(--header-height);
+  }
+}
+
+@keyframes tab-label-text-glitch {
+  0% {
+    opacity: 0;
+  }
+  10% {
+    opacity: 1;
+    clip-path: inset(10% 0 60% 0);
+    transform: translateX(-3px) scaleY(var(--tab-label-stretch));
+  }
+  20% {
+    opacity: 0.3;
+    clip-path: inset(50% 0 20% 0);
+    transform: translateX(3px) scaleY(var(--tab-label-stretch));
+  }
+  30% {
+    opacity: 1;
+    clip-path: inset(0 0 75% 0);
+    transform: translateX(-2px) scaleY(var(--tab-label-stretch));
+  }
+  45% {
+    opacity: 0.2;
+    clip-path: inset(0);
+  }
+  55% {
+    opacity: 1;
+    clip-path: inset(30% 0 40% 0);
+    transform: translateX(2px) scaleY(var(--tab-label-stretch));
+  }
+  70% {
+    clip-path: inset(0);
+    transform: translateX(-1px) scaleY(var(--tab-label-stretch));
+  }
+  85% {
+    opacity: 0.6;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .header-tab-label,
+  .header-tab-label-text {
+    animation: none;
+  }
 }
 
 .stack {
@@ -365,16 +550,149 @@ fieldset {
   gap: 6px;
 }
 
+.page-summary {
+  margin: 0;
+  text-align: right;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.field-label {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.filter-bar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 210px 190px auto;
+  border: 1px solid var(--color-border);
+}
+
+.filter-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.filter-field + .filter-field,
+.filter-direction {
+  border-left: 1px solid var(--color-border);
+}
+
+.filter-field .field-label {
+  padding: 7px 12px 0;
+}
+
+.filter-field input,
+.filter-field select,
+.skeleton-field-text {
+  border: none;
+  padding: 4px 12px 9px;
+}
+
+.filter-direction {
+  width: 52px;
+  border-top: none;
+  border-right: none;
+  border-bottom: none;
+  font-size: 18px;
+}
+
+@media (max-width: 760px) {
+  .filter-bar {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .filter-field {
+    grid-column: 1 / -1;
+  }
+
+  .filter-field + .filter-field {
+    border-left: none;
+    border-top: 1px solid var(--color-border);
+  }
+
+  .filter-direction {
+    grid-column: 2;
+    border-top: 1px solid var(--color-border);
+  }
+}
+
+.tag-filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.tag-filters .field-label {
+  margin-right: 4px;
+}
+
+.tag-filter {
+  display: flex;
+  padding: 0;
+  font-size: 12px;
+}
+
+.tag-filter > span {
+  padding: 4px 8px;
+}
+
+.tag-filter-count {
+  border-left: 1px solid currentColor;
+  opacity: 0.7;
+}
+
+.tag-filter.active {
+  background: var(--color-text);
+  color: var(--color-background);
+}
+
 .grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 20px;
+}
+
+@media (max-width: 1280px) {
+  .grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1000px) {
+  .grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 480px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
 }
 
 .card {
   display: flex;
   flex-direction: column;
   border: 1px solid var(--color-border);
+  background: var(--color-background);
+}
+
+.card:hover {
+  box-shadow: 4px 4px 0 var(--color-border);
+  transform: translate(-2px, -2px);
 }
 
 /* Custom order: cards are dragged by their lower part (open hand), the image opens the info window.
@@ -404,37 +722,57 @@ fieldset {
   transform: scale(1.04);
 }
 
-.card-title-row {
+.card-body {
+  flex: 1;
+  padding: 10px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.card-title {
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.card-actions {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border-top: 1px solid var(--color-border);
+  font-size: 11px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.card-action {
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 6px;
+  min-height: 40px;
+  padding: 0;
+  border: none;
+  background: transparent;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  text-decoration: none;
 }
 
-.icon-button {
-  display: inline-flex;
-  padding: 3px;
-  border: 1px solid var(--color-border);
-  background: var(--color-background);
+.card-action + .card-action {
+  border-left: 1px solid var(--color-border);
 }
 
-.icon-button.round {
-  padding: 5px;
-  border-radius: 50%;
+.card-action:hover {
+  background: var(--color-text);
+  color: var(--color-background);
 }
 
-.icon-button svg {
-  fill: var(--color-background);
-  stroke: var(--color-text);
+.card-action svg {
+  fill: none;
+  stroke: currentColor;
   stroke-width: 1.5;
   stroke-linejoin: round;
   stroke-linecap: round;
-}
-
-.card-body {
-  padding: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
 }
 
 .thumb {
@@ -472,7 +810,7 @@ fieldset {
   position: fixed;
   display: flex;
   flex-direction: column;
-  width: min(520px, calc(100vw - 32px));
+  width: min(1040px, calc(100vw - 32px));
   max-height: calc(100vh - 32px);
   background: var(--color-background);
   border: 1px solid var(--color-border);

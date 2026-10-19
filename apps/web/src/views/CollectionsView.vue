@@ -33,7 +33,6 @@ function deleteCollection(collection: Collection) {
 
 <template>
   <main class="page narrow stack">
-    <h1>Collections</h1>
     <p class="muted">Collections are created when saving or editing a web.</p>
     <p v-if="loadError" class="error">{{ loadError.message }}</p>
     <p v-else-if="isPending">Loading…</p>
