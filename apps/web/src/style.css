@@ -452,6 +452,12 @@ fieldset {
   .header:has(.header-tab[aria-current='page']) ~ .page {
     padding-top: calc(var(--tab-label-height) - var(--header-height) + 24px);
   }
+
+  /* In the mosaic the filter bar starts right where the label ends, so the label reads as the
+     tab of the page below it. The 1px is the header's bottom border. */
+  .header:has(.header-tab[aria-current='page']) ~ .page.wide {
+    padding-top: calc(var(--tab-label-height) - var(--header-height) - 1px);
+  }
 }
 
 /* When a tab becomes the current page, its label grows down out of the header while the
@@ -551,8 +557,7 @@ fieldset {
 }
 
 .page-summary {
-  margin: 0;
-  text-align: right;
+  margin: 0 0 0 auto;
   font-size: 12px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -592,6 +597,19 @@ fieldset {
 .skeleton-field-text {
   border: none;
   padding: 4px 12px 9px;
+}
+
+/* The focused cell gets an inner frame in the text color instead of the browser's blue ring,
+   which keeps the focus visible for keyboard users. */
+.filter-field:focus-within,
+.filter-direction:focus-visible {
+  outline: 2px solid var(--color-text);
+  outline-offset: -2px;
+}
+
+.filter-field input:focus,
+.filter-field select:focus {
+  outline: none;
 }
 
 .filter-direction {

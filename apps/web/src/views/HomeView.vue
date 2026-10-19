@@ -133,8 +133,6 @@ async function saveDroppedPosition(event: DraggableEvent) {
 
 <template>
   <main class="page wide stack">
-    <p v-if="webs?.length" class="page-summary">{{ webCountSummary }}</p>
-
     <div class="filter-bar">
       <label class="filter-field">
         <span class="field-label">Search</span>
@@ -173,20 +171,23 @@ async function saveDroppedPosition(event: DraggableEvent) {
       </button>
     </div>
 
-    <div v-if="tags?.length" class="tag-filters">
-      <span class="field-label">Tags</span>
-      <button
-        v-for="tag in tags"
-        :key="tag.name"
-        type="button"
-        class="tag-filter"
-        :class="{ active: selectedTags.includes(tag.name) }"
-        :aria-pressed="selectedTags.includes(tag.name)"
-        @click="toggleTag(tag.name)"
-      >
-        <span>{{ tag.name }}</span>
-        <span class="tag-filter-count">{{ tag.webCount }}</span>
-      </button>
+    <div v-if="tags?.length || webs?.length" class="tag-filters">
+      <template v-if="tags?.length">
+        <span class="field-label">Tags</span>
+        <button
+          v-for="tag in tags"
+          :key="tag.name"
+          type="button"
+          class="tag-filter"
+          :class="{ active: selectedTags.includes(tag.name) }"
+          :aria-pressed="selectedTags.includes(tag.name)"
+          @click="toggleTag(tag.name)"
+        >
+          <span>{{ tag.name }}</span>
+          <span class="tag-filter-count">{{ tag.webCount }}</span>
+        </button>
+      </template>
+      <p v-if="webs?.length" class="page-summary">{{ webCountSummary }}</p>
     </div>
 
     <p v-if="error" class="error">{{ error.message }}</p>
