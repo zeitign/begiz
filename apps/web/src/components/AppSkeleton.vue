@@ -8,23 +8,37 @@ const placeholderTagWidths = [64, 88, 56, 104, 72, 60, 92]
 <template>
   <div role="status" aria-label="Loading">
     <header class="header skeleton" aria-hidden="true">
-      <strong>Begiz</strong>
-      <nav>
-        <span>Mosaic</span>
-        <span>Save web</span>
-        <span>Collections</span>
-      </nav>
-      <span class="skeleton-box skeleton-email"></span>
-      <span class="skeleton-box skeleton-round"></span>
-      <span class="skeleton-field">Sign out</span>
+      <strong class="header-cell header-brand">
+        <span class="header-logo crossed"></span>
+        Begiz
+      </strong>
+      <span class="header-tabs">
+        <span class="header-cell header-tab">Save web</span>
+        <span class="header-cell header-tab" aria-current="page">Mosaic</span>
+        <span class="header-cell header-tab">Collections</span>
+      </span>
+      <span class="header-spacer"></span>
+      <span class="header-cell header-email"><span class="skeleton-box skeleton-email"></span></span>
+      <span class="header-cell header-theme"><span class="skeleton-box skeleton-round"></span></span>
+      <span class="header-cell header-action">Sign out</span>
     </header>
-    <main class="page stack">
-      <div class="row skeleton" aria-hidden="true">
-        <span class="skeleton-field grow">Search by title</span>
-        <span class="skeleton-field">All collections</span>
-        <span class="skeleton-field">Custom order</span>
+    <main class="page wide stack">
+      <div class="filter-bar skeleton" aria-hidden="true">
+        <span class="filter-field">
+          <span class="field-label">Search</span>
+          <span class="skeleton-field-text">Title contains…</span>
+        </span>
+        <span class="filter-field">
+          <span class="field-label">Collection</span>
+          <span class="skeleton-field-text">All collections</span>
+        </span>
+        <span class="filter-field">
+          <span class="field-label">Sort</span>
+          <span class="skeleton-field-text">Custom order</span>
+        </span>
       </div>
-      <div class="row skeleton" aria-hidden="true">
+      <div class="tag-filters skeleton" aria-hidden="true">
+        <span class="field-label">Tags</span>
         <span
           v-for="(tagWidth, tagIndex) in placeholderTagWidths"
           :key="tagIndex"

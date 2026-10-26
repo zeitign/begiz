@@ -35,16 +35,20 @@ function signOut() {
   <AppSkeleton v-else-if="!isAuthReady" />
   <template v-else>
     <header v-if="session" class="header">
-      <strong>Begiz</strong>
-      <nav>
-        <RouterLink :to="{ name: 'home' }">Mosaic</RouterLink>
-        <RouterLink :to="{ name: 'new' }">Save web</RouterLink>
-        <RouterLink :to="{ name: 'collections' }">Collections</RouterLink>
+      <strong class="header-cell header-brand">
+        <span class="header-logo crossed" aria-hidden="true"></span>
+        Begiz
+      </strong>
+      <nav class="header-tabs">
+        <RouterLink :to="{ name: 'new' }" class="header-cell header-tab">Save web</RouterLink>
+        <RouterLink :to="{ name: 'home' }" class="header-cell header-tab">Mosaic</RouterLink>
+        <RouterLink :to="{ name: 'collections' }" class="header-cell header-tab">Collections</RouterLink>
       </nav>
-      <span class="muted">{{ session.user.email }}</span>
+      <span class="header-spacer"></span>
+      <span class="header-cell header-email">{{ session.user.email }}</span>
       <button
         type="button"
-        class="icon-button round"
+        class="header-cell header-theme"
         :title="themeToggleLabel"
         :aria-label="themeToggleLabel"
         @click="toggleTheme"
@@ -59,7 +63,7 @@ function signOut() {
           <path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" />
         </svg>
       </button>
-      <button type="button" @click="signOut">Sign out</button>
+      <button type="button" class="header-cell header-action" @click="signOut">Sign out</button>
     </header>
     <RouterView />
     <template v-if="session">

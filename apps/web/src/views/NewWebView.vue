@@ -54,7 +54,6 @@ async function saveWeb() {
 <template>
   <main class="page narrow">
     <form class="stack" @submit.prevent="saveWeb">
-      <h1>Save web</h1>
       <label>
         URL
         <input v-model="url" type="url" placeholder="https://…" required />
