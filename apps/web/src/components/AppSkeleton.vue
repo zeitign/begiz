@@ -14,10 +14,7 @@ const placeholderTagWidths = [64, 88, 56, 104, 72, 60, 92]
       </strong>
       <span class="header-tabs">
         <span class="header-cell header-tab">Save web</span>
-        <span class="header-cell header-tab" aria-current="page">
-          Mosaic
-          <span class="header-tab-label"><span class="header-tab-label-text">Mosaic</span></span>
-        </span>
+        <span class="header-cell header-tab" aria-current="page">Mosaic</span>
         <span class="header-cell header-tab">Collections</span>
       </span>
       <span class="header-spacer"></span>
