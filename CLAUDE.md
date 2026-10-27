@@ -14,14 +14,13 @@ puesta en marcha en `README.md`.
 - **Explicar los cambios**: un resumen de alto nivel en cada paso.
 - **Seguir el progreso**: marcar las tareas como completadas a medida que se terminan.
 - Ir **en orden**: no saltar a una fase nueva sin cerrar y validar la anterior.
-- **Diseño visual aparcado**: estilo mínimo (fondo blanco, bordes negros finos, tipografía del
-  sistema en negro) hasta que la plataforma esté validada. Reutilizar las clases de
-  `apps/web/src/style.css`; no decorar ni proponer diseño hasta que ella abra esa fase.
+- **Fase de diseño en curso**: el estilo es brutalista (todo en Geist Mono con `--font-mono`, línea
+  fina, celdas, sombra dura), el mismo de `begiz-proyecto.pdf`. Ya lo siguen el login, la página de
+  error, la pantalla de carga, la cabecera y el mosaico; el resto de páginas aún tiene el estilo
+  mínimo provisional.
+- **Antes de cambiar una pantalla**, se le enseña una propuesta en el lienzo de diseño; no se
+  implementa nada visual sin su visto bueno. Reutilizar las clases de `apps/web/src/style.css`.
   Colores siempre con las variables CSS de `style.css` (`--color-*`), nunca valores fijos.
-- **Excepción ya aprobada**: el login, la página de error y la pantalla de carga siguen un estilo
-  brutalista (ficha `ScreenCard`, títulos en `--font-mono`, línea fina, sombra dura, mosaico tenue
-  de fondo), el mismo de `begiz-proyecto.pdf`. Antes de cambiar una pantalla, se le enseña una
-  propuesta en el lienzo de diseño.
 
 ## Principios
 
