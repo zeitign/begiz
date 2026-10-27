@@ -9,7 +9,7 @@ plan de despliegue (14-oct-2026) en `begiz-proyecto.pdf`, que se genera desde `d
 | Tema | Decisión | Motivo |
 |---|---|---|
 | Front | Vue 3 + Vite + TypeScript, SPA | Herramienta privada tras login: no necesita SSR ni SEO. |
-| Estilo | Mínimo y provisional (blanco, bordes negros, tipografía del sistema), con los colores en variables CSS y tema claro/oscuro. El login, la página de error y la pantalla de carga ya siguen un estilo brutalista: monoespaciada del sistema en títulos, línea fina y sombra dura | El diseño visual se hará cuando la plataforma funcione; con las variables, rediseñar solo cambia valores. Las fichas brutalistas son un primer paso, revisable en la fase de diseño. |
+| Estilo | Brutalista (en curso): todo el texto en Geist Mono, línea fina, celdas y sombra dura, con los colores en variables CSS y tema claro/oscuro. Lo siguen el login, la página de error, la pantalla de carga, la cabecera y el mosaico | Se diseña pantalla a pantalla, con una propuesta previa en el lienzo de diseño; con las variables, cambiar la paleta solo cambia valores. |
 | Backend | Node + Hono + Drizzle | Mismo lenguaje que el front; el cliente `hc` de Hono tipa las llamadas del front sin duplicar tipos. |
 | Base de datos | PostgreSQL en Supabase | Relacional (tags y colecciones son muchos a muchos); `pg_trgm` para buscar por título. |
 | Login | Supabase Auth (email + contraseña, registro público desactivado) | Cuentas creadas a mano en Supabase (de momento, la usuaria y su compañera). Cada cuenta ve solo sus datos. La API valida el JWT de Supabase. |
@@ -124,7 +124,7 @@ Todas las rutas van bajo `/api` y exigen sesión.
 | Arranque y errores | Arranque sin pantalla en blanco, pantalla de carga y página de error única (PR #3) | Hecha (14-oct-2026) |
 | Login | Login con el mismo estilo que la página de error y errores claros (PR #4) | Hecha (14-oct-2026) |
 | Despliegue gratuito | Publicar la app sin coste para usarla la usuaria y su compañera (ver «Despliegue») | Hecha (15-oct-2026): https://begiz.onrender.com |
-| Diseño | Diseño visual de la plataforma | **Siguiente** |
+| Diseño | Diseño visual de la plataforma. Hecho: cabecera de celdas con la pestaña activa invertida y mosaico a pantalla completa (hasta cinco tarjetas por fila según el ancho, barra de filtros en celdas, acciones View, Edit y Open), todo en Geist Mono (PR #9, 26-oct-2026). Falta: revisar el resto de páginas y definir la paleta | **En curso** |
 | 2 · Captura | Captura automática con Playwright en un worker (rellena `preview_key` / `full_key` con `preview_source = 'screenshot'`); requiere un contenedor con Chromium | Planificada |
 | 3 · Extensión | Extensión de navegador (WXT + Vue) usando la misma API | Planificada |
 | 4 · Componentes | RF-F1: guardar componentes concretos (tabla `components` que apunta a `webs`) | Futuro |
@@ -166,8 +166,8 @@ y sus colecciones, en solo lectura y sin iniciar sesión. El alcance exacto est�
 
 - Los colores están en variables CSS al principio de `apps/web/src/style.css`
   (`--color-background`, `--color-text`, `--color-border`, `--color-muted`, `--color-error`), con
-  un juego para cada tema. Cambiar de tema solo cambia qué juego se usa. `--font-mono` es la
-  monoespaciada del sistema que usan los títulos de las fichas.
+  un juego para cada tema. Cambiar de tema solo cambia qué juego se usa. `--font-mono` es Geist
+  Mono (paquete `@fontsource-variable/geist-mono`), la tipografía de toda la app.
 - Por defecto se sigue la preferencia del sistema; si la usuaria elige uno a mano, se recuerda en el
   navegador.
 - En la **fase de diseño**, la paleta se define en las dos variantes sobre esas mismas variables.
