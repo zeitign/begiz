@@ -2,14 +2,14 @@
 
 App personal para guardar webs de inspiración: enlace, título propio, imagen, notas, tags y colecciones.
 Requisitos, plan de arquitectura inicial, explicación de los procesos (instantánea del 1-oct-2026) y
-plan de despliegue (14-oct-2026) en `begiz-proyecto.pdf`, que se genera desde `docs/begiz-proyecto/`.
+plan de despliegue (14-oct-2026) y hoja de ruta de producto (2-nov-2026) en `begiz-proyecto.pdf`, que se genera desde `docs/begiz-proyecto/`.
 
 ## Decisiones
 
 | Tema | Decisión | Motivo |
 |---|---|---|
 | Front | Vue 3 + Vite + TypeScript, SPA | Herramienta privada tras login: no necesita SSR ni SEO. |
-| Estilo | Brutalista (en curso): todo el texto en Geist Mono, línea fina, celdas y sombra dura, con los colores en variables CSS y tema claro/oscuro. Lo siguen el login, la página de error, la pantalla de carga, la cabecera y el mosaico | Se diseña pantalla a pantalla, con una propuesta previa en el lienzo de diseño; con las variables, cambiar la paleta solo cambia valores. |
+| Estilo | Brutalista (rediseño aparcado): todo el texto en Geist Mono, línea fina, celdas y sombra dura, con los colores en variables CSS y tema claro/oscuro. Lo siguen el login, la página de error, la pantalla de carga, la cabecera y el mosaico | El rediseño se retoma cuando se vea cómo funciona la división entre Mosaic y Vault. Cada pantalla lleva una propuesta previa en el lienzo de diseño; con las variables, cambiar la paleta solo cambia valores. |
 | Backend | Node + Hono + Drizzle | Mismo lenguaje que el front; el cliente `hc` de Hono tipa las llamadas del front sin duplicar tipos. |
 | Base de datos | PostgreSQL en Supabase | Relacional (tags y colecciones son muchos a muchos); `pg_trgm` para buscar por título. |
 | Login | Supabase Auth (email + contraseña, registro público desactivado) | Cuentas creadas a mano en Supabase (de momento, la usuaria y su compañera). Cada cuenta ve solo sus datos. La API valida el JWT de Supabase. |
@@ -124,12 +124,30 @@ Todas las rutas van bajo `/api` y exigen sesión.
 | Arranque y errores | Arranque sin pantalla en blanco, pantalla de carga y página de error única (PR #3) | Hecha (14-oct-2026) |
 | Login | Login con el mismo estilo que la página de error y errores claros (PR #4) | Hecha (14-oct-2026) |
 | Despliegue gratuito | Publicar la app sin coste para usarla la usuaria y su compañera (ver «Despliegue») | Hecha (15-oct-2026): https://begiz.onrender.com |
-| Diseño | Diseño visual de la plataforma. Hecho: cabecera de celdas con la pestaña activa invertida y mosaico a pantalla completa (hasta cinco tarjetas por fila según el ancho, barra de filtros en celdas, acciones View, Edit y Open), todo en Geist Mono (PR #9, 26-oct-2026). Falta: revisar el resto de páginas y definir la paleta | **En curso** |
-| 2 · Captura | Captura automática con Playwright en un worker (rellena `preview_key` / `full_key` con `preview_source = 'screenshot'`); requiere un contenedor con Chromium | Planificada |
+| Diseño | Diseño visual de la plataforma. Hecho: cabecera de celdas con la pestaña activa invertida y mosaico a pantalla completa (hasta cinco tarjetas por fila según el ancho, barra de filtros en celdas, acciones View, Edit y Open), todo en Geist Mono (PR #9, 26-oct-2026). Falta: revisar el resto de páginas y definir la paleta | **Aparcada** (2-nov-2026) hasta ver cómo funciona la división entre Mosaic y Vault |
+| Vault | Segundo espacio para guardar marcadores en folders anidados, con selección múltiple y buscador (ver «Vault») | **Siguiente** |
+| Importar marcadores | Subir un `bookmarks.html` al Vault, conservando las carpetas (ver «Vault») | Planificada |
+| Exportar marcadores | Generar un `bookmarks.html` con los folders y una carpeta `Mosaic` (ver «Vault») | Planificada |
+| 2 · Captura | Pantallazo automático al guardar en Mosaic. Planteamiento aprobado el 2-nov-2026: un servicio externo de capturas en lugar de un contenedor con Chromium (parte 05 del PDF). Las webs actuales no cambian | Sin fecha |
 | 3 · Extensión | Extensión de navegador (WXT + Vue) usando la misma API | Planificada |
 | 4 · Componentes | RF-F1: guardar componentes concretos (tabla `components` que apunta a `webs`) | Futuro |
 | Idiomas | Selector de idioma en la interfaz: inglés (por defecto) y español | Futuro |
 | Vista pública | Que otras personas puedan ver tu mosaico y tus colecciones con un enlace, sin cuenta | Futuro |
+
+### Vault (planificado)
+
+Plan aprobado el 2-nov-2026; requisitos RF-13 a RF-21 en la parte 05 del PDF. Las pantallas pueden
+cambiar al diseñarlas.
+
+- **Dos espacios**: Mosaic es lo que ya existe y no cambia. Vault guarda marcadores sin imagen, y
+  «Save web» pregunta primero a cuál va.
+- **Tablas propias** (`vault_folders`, `vault_links` y tags propios), porque casi no comparten nada
+  con `webs` y así el mosaico no corre riesgo. Cada folder apunta a su folder madre, sin límite de
+  niveles, y cada enlace está en un solo folder o suelto en la raíz. Necesitan RLS, como todas.
+- **Borrar un folder** borra lo que contiene, tras un aviso con el recuento.
+- **Importar y exportar**: formato HTML de marcadores de Netscape. Importar conserva el árbol y los
+  tags, omite los enlaces repetidos y termina con un resumen. Exportar añade una carpeta `Mosaic`
+  con los enlaces y tags del mosaico; si se vuelve a importar, entra como un folder más.
 
 ### Arranque y sesión
 
@@ -223,7 +241,8 @@ España.
 - **Límites aproximados** (se comprueban al desplegar, porque cambian): Supabase da 500 MB de base
   de datos, 1 GB de archivos y 5 GB de descarga al mes; Render, 512 MB de memoria.
 - **Sin copias de seguridad automáticas** de la base de datos.
-- **La fase 2 (captura) no cabe**: Chromium necesita más memoria de la que da Render gratis.
+- **Chromium no cabe**: necesita más memoria de la que da Render gratis. Por eso la fase 2 (captura)
+  se plantea con un servicio externo.
 
 **Pasos**
 
@@ -253,14 +272,13 @@ Cuando haya que abrirla a más gente. Se da el salto con cualquiera de estas se�
 
 - entra gente de fuera, o se activa la vista pública;
 - el arranque lento de Render molesta;
-- se empieza la fase 2 (captura), que necesita un contenedor con Chromium;
 - los datos ya importan lo suficiente como para necesitar copias de seguridad.
 
 | Pieza | Dónde | Coste aproximado |
 |---|---|---|
 | Front | Render, «Static Site», con dominio propio | Gratis |
 | API | Render de pago (no se duerme) o Railway | ~7 $/mes |
-| Worker de captura (fase 2) | Servicio aparte con Chromium y ~1–2 GB de memoria | ~7–25 $/mes |
+| Captura (fase 2) | Servicio externo de capturas, según el volumen; un worker propio con Chromium y ~1–2 GB de memoria costaría ~7–25 $/mes | Desde ~7 $/mes si se supera el cupo gratuito |
 | Login y base de datos | Supabase Pro: sin pausas, copias de seguridad diarias y más espacio | 25 $/mes |
 | Imágenes | Cloudflare R2: 10 GB gratis y sin coste por descarga, que es lo que más crece con más gente. Pendiente de revisar por los bloqueos de LaLiga a Cloudflare | Gratis al principio |
 | Dominio | Uno propio, p. ej. `begiz.app` (`api.` para la API, `files.` para las imágenes) | ~10–15 €/año |

@@ -92,7 +92,7 @@ code {
 }
 
 .cover-part-body {
-  padding: 6mm 8mm;
+  padding: 3.5mm 8mm;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -354,9 +354,9 @@ pre {
 
 <section class="cover">
   <div class="cover-top">
-    <div class="cover-kicker">Documento de proyecto · 29 sep – 14 oct 2026</div>
+    <div class="cover-kicker">Documento de proyecto · 29 sep – 2 nov 2026</div>
     <div class="cover-title">Begiz</div>
-    <div class="cover-subtitle">App personal para guardar webs de inspiración. Requisitos, plan de arquitectura, procesos y despliegue, en un solo documento.</div>
+    <div class="cover-subtitle">App personal para guardar webs de inspiración. Requisitos, plan de arquitectura, procesos, despliegue y hoja de ruta, en un solo documento.</div>
   </div>
   <div class="cover-parts">
     <div class="cover-part">
@@ -389,6 +389,14 @@ pre {
         <div class="cover-part-meta">Plan de despliegue · 14 oct 2026</div>
         <div class="cover-part-name">Plan de despliegue</div>
         <div class="cover-part-sections">Resumen · Etapa 1 · Gratuita · Etapa 2 · Profesional</div>
+      </div>
+    </div>
+    <div class="cover-part">
+      <div class="cover-part-number">05</div>
+      <div class="cover-part-body">
+        <div class="cover-part-meta">Producto y hoja de ruta · 2 nov 2026</div>
+        <div class="cover-part-name">Producto y hoja de ruta</div>
+        <div class="cover-part-sections">Resumen · Requisitos originales · Vault · Importar y exportar · Pantallazo automático · Otras ideas</div>
       </div>
     </div>
   </div>
@@ -1043,6 +1051,98 @@ pre {
   <li><strong>Vigilancia:</strong> aviso si la API cae y registro de errores del front y la API, con herramientas que tienen plan gratuito.</li>
 </ul>
 <p class="quiet">Estado al día y detalle técnico: <code>ARCHITECTURE.md</code>, sección «Despliegue».</p>
+
+<!-- ================= PART 05 · PRODUCT AND ROADMAP ================= -->
+
+<header class="part">
+  <div class="part-kicker"><span>Parte 05</span><span>Producto y hoja de ruta · 2 nov 2026</span></div>
+  <h1>Producto y hoja de ruta</h1>
+  <p class="part-subtitle">Begiz se divide en dos: una galería visual de inspiración y un cofre de marcadores.</p>
+</header>
+
+<h2 class="first"><span class="number">01</span>Resumen</h2>
+<p>Hasta ahora Begiz servía para una sola cosa: guardar webs por su diseño y verlas en una galería. A partir de aquí tiene dos espacios, con usos y formas de guardar distintos.</p>
+<table>
+  <thead><tr><th style="width:16%">Espacio</th><th>Para qué</th><th style="width:40%">Cómo se ve</th></tr></thead>
+  <tr><td class="key">Mosaic</td><td>Galería del contenido que inspira el trabajo. Es lo que ya existe y no cambia.</td><td>Tarjetas con imagen, tags, notas y colecciones.</td></tr>
+  <tr><td class="key">Vault</td><td>Archivo de marcadores: herramientas, fotos, IA, prensa… Se guardan sin más.</td><td>Lista compacta de enlaces, ordenada en carpetas (folders).</td></tr>
+</table>
+<div class="note">
+  <span class="note-label">Amplía</span>
+  <p>Esta parte amplía la visión de la parte 01 y sustituye a las hojas de ruta de las partes 02 y 03, que se mantienen como estaban. Las pantallas que se describen aquí son un planteamiento y pueden cambiar al diseñarlas.</p>
+</div>
+
+<h3>Orden de trabajo</h3>
+<table>
+  <thead><tr><th style="width:7%">#</th><th style="width:30%">Trabajo</th><th>Motivo</th><th style="width:15%">Estado</th></tr></thead>
+  <tr><td class="key">1</td><td>Vault</td><td>Es la base: la importación y la exportación dependen de él.</td><td><span class="tag solid">Siguiente</span></td></tr>
+  <tr><td class="key">2</td><td>Importar marcadores</td><td>Llena el Vault con lo que ya hay en los navegadores.</td><td><span class="tag">Planificado</span></td></tr>
+  <tr><td class="key">3</td><td>Exportar marcadores</td><td>Obligatorio: los marcadores no se quedan atrapados en Begiz.</td><td><span class="tag">Planificado</span></td></tr>
+  <tr><td class="key">4</td><td>Retomar el rediseño</td><td>Aparcado hasta ver cómo funciona la división entre los dos espacios. Incluye la paleta.</td><td><span class="tag">Aparcado</span></td></tr>
+  <tr><td class="key">—</td><td>Pantallazo automático</td><td>Planteamiento aprobado, sin fecha. Las webs actuales no cambian.</td><td><span class="tag dashed">Sin fecha</span></td></tr>
+</table>
+
+<h2><span class="number">02</span>Requisitos originales: estado</h2>
+<table>
+  <thead><tr><th style="width:26%">Requisitos</th><th>Estado</th><th style="width:15%"></th></tr></thead>
+  <tr><td class="key">RF-01, 02, 05 a 12</td><td>Enlace, título, notas, tags, mosaico, detalle, filtros y colecciones.</td><td><span class="tag solid">Hechos</span></td></tr>
+  <tr><td class="key">RF-03</td><td>Sustituido de momento por la imagen de vista previa de la propia web (<code>og:image</code>) o una subida a mano. Ver RF-22.</td><td><span class="tag">Parcial</span></td></tr>
+  <tr><td class="key">RF-04</td><td>Captura de página completa. Solo existe subiéndola a mano.</td><td><span class="tag dashed">Sin fecha</span></td></tr>
+  <tr><td class="key">RF-F1</td><td>Guardar componentes concretos de una web.</td><td><span class="tag dashed">Futuro</span></td></tr>
+</table>
+
+<h2><span class="number">03</span>Vault</h2>
+<table>
+  <thead><tr><th style="width:9%">ID</th><th style="width:24%">Requisito</th><th>Descripción</th><th style="width:17%">Prioridad</th></tr></thead>
+  <tr><td class="key">RF-13</td><td>Dos espacios</td><td>La app separa Mosaic y Vault. Lo ya guardado se queda en Mosaic.</td><td><span class="tag solid">Imprescindible</span></td></tr>
+  <tr><td class="key">RF-14</td><td>Elegir destino al guardar</td><td>«Save web» pregunta primero si es para Mosaic o para Vault, y el formulario cambia según la respuesta.</td><td><span class="tag solid">Imprescindible</span></td></tr>
+  <tr><td class="key">RF-15</td><td>Enlaces</td><td>Cada enlace tiene nombre, URL y, si se quiere, tags de clasificación. Sin imagen ni notas.</td><td><span class="tag solid">Imprescindible</span></td></tr>
+  <tr><td class="key">RF-16</td><td>Folders anidados</td><td>Carpetas dentro de carpetas, sin límite de niveles, como en un navegador. Cada enlace está en un solo folder o suelto en la raíz.</td><td><span class="tag solid">Imprescindible</span></td></tr>
+  <tr><td class="key">RF-17</td><td>Borrar un folder</td><td>Borra también lo que contiene, tras un aviso con el recuento: «Delete "Work", 3 folders and 42 links?».</td><td><span class="tag solid">Imprescindible</span></td></tr>
+  <tr><td class="key">RF-18</td><td>Selección múltiple</td><td>Marcar varios enlaces y moverlos juntos a otro folder.</td><td><span class="tag solid">Imprescindible</span></td></tr>
+  <tr><td class="key">RF-19</td><td>Buscador</td><td>Buscar enlaces en todo el Vault.</td><td><span class="tag solid">Imprescindible</span></td></tr>
+</table>
+<p><strong>Pantalla.</strong> Árbol de folders a la izquierda, que se abren y se cierran; a la derecha, los enlaces del folder elegido con su nombre, dominio y tags.</p>
+<p><strong>Datos.</strong> Tablas propias, separadas de las del mosaico, porque casi no comparten nada: <code>vault_folders</code> (cada folder apunta a su folder madre), <code>vault_links</code>, y tags propios para que no se mezclen con los filtros de Mosaic. Ocupan muy poco: miles de enlaces apenas pesan frente a los 500 MB de base de datos del plan gratuito.</p>
+<p class="quiet">Idea anotada, sin fecha: mover una web de Vault a Mosaic y al revés.</p>
+
+<h2><span class="number">04</span>Importar y exportar marcadores</h2>
+<p>Todos los navegadores importan y exportan en el mismo formato: el HTML de marcadores de Netscape (<code>bookmarks.html</code>). Es el único que hace falta leer y generar.</p>
+<table>
+  <thead><tr><th style="width:9%">ID</th><th style="width:24%">Requisito</th><th>Descripción</th><th style="width:17%">Prioridad</th></tr></thead>
+  <tr><td class="key">RF-20</td><td>Importar marcadores</td><td>Subir el archivo entero al Vault, conservando el árbol de carpetas y los tags si los trae (Firefox). Omite los enlaces que ya estén en el Vault y termina con un resumen: «740 added, 60 duplicates».</td><td><span class="tag solid">Imprescindible</span></td></tr>
+  <tr><td class="key">RF-21</td><td>Exportar marcadores</td><td>Genera un <code>bookmarks.html</code> con los folders, los enlaces y los tags, más una carpeta <code>Mosaic</code> con los enlaces del mosaico.</td><td><span class="tag solid">Imprescindible</span></td></tr>
+</table>
+<ul>
+  <li><strong>Sin imágenes:</strong> el Vault no las usa, así que importar no tiene que visitar cada web y es rápido.</li>
+  <li><strong>Mosaic al exportar:</strong> solo salen sus enlaces y sus tags. Se pierden las imágenes y el orden propio. Si ese archivo se vuelve a importar, <code>Mosaic</code> entra en el Vault como un folder más.</li>
+  <li><strong>Sin coste</strong> ni cambios de infraestructura.</li>
+</ul>
+<p class="quiet">Idea anotada, sin fecha: copia de seguridad completa de Begiz, con imágenes y en su propio formato.</p>
+
+<h2><span class="number">05</span>Pantallazo automático (sin fecha)</h2>
+<table>
+  <thead><tr><th style="width:9%">ID</th><th style="width:24%">Requisito</th><th>Descripción</th><th style="width:17%">Prioridad</th></tr></thead>
+  <tr><td class="key">RF-22</td><td>Pantallazo al guardar en Mosaic</td><td>La app captura la parte visible de la web y la usa como imagen, sin que haya que hacerlo a mano.</td><td><span class="tag dashed">Sin fecha</span></td></tr>
+</table>
+<p><strong>Cómo.</strong> Con un servicio externo de capturas: la API le pide la imagen, la reduce y la guarda. Evita el servidor con Chromium que preveían las partes 02 y 04, que no cabe en el Render gratuito. El proveedor queda aislado en el código, para poder cambiarlo. Los precios se confirman al elegirlo; las comparativas de noviembre de 2026 hablan de unas 100 capturas gratis al mes, y de 1.000 por unos 7 $/mes.</p>
+<table>
+  <thead><tr><th style="width:30%">Pregunta</th><th>Propuesta</th></tr></thead>
+  <tr><td class="key">Qué imagen se usa</td><td>La subida a mano, si la hay; si no, el pantallazo; y si falla, la <code>og:image</code>.</td></tr>
+  <tr><td class="key">Qué se captura</td><td>Solo la parte visible. La página completa queda para más adelante (RF-04).</td></tr>
+  <tr><td class="key">Dónde se guarda</td><td>En Supabase Storage, igual que las demás imágenes. No se guarda en Render.</td></tr>
+  <tr><td class="key">Cuánto ocupa</td><td>Estimación sin medir: ~100 KB por miniatura, unas 10.000 en el 1 GB gratuito. Guardando también el original de página completa (~2 MB o más), unas 500.</td></tr>
+  <tr><td class="key">Webs ya guardadas</td><td>Conservan su imagen. Un botón opcional permitiría rehacerla.</td></tr>
+</table>
+<ul>
+  <li><strong>Privacidad:</strong> el servicio externo ve las URL que se guardan en Mosaic. Las del Vault no, porque no llevan captura.</li>
+  <li><strong>Espera:</strong> la captura tarda unos segundos. La web se guarda al momento y la imagen aparece después.</li>
+  <li><strong>Fallos:</strong> algunas webs saldrán con banners de cookies o bloquearán la captura.</li>
+</ul>
+
+<h2><span class="number">06</span>Otras ideas anotadas</h2>
+<p>No cambian de prioridad con este plan: extensión de navegador, guardar componentes (RF-F1), idiomas, vista pública, registro de cuentas y etapa profesional (parte 04).</p>
+<p class="quiet">Estado al día y detalle técnico: <code>ARCHITECTURE.md</code>.</p>
 
 </body>
 </html>
