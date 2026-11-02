@@ -14,10 +14,11 @@ puesta en marcha en `README.md`.
 - **Explicar los cambios**: un resumen de alto nivel en cada paso.
 - **Seguir el progreso**: marcar las tareas como completadas a medida que se terminan.
 - Ir **en orden**: no saltar a una fase nueva sin cerrar y validar la anterior.
-- **Fase de diseño en curso**: el estilo es brutalista (todo en Geist Mono con `--font-mono`, línea
-  fina, celdas, sombra dura), el mismo de `begiz-proyecto.pdf`. Ya lo siguen el login, la página de
-  error, la pantalla de carga, la cabecera y el mosaico; el resto de páginas aún tiene el estilo
-  mínimo provisional.
+- **Rediseño aparcado** hasta ver cómo funciona la división entre Mosaic y Vault; la paleta
+  definitiva también espera. El estilo actual es brutalista (todo en Geist Mono con `--font-mono`,
+  línea fina, celdas, sombra dura), el mismo de `begiz-proyecto.pdf`: lo siguen el login, la página
+  de error, la pantalla de carga, la cabecera y el mosaico; el resto de páginas tiene el estilo
+  mínimo provisional. Las pantallas nuevas usan el estilo actual, sin rediseñar nada más.
 - **Antes de cambiar una pantalla**, se le enseña una propuesta en el lienzo de diseño; no se
   implementa nada visual sin su visto bueno. Reutilizar las clases de `apps/web/src/style.css`.
   Colores siempre con las variables CSS de `style.css` (`--color-*`), nunca valores fijos.
