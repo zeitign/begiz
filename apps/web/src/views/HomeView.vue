@@ -15,6 +15,7 @@ import SkeletonCards from '../components/SkeletonCards.vue'
 import WebCard from '../components/WebCard.vue'
 import { api, errorMessage, responseBody, type WebCard as WebCardData } from '../lib/api'
 import { useTags } from '../lib/queries'
+import { useTypewriter } from '../lib/typewriter'
 
 // Filters live in the URL, so they survive reloads, can be shared and work with the back button.
 const route = useRoute()
@@ -58,6 +59,16 @@ function updateFilters(changedFilters: LocationQueryRaw) {
   for (const key of Object.keys(nextQuery)) if (!nextQuery[key]) delete nextQuery[key]
   router.replace({ query: nextQuery })
 }
+
+const SEARCH_PLACEHOLDERS = [
+  'THAT WEB?',
+  'THE INSPIRATION?',
+  'THAT PORTFOLIO?',
+  'THAT TYPEFACE?',
+  'THAT LANDING?',
+  'THE GOOD ONE?',
+]
+const searchPlaceholder = useTypewriter(SEARCH_PLACEHOLDERS)
 
 const searchInput = ref(searchFilter.value)
 let searchDebounceTimer: ReturnType<typeof setTimeout> | undefined
@@ -138,39 +149,52 @@ async function saveDroppedPosition(event: DraggableEvent) {
 <template>
   <main class="page wide stack">
     <div class="filter-bar">
-      <input
-        v-model="searchInput"
-        class="filter-search"
-        type="search"
-        aria-label="Search"
-        placeholder="I'm searching for"
-      />
-      <FilterDropdown :label="tagsLabel">
-        <label v-for="tag in tags" :key="tag.name" class="filter-option">
-          <input type="checkbox" :checked="selectedTags.includes(tag.name)" @change="toggleTag(tag.name)" />
-          <span>{{ tag.name }}</span>
-          <span class="filter-option-count">{{ tag.webCount }}</span>
-        </label>
-        <p v-if="!tags?.length" class="filter-option muted">No tags yet.</p>
-      </FilterDropdown>
-      <FilterDropdown label="Order">
-        <label v-for="mode in webSortModes" :key="mode" class="filter-option">
-          <input type="radio" name="web-order" :checked="sortMode === mode" @change="changeSortMode(mode)" />
-          <span>{{ SORT_MODE_LABELS[mode] }}</span>
-        </label>
-        <div v-if="!isCustomOrder" class="order-direction" role="group" aria-label="Direction">
-          <button
-            v-for="direction in sortDirections"
-            :key="direction"
-            type="button"
-            :aria-pressed="sortDirection === direction"
-            @click="updateFilters({ direction })"
-          >
-            {{ SORT_DIRECTION_LABELS[direction] }}
-          </button>
+      <div class="search-sentence">
+        <label for="mosaic-search" class="search-sentence-text">I'm gonna search</label>
+        <div class="search-box">
+          <input
+            id="mosaic-search"
+            v-model="searchInput"
+            type="search"
+            :placeholder="searchPlaceholder.displayedText.value"
+            @focus="searchPlaceholder.pause"
+            @blur="searchPlaceholder.resume"
+          />
+          <span class="filter-stripes" aria-hidden="true"></span>
         </div>
-      </FilterDropdown>
-      <p class="filter-count">{{ webCountLabel }}</p>
+        <span class="search-sentence-text">in this mosaic</span>
+      </div>
+      <div class="filter-frame">
+        <div class="filter-cells">
+          <FilterDropdown :label="tagsLabel">
+            <label v-for="tag in tags" :key="tag.name" class="filter-option">
+              <input type="checkbox" :checked="selectedTags.includes(tag.name)" @change="toggleTag(tag.name)" />
+              <span>{{ tag.name }}</span>
+              <span class="filter-option-count">{{ tag.webCount }}</span>
+            </label>
+            <p v-if="!tags?.length" class="filter-option muted">No tags yet.</p>
+          </FilterDropdown>
+          <FilterDropdown label="Order">
+            <label v-for="mode in webSortModes" :key="mode" class="filter-option">
+              <input type="radio" name="web-order" :checked="sortMode === mode" @change="changeSortMode(mode)" />
+              <span>{{ SORT_MODE_LABELS[mode] }}</span>
+            </label>
+            <div v-if="!isCustomOrder" class="order-direction" role="group" aria-label="Direction">
+              <button
+                v-for="direction in sortDirections"
+                :key="direction"
+                type="button"
+                :aria-pressed="sortDirection === direction"
+                @click="updateFilters({ direction })"
+              >
+                {{ SORT_DIRECTION_LABELS[direction] }}
+              </button>
+            </div>
+          </FilterDropdown>
+          <p class="filter-count">{{ webCountLabel }}</p>
+        </div>
+        <span class="filter-stripes" aria-hidden="true"></span>
+      </div>
     </div>
 
     <p v-if="error" class="error">{{ error.message }}</p>

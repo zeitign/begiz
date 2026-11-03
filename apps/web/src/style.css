@@ -627,23 +627,83 @@ fieldset {
 }
 
 .filter-bar {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 130px 130px auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.search-sentence {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* The bottom padding skips the striped strip, so the text lines up with the typed text. */
+.search-sentence-text {
+  align-self: center;
+  padding-bottom: 8px;
+  white-space: nowrap;
+}
+
+.search-box,
+.filter-frame {
+  display: flex;
+  flex-direction: column;
   border: 1px solid var(--color-border);
 }
 
-.filter-search {
+.search-box {
+  width: 220px;
   min-width: 0;
-  padding: 9px 12px;
+}
+
+.search-box input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 12px;
   border: none;
 }
 
-.filter-search:focus {
+.search-box-placeholder {
+  flex: 1;
+  min-height: 32px;
+}
+
+.search-box input::placeholder {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  color: var(--color-muted);
+  opacity: 1;
+}
+
+.search-box input:focus {
   outline: none;
   box-shadow: inset 0 -2px 0 var(--color-text);
 }
 
-.filter-dropdown,
+.filter-stripes {
+  position: relative;
+  flex: none;
+  height: 8px;
+  border-top: 1px solid var(--color-border);
+}
+
+.filter-stripes::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--color-stripe);
+  mask: url('./assets/dashed-stripes.svg');
+}
+
+.filter-cells {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 120px 120px auto;
+}
+
+.filter-dropdown + .filter-dropdown,
 .filter-count {
   border-left: 1px solid var(--color-border);
 }
@@ -659,7 +719,7 @@ fieldset {
   gap: 8px;
   width: 100%;
   height: 100%;
-  padding: 9px 12px;
+  padding: 9px 10px;
   border: none;
   font-size: 12px;
   letter-spacing: 0.12em;
@@ -675,14 +735,38 @@ fieldset {
 .filter-panel {
   position: absolute;
   z-index: 2;
-  top: 100%;
+  top: calc(100% + 8px);
   left: -1px;
+  min-width: 200px;
+}
+
+.filter-panel-content {
   display: flex;
   flex-direction: column;
-  min-width: 200px;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 0 0 10px 10px;
+  background: var(--color-background);
+}
+
+/* The hard shadow of the panel, drawn with the same stripes as the bars. */
+.filter-panel::before,
+.filter-panel::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 6px -6px -6px 6px;
+  border-radius: 0 0 10px 10px;
+}
+
+.filter-panel::before {
   border: 1px solid var(--color-border);
   background: var(--color-background);
-  box-shadow: 4px 4px 0 var(--color-border);
+}
+
+.filter-panel::after {
+  background: var(--color-stripe);
+  mask: url('./assets/dashed-stripes.svg');
 }
 
 .filter-option {
@@ -744,11 +828,21 @@ fieldset {
 }
 
 @media (max-width: 760px) {
-  .filter-bar {
+  .search-sentence,
+  .filter-frame {
+    flex-basis: 100%;
+  }
+
+  .search-box {
+    flex-basis: 100%;
+    width: auto;
+  }
+
+  .filter-cells {
     grid-template-columns: 1fr;
   }
 
-  .filter-dropdown,
+  .filter-dropdown + .filter-dropdown,
   .filter-count {
     border-left: none;
     border-top: 1px solid var(--color-border);
