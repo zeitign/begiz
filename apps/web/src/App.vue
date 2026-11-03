@@ -1,17 +1,21 @@
 <script setup lang="ts">
 import { useQueryClient } from '@tanstack/vue-query'
 import { computed, watch } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import AppSkeleton from './components/AppSkeleton.vue'
 import ErrorPage from './components/ErrorPage.vue'
+import SpaceNav from './components/SpaceNav.vue'
 import WebInfoWindow from './components/WebInfoWindow.vue'
 import { appError } from './lib/appError'
 import { closeAllInfoWindows, infoWindows } from './lib/infoWindows'
 import { isAuthReady, session, supabase } from './lib/supabase'
 import { theme, toggleTheme } from './lib/theme'
 
+const route = useRoute()
 const router = useRouter()
 const queryClient = useQueryClient()
+
+const currentSpace = computed(() => route.meta.space ?? 'mosaic')
 
 const themeToggleLabel = computed(() =>
   theme.value === 'dark' ? 'Switch to light theme' : 'Switch to dark theme',
@@ -40,9 +44,20 @@ function signOut() {
         Begiz
       </strong>
       <nav class="header-tabs">
-        <RouterLink :to="{ name: 'new' }" class="header-cell header-tab">Save web</RouterLink>
-        <RouterLink :to="{ name: 'home' }" class="header-cell header-tab">Mosaic</RouterLink>
-        <RouterLink :to="{ name: 'collections' }" class="header-cell header-tab">Collections</RouterLink>
+        <RouterLink
+          :to="{ name: 'home' }"
+          class="header-cell header-tab header-tab-mosaic"
+          :aria-current="currentSpace === 'mosaic' ? 'page' : undefined"
+        >
+          Mosaic
+        </RouterLink>
+        <RouterLink
+          :to="{ name: 'vault' }"
+          class="header-cell header-tab"
+          :aria-current="currentSpace === 'vault' ? 'page' : undefined"
+        >
+          Vault
+        </RouterLink>
       </nav>
       <span class="header-spacer"></span>
       <span class="header-cell header-email">{{ session.user.email }}</span>
@@ -65,6 +80,7 @@ function signOut() {
       </button>
       <button type="button" class="header-cell header-action" @click="signOut">Sign out</button>
     </header>
+    <SpaceNav v-if="session" :space="currentSpace" />
     <RouterView />
     <template v-if="session">
       <template v-for="infoWindow in infoWindows" :key="infoWindow.webId">
