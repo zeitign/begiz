@@ -737,12 +737,34 @@ fieldset {
   z-index: 2;
   top: calc(100% + 8px);
   left: -1px;
+  display: grid;
+  grid-template-rows: 0fr;
   min-width: 200px;
+  visibility: hidden;
+  transition:
+    grid-template-rows 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    visibility 0s 0.25s;
+}
+
+.filter-trigger[aria-expanded='true'] + .filter-panel {
+  grid-template-rows: 1fr;
+  visibility: visible;
+  transition:
+    grid-template-rows 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    visibility 0s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .filter-panel,
+  .filter-trigger[aria-expanded='true'] + .filter-panel {
+    transition: none;
+  }
 }
 
 .filter-panel-content {
   display: flex;
   flex-direction: column;
+  min-height: 0;
   overflow: hidden;
   border: 1px solid var(--color-border);
   border-radius: 0 0 10px 10px;
@@ -755,7 +777,7 @@ fieldset {
   content: '';
   position: absolute;
   z-index: -1;
-  inset: 6px -6px -6px 6px;
+  inset: 9px -9px -9px 9px;
   border-radius: 0 0 10px 10px;
 }
 

@@ -37,7 +37,7 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', closeOnOutside
         <path d="M6 9l6 6 6-6" />
       </svg>
     </button>
-    <div v-show="isOpen" :id="panelId" class="filter-panel">
+    <div :id="panelId" class="filter-panel">
       <div class="filter-panel-content">
         <slot />
       </div>

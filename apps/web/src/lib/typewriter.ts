@@ -7,7 +7,7 @@ const NEXT_PHRASE_DELAY_MS = 350
 const PAUSED_CHECK_DELAY_MS = 200
 const CURSOR_BLINK_MS = 500
 
-/** Types and deletes the phrases one after another in random order, with a blinking `_` cursor. */
+/** Types and deletes the phrases one after another in random order, with a blinking `_` cursor. Paused, it shows nothing. */
 export function useTypewriter(phrases: string[]) {
   const typedText = ref('')
   const isCursorVisible = ref(true)
@@ -63,9 +63,10 @@ export function useTypewriter(phrases: string[]) {
     clearInterval(cursorTimer)
   })
 
-  const displayedText = computed(() =>
-    isCursorVisible.value && !isPaused.value ? `${typedText.value}_` : typedText.value,
-  )
+  const displayedText = computed(() => {
+    if (isPaused.value) return ''
+    return isCursorVisible.value ? `${typedText.value}_` : typedText.value
+  })
 
   return {
     displayedText,
