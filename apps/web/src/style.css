@@ -11,9 +11,13 @@
   --color-text: #000;
   --color-border: #000;
   --color-muted: #555;
+  --color-stripe: #888;
   --color-error: #b00020;
   --font-mono: 'Geist Mono Variable', ui-monospace, 'SF Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
   --header-height: 56px;
+  /* Fixed so the options under the header can line up with the space tabs. */
+  --brand-width: 136px;
+  --mosaic-tab-width: 106px;
 }
 
 :root[data-theme='dark'] {
@@ -331,6 +335,8 @@ fieldset {
 }
 
 .header-brand {
+  flex: none;
+  width: var(--brand-width);
   gap: 10px;
   padding: 0 20px;
   border-right: 1px solid var(--color-border);
@@ -351,6 +357,12 @@ fieldset {
 
 .header-tab {
   border-right: 1px solid var(--color-border);
+}
+
+.header-tab-mosaic {
+  justify-content: center;
+  width: var(--mosaic-tab-width);
+  padding: 0;
 }
 
 .header-spacer {
@@ -388,6 +400,183 @@ fieldset {
 .header-tab[aria-current='page'] {
   background: var(--color-text);
   color: var(--color-background);
+}
+
+/* The options start under the active space, sharing the left border of its header tab. */
+.space-nav {
+  --space-indent: calc(var(--brand-width) - 1px);
+}
+
+.space-nav.under-vault {
+  --space-indent: calc(var(--brand-width) + var(--mosaic-tab-width) - 1px);
+}
+
+.space-explainer {
+  position: relative;
+  display: flex;
+  align-items: stretch;
+  padding-left: var(--space-indent);
+  border-bottom: 1px solid var(--color-border);
+}
+
+/* A mask rather than a plain background image, so the stripes follow the theme colors. */
+.space-explainer::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--color-stripe);
+  mask: url('./assets/dashed-stripes.svg');
+}
+
+.what-is-button {
+  position: relative;
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 32px;
+  padding: 0 24px;
+  border-width: 0 1px;
+  border-style: solid;
+  border-color: var(--color-border);
+  background: var(--color-background);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.what-is-icon {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: square;
+  transition: transform 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.space-explainer.open .what-is-icon {
+  transform: rotate(180deg);
+}
+
+.explanation-reveal {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 0fr;
+  transition: grid-template-columns 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.space-explainer.open .explanation-reveal {
+  grid-template-columns: 1fr;
+}
+
+/* Closing waits for the text to roll back up before removing it. */
+.explanation-clip {
+  min-width: 0;
+  max-height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  border-right: 1px solid var(--color-border);
+  background: var(--color-background);
+  transition:
+    max-height 0s 0.7s,
+    visibility 0s 0.7s;
+}
+
+.space-explainer.open .explanation-clip {
+  max-height: 200px;
+  visibility: visible;
+  transition:
+    max-height 0s,
+    visibility 0s;
+}
+
+.explanation-text {
+  margin: 0;
+  padding: 7px 20px;
+  font-size: 13px;
+}
+
+/* On one line while there is room, so the text does not reflow as it unrolls. */
+@media (min-width: 1200px) {
+  .explanation-text {
+    white-space: nowrap;
+  }
+}
+
+.space-options {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 0 20px 0 var(--space-indent);
+}
+
+.folder-tab {
+  display: flex;
+  align-items: center;
+  min-height: 36px;
+  margin-top: -1px;
+  padding: 0 24px;
+  border: 1px solid var(--color-border);
+  border-radius: 0 0 10px 10px;
+  background: var(--color-text);
+  color: var(--color-background);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.folder-tab[aria-current='page'] {
+  min-height: 44px;
+  font-weight: 700;
+}
+
+.folder-tab:focus-visible {
+  outline: 2px solid var(--color-background);
+  outline-offset: -3px;
+}
+
+.folder-tab-home {
+  padding: 0 12px;
+}
+
+/* The logo drawn in the tab's own colors: .crossed paints with --color-border. */
+.folder-tab-logo {
+  --color-border: var(--color-background);
+  display: block;
+  width: 22px;
+  height: 16px;
+  border: 1px solid var(--color-border);
+}
+
+@media (max-width: 760px) {
+  .space-nav,
+  .space-nav.under-vault {
+    --space-indent: 0px;
+  }
+
+  .space-explainer {
+    flex-wrap: wrap;
+  }
+
+  .what-is-button {
+    border-left: none;
+  }
+
+  .explanation-reveal {
+    flex-basis: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .what-is-icon,
+  .explanation-reveal,
+  .explanation-clip,
+  .space-explainer.open .explanation-clip {
+    transition: none;
+  }
 }
 
 .stack {

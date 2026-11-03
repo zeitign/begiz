@@ -80,6 +80,11 @@ Todas las rutas van bajo `/api` y exigen sesión.
 
 - **Estado**: los filtros y el orden del mosaico viven en la URL; los datos, en la caché de TanStack
   Query. No hay Pinia.
+- **Navegación por espacios** (`SpaceNav.vue`): la cabecera solo elige entre Mosaic y Vault (el
+  espacio de cada ruta está en `meta.space`). Debajo van el botón `What is it?`, que desenrolla la
+  explicación, y las pestañas `Save web`, `Collections` y la de inicio del espacio, alineadas con el
+  espacio activo. Las rutas `/vault` muestran por ahora `VaultPlaceholderView`, hasta que existan
+  sus pantallas.
 - **Mosaico**: al arrastrar una tarjeta, una copia local cambia de orden al momento y la API guarda
   la posición después. Si la API falla, se vuelve al orden de la caché.
 - **Ventanas de información** (`lib/infoWindows.ts`): ventanas flotantes de solo lectura, varias a
@@ -139,8 +144,8 @@ Todas las rutas van bajo `/api` y exigen sesión.
 Plan aprobado el 2-nov-2026; requisitos RF-13 a RF-21 en la parte 05 del PDF. Las pantallas pueden
 cambiar al diseñarlas.
 
-- **Dos espacios**: Mosaic es lo que ya existe y no cambia. Vault guarda marcadores sin imagen, y
-  «Save web» pregunta primero a cuál va.
+- **Dos espacios**: Mosaic es lo que ya existe y no cambia. Vault guarda marcadores sin imagen.
+  «Save web» guarda en el espacio en el que estés, sin preguntar.
 - **Tablas propias** (`vault_folders`, `vault_links` y tags propios), porque casi no comparten nada
   con `webs` y así el mosaico no corre riesgo. Cada folder apunta a su folder madre, sin límite de
   niveles, y cada enlace está en un solo folder o suelto en la raíz. Necesitan RLS, como todas.
