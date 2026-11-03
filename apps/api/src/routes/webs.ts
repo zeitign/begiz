@@ -155,7 +155,6 @@ export const websRoutes = new Hono<AuthEnv>()
       )
     }
     if (tagNames.length > 0) {
-      // Webs that have ALL the selected tags.
       conditions.push(
         inArray(
           webs.id,
@@ -163,9 +162,7 @@ export const websRoutes = new Hono<AuthEnv>()
             .select({ webId: webTags.webId })
             .from(webTags)
             .innerJoin(tags, eq(tags.id, webTags.tagId))
-            .where(and(eq(tags.userId, userId), inArray(tags.name, tagNames)))
-            .groupBy(webTags.webId)
-            .having(sql`count(*) = ${tagNames.length}`),
+            .where(and(eq(tags.userId, userId), inArray(tags.name, tagNames))),
         ),
       )
     }

@@ -2,6 +2,7 @@
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/vue-query'
 import {
   defaultSortDirection,
+  sortDirections,
   webSortModes,
   type SortDirection,
   type WebSortMode,
@@ -9,10 +10,11 @@ import {
 import { computed, ref, watch } from 'vue'
 import { VueDraggable, type DraggableEvent } from 'vue-draggable-plus'
 import { useRoute, useRouter, type LocationQueryRaw } from 'vue-router'
+import FilterDropdown from '../components/FilterDropdown.vue'
 import SkeletonCards from '../components/SkeletonCards.vue'
 import WebCard from '../components/WebCard.vue'
 import { api, errorMessage, responseBody, type WebCard as WebCardData } from '../lib/api'
-import { useCollections, useTags } from '../lib/queries'
+import { useTags } from '../lib/queries'
 
 // Filters live in the URL, so they survive reloads, can be shared and work with the back button.
 const route = useRoute()
@@ -28,9 +30,13 @@ const collectionFilter = computed(() =>
 
 const SORT_MODE_LABELS: Record<WebSortMode, string> = {
   custom: 'Custom order',
-  title: 'Title',
-  collection: 'Collection',
   date: 'Date added',
+  title: 'Title',
+}
+
+const SORT_DIRECTION_LABELS: Record<SortDirection, string> = {
+  asc: '↑ Asc',
+  desc: '↓ Desc',
 }
 
 const isSortMode = (value: unknown): value is WebSortMode =>
@@ -45,10 +51,6 @@ const isCustomOrder = computed(() => sortMode.value === 'custom')
 
 function changeSortMode(nextSortMode: WebSortMode) {
   updateFilters({ sort: nextSortMode === 'custom' ? '' : nextSortMode, direction: '' })
-}
-
-function reverseSortDirection() {
-  updateFilters({ direction: sortDirection.value === 'asc' ? 'desc' : 'asc' })
 }
 
 function updateFilters(changedFilters: LocationQueryRaw) {
@@ -72,7 +74,6 @@ function toggleTag(name: string) {
 }
 
 const { data: tags } = useTags()
-const { data: collections } = useCollections()
 const { data: webs, isPending, error } = useQuery({
   queryKey: ['webs', searchFilter, selectedTags, collectionFilter, sortMode, sortDirection],
   queryFn: () =>
@@ -90,10 +91,13 @@ const { data: webs, isPending, error } = useQuery({
   placeholderData: keepPreviousData,
 })
 
-const webCountSummary = computed(() => {
-  const webCount = webs.value?.length ?? 0
-  const countText = `${webCount} ${webCount === 1 ? 'web' : 'webs'}`
-  return isCustomOrder.value && webCount > 1 ? `${countText} · drag to reorder` : countText
+const tagsLabel = computed(() =>
+  selectedTags.value.length > 0 ? `Tags · ${selectedTags.value.length}` : 'Tags',
+)
+
+const webCountLabel = computed(() => {
+  if (!webs.value) return ''
+  return webs.value.length === 1 ? '1 web' : `${webs.value.length} webs`
 })
 
 const hasFilters = computed(() =>
@@ -134,60 +138,39 @@ async function saveDroppedPosition(event: DraggableEvent) {
 <template>
   <main class="page wide stack">
     <div class="filter-bar">
-      <label class="filter-field">
-        <span class="field-label">Search</span>
-        <input v-model="searchInput" type="search" placeholder="Title contains…" />
-      </label>
-      <label class="filter-field">
-        <span class="field-label">Collection</span>
-        <select
-          :value="collectionFilter"
-          @change="updateFilters({ collection: ($event.target as HTMLSelectElement).value })"
-        >
-          <option value="">All collections</option>
-          <option v-for="collection in collections" :key="collection.id" :value="collection.id">
-            {{ collection.name }} ({{ collection.webCount }})
-          </option>
-        </select>
-      </label>
-      <label class="filter-field">
-        <span class="field-label">Sort</span>
-        <select
-          :value="sortMode"
-          @change="changeSortMode(($event.target as HTMLSelectElement).value as WebSortMode)"
-        >
-          <option v-for="mode in webSortModes" :key="mode" :value="mode">{{ SORT_MODE_LABELS[mode] }}</option>
-        </select>
-      </label>
-      <button
-        v-if="!isCustomOrder"
-        type="button"
-        class="filter-direction"
-        :title="sortDirection === 'asc' ? 'Ascending' : 'Descending'"
-        :aria-label="sortDirection === 'asc' ? 'Ascending, click to reverse' : 'Descending, click to reverse'"
-        @click="reverseSortDirection"
-      >
-        {{ sortDirection === 'asc' ? '↑' : '↓' }}
-      </button>
-    </div>
-
-    <div v-if="tags?.length || webs?.length" class="tag-filters">
-      <template v-if="tags?.length">
-        <span class="field-label">Tags</span>
-        <button
-          v-for="tag in tags"
-          :key="tag.name"
-          type="button"
-          class="tag-filter"
-          :class="{ active: selectedTags.includes(tag.name) }"
-          :aria-pressed="selectedTags.includes(tag.name)"
-          @click="toggleTag(tag.name)"
-        >
+      <input
+        v-model="searchInput"
+        class="filter-search"
+        type="search"
+        aria-label="Search"
+        placeholder="I'm searching for"
+      />
+      <FilterDropdown :label="tagsLabel">
+        <label v-for="tag in tags" :key="tag.name" class="filter-option">
+          <input type="checkbox" :checked="selectedTags.includes(tag.name)" @change="toggleTag(tag.name)" />
           <span>{{ tag.name }}</span>
-          <span class="tag-filter-count">{{ tag.webCount }}</span>
-        </button>
-      </template>
-      <p v-if="webs?.length" class="page-summary">{{ webCountSummary }}</p>
+          <span class="filter-option-count">{{ tag.webCount }}</span>
+        </label>
+        <p v-if="!tags?.length" class="filter-option muted">No tags yet.</p>
+      </FilterDropdown>
+      <FilterDropdown label="Order">
+        <label v-for="mode in webSortModes" :key="mode" class="filter-option">
+          <input type="radio" name="web-order" :checked="sortMode === mode" @change="changeSortMode(mode)" />
+          <span>{{ SORT_MODE_LABELS[mode] }}</span>
+        </label>
+        <div v-if="!isCustomOrder" class="order-direction" role="group" aria-label="Direction">
+          <button
+            v-for="direction in sortDirections"
+            :key="direction"
+            type="button"
+            :aria-pressed="sortDirection === direction"
+            @click="updateFilters({ direction })"
+          >
+            {{ SORT_DIRECTION_LABELS[direction] }}
+          </button>
+        </div>
+      </FilterDropdown>
+      <p class="filter-count">{{ webCountLabel }}</p>
     </div>
 
     <p v-if="error" class="error">{{ error.message }}</p>

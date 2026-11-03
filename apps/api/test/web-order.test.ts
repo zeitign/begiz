@@ -29,10 +29,8 @@ const moveWeb = (webId: string, afterWebId: string | null) =>
 
 describe('sorting the mosaic', () => {
   beforeEach(async () => {
-    const shopsId = await createCollection('Shops')
-    const blogsId = await createCollection('blogs')
-    await saveWeb('banana', [shopsId])
-    await saveWeb('Apple', [blogsId, shopsId])
+    await saveWeb('banana')
+    await saveWeb('Apple')
     await saveWeb('cherry')
   })
 
@@ -50,17 +48,12 @@ describe('sorting the mosaic', () => {
     expect(await listWebTitles('?sort=date&direction=asc')).toEqual(['banana', 'Apple', 'cherry'])
   })
 
-  it('sorts by the first collection name and leaves webs without collection last', async () => {
-    expect(await listWebTitles('?sort=collection')).toEqual(['Apple', 'banana', 'cherry'])
-    expect(await listWebTitles('?sort=collection&direction=desc')).toEqual(['banana', 'Apple', 'cherry'])
-  })
-
   it('never reverses the custom order', async () => {
     expect(await listWebTitles('?sort=custom&direction=desc')).toEqual(['cherry', 'Apple', 'banana'])
   })
 
   it('rejects unknown sort modes', async () => {
-    expect((await user.get('/webs?sort=random')).status).toBe(400)
+    expect((await user.get('/webs?sort=collection')).status).toBe(400)
   })
 })
 

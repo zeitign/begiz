@@ -2,21 +2,13 @@ import { and, asc, desc, eq, gt, min, ne, sql, type SQL } from 'drizzle-orm'
 import { HTTPException } from 'hono/http-exception'
 import { defaultSortDirection, type SortDirection, type WebSortMode } from '@webs/shared'
 import type { Transaction } from '../db/client.ts'
-import { collections, collectionWebs, webs } from '../db/schema.ts'
+import { webs } from '../db/schema.ts'
 
 const SORT_POSITION_SPACING = 1024
 /** Below this gap, halving it again would lose precision, so positions are spread out first. */
 const MIN_POSITION_GAP = 1e-6
 
 const lowercaseTitle = sql`lower(${webs.title})`
-
-/** Name of the alphabetically first collection of each web. null when it has none. */
-const firstCollectionName = sql`(
-  select min(lower(${collections.name}))
-  from ${collectionWebs}
-  join ${collections} on ${collections.id} = ${collectionWebs.collectionId}
-  where ${collectionWebs.webId} = ${webs.id}
-)`
 
 export function webOrderBy(sortMode: WebSortMode, requestedDirection?: SortDirection): SQL[] {
   const direction = sortMode === 'custom' ? 'asc' : (requestedDirection ?? defaultSortDirection[sortMode])
@@ -30,9 +22,6 @@ export function webOrderBy(sortMode: WebSortMode, requestedDirection?: SortDirec
       return [inDirection(lowercaseTitle), newestFirst]
     case 'date':
       return [inDirection(webs.createdAt)]
-    case 'collection':
-      // Webs without a collection go last in both directions.
-      return [sql`${firstCollectionName} ${sql.raw(direction)} nulls last`, asc(lowercaseTitle), newestFirst]
   }
 }
 

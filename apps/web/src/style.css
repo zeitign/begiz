@@ -132,10 +132,6 @@ fieldset {
   height: 14px;
 }
 
-.skeleton-chip {
-  height: 22px;
-}
-
 .skeleton-icon {
   width: 26px;
   height: 26px;
@@ -623,14 +619,6 @@ fieldset {
   gap: 6px;
 }
 
-.page-summary {
-  margin: 0 0 0 auto;
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-muted);
-}
-
 .field-label {
   font-size: 10px;
   letter-spacing: 0.12em;
@@ -640,102 +628,131 @@ fieldset {
 
 .filter-bar {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) 210px 190px auto;
+  grid-template-columns: minmax(0, 1fr) 130px 130px auto;
   border: 1px solid var(--color-border);
 }
 
-.filter-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
+.filter-search {
+  min-width: 0;
+  padding: 9px 12px;
+  border: none;
 }
 
-.filter-field + .filter-field,
-.filter-direction {
+.filter-search:focus {
+  outline: none;
+  box-shadow: inset 0 -2px 0 var(--color-text);
+}
+
+.filter-dropdown,
+.filter-count {
   border-left: 1px solid var(--color-border);
 }
 
-.filter-field .field-label {
-  padding: 7px 12px 0;
+.filter-dropdown {
+  position: relative;
 }
 
-.filter-field input,
-.filter-field select,
-.skeleton-field-text {
+.filter-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  height: 100%;
+  padding: 9px 12px;
   border: none;
-  padding: 4px 12px 9px;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
-/* The focused cell gets an inner frame in the text color instead of the browser's blue ring,
-   which keeps the focus visible for keyboard users. */
-.filter-field:focus-within,
-.filter-direction:focus-visible {
+.filter-trigger:focus-visible,
+.order-direction button:focus-visible {
   outline: 2px solid var(--color-text);
   outline-offset: -2px;
 }
 
-.filter-field input:focus,
-.filter-field select:focus {
-  outline: none;
+.filter-panel {
+  position: absolute;
+  z-index: 2;
+  top: 100%;
+  left: -1px;
+  display: flex;
+  flex-direction: column;
+  min-width: 200px;
+  border: 1px solid var(--color-border);
+  background: var(--color-background);
+  box-shadow: 4px 4px 0 var(--color-border);
 }
 
-.filter-direction {
-  width: 52px;
-  border-top: none;
-  border-right: none;
-  border-bottom: none;
-  font-size: 18px;
+.filter-option {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.filter-option input {
+  margin: 0;
+  accent-color: var(--color-text);
+}
+
+.filter-option-count {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+.order-direction {
+  display: flex;
+  border-top: 1px solid var(--color-border);
+}
+
+.order-direction button {
+  flex: 1;
+  min-height: 34px;
+  padding: 0;
+  border: none;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.order-direction button + button {
+  border-left: 1px solid var(--color-border);
+}
+
+.order-direction button[aria-pressed='true'] {
+  background: var(--color-text);
+  color: var(--color-background);
+}
+
+.filter-count {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 9px 14px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--color-muted);
 }
 
 @media (max-width: 760px) {
   .filter-bar {
-    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-columns: 1fr;
   }
 
-  .filter-field {
-    grid-column: 1 / -1;
-  }
-
-  .filter-field + .filter-field {
+  .filter-dropdown,
+  .filter-count {
     border-left: none;
     border-top: 1px solid var(--color-border);
   }
-
-  .filter-direction {
-    grid-column: 2;
-    border-top: 1px solid var(--color-border);
-  }
-}
-
-.tag-filters {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
-
-.tag-filters .field-label {
-  margin-right: 4px;
-}
-
-.tag-filter {
-  display: flex;
-  padding: 0;
-  font-size: 12px;
-}
-
-.tag-filter > span {
-  padding: 4px 8px;
-}
-
-.tag-filter-count {
-  border-left: 1px solid currentColor;
-  opacity: 0.7;
-}
-
-.tag-filter.active {
-  background: var(--color-text);
-  color: var(--color-background);
 }
 
 .grid {

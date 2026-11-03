@@ -55,7 +55,7 @@ collection_webs collection_id, web_id
 - `preview_key` es la miniatura WebP del mosaico (800 px de ancho, recortada por arriba a 1200 px).
   `full_key` es la imagen original subida a mano, que puede ser una captura de página completa.
 - Los tags sin webs se borran solos.
-- Filtrar por varios tags devuelve las webs que tienen **todos** (Y).
+- Filtrar por varios tags devuelve las webs que tienen **alguno** (O).
 - `sort_position` guarda el orden propio del mosaico (migración `0003`). Es un número decimal con
   huecos de 1024: mover una web solo cambia su posición, que pasa a estar entre la de sus vecinas. Si
   el hueco se agota, se reparten de nuevo todas las posiciones de la usuaria. Las webs nuevas van
@@ -67,7 +67,7 @@ Todas las rutas van bajo `/api` y exigen sesión.
 
 | Método | Ruta | |
 |---|---|---|
-| GET | `/webs?search=&tags=a,b&collection=&sort=&direction=` | Mosaico con filtros. `sort`: `custom` (por defecto), `date`, `title` o `collection`; `direction`: `asc` o `desc` (el orden propio no se invierte) |
+| GET | `/webs?search=&tags=a,b&collection=&sort=&direction=` | Mosaico con filtros. `sort`: `custom` (por defecto), `date` o `title`; `direction`: `asc` o `desc` (el orden propio no se invierte) |
 | POST | `/webs` | Crear. Lee título, favicon y `og:image` de la página (`usePageImage: false` para no descargar la imagen) |
 | GET / PATCH / DELETE | `/webs/:id` | Detalle, edición (incluye tags y colecciones), borrado |
 | PUT | `/webs/:id/preview` | Subir imagen propia (multipart, campo `image`) |
