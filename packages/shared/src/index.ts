@@ -34,7 +34,7 @@ export const webUpdate = z.object({
   collectionIds: collectionIds.optional(),
 })
 
-export const webSortModes = ['custom', 'title', 'collection', 'date'] as const
+export const webSortModes = ['custom', 'date', 'title'] as const
 export type WebSortMode = (typeof webSortModes)[number]
 
 export const sortDirections = ['asc', 'desc'] as const
@@ -44,13 +44,12 @@ export type SortDirection = (typeof sortDirections)[number]
 export const defaultSortDirection: Record<WebSortMode, SortDirection> = {
   custom: 'asc',
   title: 'asc',
-  collection: 'asc',
   date: 'desc',
 }
 
 export const webListQuery = z.object({
   search: z.string().trim().max(200).optional(),
-  /** Comma-separated tag names. Only webs that have ALL of them are returned. */
+  /** Comma-separated tag names. Webs that have ANY of them are returned. */
   tags: z.string().max(2000).optional(),
   collection: z.uuid().optional(),
   sort: z.enum(webSortModes).default('custom'),

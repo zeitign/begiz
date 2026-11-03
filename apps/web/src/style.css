@@ -132,10 +132,6 @@ fieldset {
   height: 14px;
 }
 
-.skeleton-chip {
-  height: 22px;
-}
-
 .skeleton-icon {
   width: 26px;
   height: 26px;
@@ -623,14 +619,6 @@ fieldset {
   gap: 6px;
 }
 
-.page-summary {
-  margin: 0 0 0 auto;
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--color-muted);
-}
-
 .field-label {
   font-size: 10px;
   letter-spacing: 0.12em;
@@ -639,103 +627,248 @@ fieldset {
 }
 
 .filter-bar {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 210px 190px auto;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.search-sentence {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+/* The bottom padding skips the striped strip, so the text lines up with the typed text. */
+.search-sentence-text {
+  align-self: center;
+  padding-bottom: 8px;
+  white-space: nowrap;
+}
+
+.search-box,
+.filter-frame {
+  display: flex;
+  flex-direction: column;
   border: 1px solid var(--color-border);
 }
 
-.filter-field {
-  display: flex;
-  flex-direction: column;
-  gap: 0;
+.search-box {
+  width: 220px;
+  min-width: 0;
 }
 
-.filter-field + .filter-field,
-.filter-direction {
+.search-box input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 12px;
+  border: none;
+}
+
+.search-box-placeholder {
+  flex: 1;
+  min-height: 32px;
+}
+
+.search-box input::placeholder {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  color: var(--color-muted);
+  opacity: 1;
+}
+
+.search-box input:focus {
+  outline: none;
+  box-shadow: inset 0 -2px 0 var(--color-text);
+}
+
+.filter-stripes {
+  position: relative;
+  flex: none;
+  height: 8px;
+  border-top: 1px solid var(--color-border);
+}
+
+.filter-stripes::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--color-stripe);
+  mask: url('./assets/dashed-stripes.svg');
+}
+
+.filter-cells {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 120px 120px auto;
+}
+
+.filter-dropdown + .filter-dropdown,
+.filter-count {
   border-left: 1px solid var(--color-border);
 }
 
-.filter-field .field-label {
-  padding: 7px 12px 0;
+.filter-dropdown {
+  position: relative;
 }
 
-.filter-field input,
-.filter-field select,
-.skeleton-field-text {
+.filter-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  width: 100%;
+  height: 100%;
+  padding: 9px 10px;
   border: none;
-  padding: 4px 12px 9px;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
-/* The focused cell gets an inner frame in the text color instead of the browser's blue ring,
-   which keeps the focus visible for keyboard users. */
-.filter-field:focus-within,
-.filter-direction:focus-visible {
+.filter-trigger:focus-visible,
+.order-direction button:focus-visible {
   outline: 2px solid var(--color-text);
   outline-offset: -2px;
 }
 
-.filter-field input:focus,
-.filter-field select:focus {
-  outline: none;
+.filter-panel {
+  position: absolute;
+  z-index: 2;
+  top: calc(100% + 8px);
+  left: -1px;
+  display: grid;
+  grid-template-rows: 0fr;
+  min-width: 200px;
+  visibility: hidden;
+  transition:
+    grid-template-rows 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    visibility 0s 0.25s;
 }
 
-.filter-direction {
-  width: 52px;
-  border-top: none;
-  border-right: none;
-  border-bottom: none;
-  font-size: 18px;
+.filter-trigger[aria-expanded='true'] + .filter-panel {
+  grid-template-rows: 1fr;
+  visibility: visible;
+  transition:
+    grid-template-rows 0.25s cubic-bezier(0.4, 0, 0.2, 1),
+    visibility 0s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .filter-panel,
+  .filter-trigger[aria-expanded='true'] + .filter-panel {
+    transition: none;
+  }
+}
+
+.filter-panel-content {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  border-radius: 0 0 10px 10px;
+  background: var(--color-background);
+}
+
+/* The hard shadow of the panel, drawn with the same stripes as the bars. */
+.filter-panel::before,
+.filter-panel::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  inset: 9px -9px -9px 9px;
+  border-radius: 0 0 10px 10px;
+}
+
+.filter-panel::before {
+  border: 1px solid var(--color-border);
+  background: var(--color-background);
+}
+
+.filter-panel::after {
+  background: var(--color-stripe);
+  mask: url('./assets/dashed-stripes.svg');
+}
+
+.filter-option {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+  margin: 0;
+  padding: 8px 12px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.filter-option input {
+  margin: 0;
+  accent-color: var(--color-text);
+}
+
+.filter-option-count {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--color-muted);
+}
+
+.order-direction {
+  display: flex;
+  border-top: 1px solid var(--color-border);
+}
+
+.order-direction button {
+  flex: 1;
+  min-height: 34px;
+  padding: 0;
+  border: none;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.order-direction button + button {
+  border-left: 1px solid var(--color-border);
+}
+
+.order-direction button[aria-pressed='true'] {
+  background: var(--color-text);
+  color: var(--color-background);
+}
+
+.filter-count {
+  display: flex;
+  align-items: center;
+  margin: 0;
+  padding: 9px 14px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--color-muted);
 }
 
 @media (max-width: 760px) {
-  .filter-bar {
-    grid-template-columns: minmax(0, 1fr) auto;
+  .search-sentence,
+  .filter-frame {
+    flex-basis: 100%;
   }
 
-  .filter-field {
-    grid-column: 1 / -1;
+  .search-box {
+    flex-basis: 100%;
+    width: auto;
   }
 
-  .filter-field + .filter-field {
+  .filter-cells {
+    grid-template-columns: 1fr;
+  }
+
+  .filter-dropdown + .filter-dropdown,
+  .filter-count {
     border-left: none;
     border-top: 1px solid var(--color-border);
   }
-
-  .filter-direction {
-    grid-column: 2;
-    border-top: 1px solid var(--color-border);
-  }
-}
-
-.tag-filters {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 8px;
-}
-
-.tag-filters .field-label {
-  margin-right: 4px;
-}
-
-.tag-filter {
-  display: flex;
-  padding: 0;
-  font-size: 12px;
-}
-
-.tag-filter > span {
-  padding: 4px 8px;
-}
-
-.tag-filter-count {
-  border-left: 1px solid currentColor;
-  opacity: 0.7;
-}
-
-.tag-filter.active {
-  background: var(--color-text);
-  color: var(--color-background);
 }
 
 .grid {

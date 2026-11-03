@@ -123,13 +123,14 @@ describe('listing webs', () => {
     expect(await listWebTitles('?search=_')).toEqual([])
   })
 
-  it('returns only the webs that have all the selected tags', async () => {
+  it('returns the webs that have any of the selected tags', async () => {
     await saveWeb(user, { title: 'Dark and serif', tags: ['dark', 'serif'] })
     await saveWeb(user, { title: 'Only dark', tags: ['dark'] })
     await saveWeb(user, { title: 'Only serif', tags: ['serif'] })
+    await saveWeb(user, { title: 'Untagged' })
 
     expect(await listWebTitles('?tags=dark')).toEqual(['Only dark', 'Dark and serif'])
-    expect(await listWebTitles('?tags=dark,Serif')).toEqual(['Dark and serif'])
+    expect(await listWebTitles('?tags=dark,Serif')).toEqual(['Only serif', 'Only dark', 'Dark and serif'])
   })
 
   it('filters by collection, combined with the other filters', async () => {

@@ -1,7 +1,5 @@
 <script setup lang="ts">
 import SkeletonCards from './SkeletonCards.vue'
-
-const placeholderTagWidths = [64, 88, 56, 104, 72, 60, 92]
 </script>
 
 <!-- Shown while the session is checked: the mosaic as it will look, with what is already known as text. -->
@@ -33,27 +31,21 @@ const placeholderTagWidths = [64, 88, 56, 104, 72, 60, 92]
     </div>
     <main class="page wide stack">
       <div class="filter-bar skeleton" aria-hidden="true">
-        <span class="filter-field">
-          <span class="field-label">Search</span>
-          <span class="skeleton-field-text">Title contains…</span>
+        <span class="search-sentence">
+          <span class="search-sentence-text">I'm gonna search</span>
+          <span class="search-box">
+            <span class="search-box-placeholder"></span>
+            <span class="filter-stripes"></span>
+          </span>
+          <span class="search-sentence-text">in this mosaic</span>
         </span>
-        <span class="filter-field">
-          <span class="field-label">Collection</span>
-          <span class="skeleton-field-text">All collections</span>
+        <span class="filter-frame">
+          <span class="filter-cells">
+            <span class="filter-dropdown"><span class="filter-trigger">Tags</span></span>
+            <span class="filter-dropdown"><span class="filter-trigger">Order</span></span>
+          </span>
+          <span class="filter-stripes"></span>
         </span>
-        <span class="filter-field">
-          <span class="field-label">Sort</span>
-          <span class="skeleton-field-text">Custom order</span>
-        </span>
-      </div>
-      <div class="tag-filters skeleton" aria-hidden="true">
-        <span class="field-label">Tags</span>
-        <span
-          v-for="(tagWidth, tagIndex) in placeholderTagWidths"
-          :key="tagIndex"
-          class="skeleton-box skeleton-chip"
-          :style="{ width: `${tagWidth}px` }"
-        ></span>
       </div>
       <SkeletonCards />
     </main>

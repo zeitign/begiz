@@ -2,6 +2,7 @@
 import { keepPreviousData, useQuery, useQueryClient } from '@tanstack/vue-query'
 import {
   defaultSortDirection,
+  sortDirections,
   webSortModes,
   type SortDirection,
   type WebSortMode,
@@ -9,10 +10,12 @@ import {
 import { computed, ref, watch } from 'vue'
 import { VueDraggable, type DraggableEvent } from 'vue-draggable-plus'
 import { useRoute, useRouter, type LocationQueryRaw } from 'vue-router'
+import FilterDropdown from '../components/FilterDropdown.vue'
 import SkeletonCards from '../components/SkeletonCards.vue'
 import WebCard from '../components/WebCard.vue'
 import { api, errorMessage, responseBody, type WebCard as WebCardData } from '../lib/api'
-import { useCollections, useTags } from '../lib/queries'
+import { useTags } from '../lib/queries'
+import { useTypewriter } from '../lib/typewriter'
 
 // Filters live in the URL, so they survive reloads, can be shared and work with the back button.
 const route = useRoute()
@@ -28,9 +31,13 @@ const collectionFilter = computed(() =>
 
 const SORT_MODE_LABELS: Record<WebSortMode, string> = {
   custom: 'Custom order',
-  title: 'Title',
-  collection: 'Collection',
   date: 'Date added',
+  title: 'Title',
+}
+
+const SORT_DIRECTION_LABELS: Record<SortDirection, string> = {
+  asc: '↑ Asc',
+  desc: '↓ Desc',
 }
 
 const isSortMode = (value: unknown): value is WebSortMode =>
@@ -47,15 +54,21 @@ function changeSortMode(nextSortMode: WebSortMode) {
   updateFilters({ sort: nextSortMode === 'custom' ? '' : nextSortMode, direction: '' })
 }
 
-function reverseSortDirection() {
-  updateFilters({ direction: sortDirection.value === 'asc' ? 'desc' : 'asc' })
-}
-
 function updateFilters(changedFilters: LocationQueryRaw) {
   const nextQuery = { ...route.query, ...changedFilters }
   for (const key of Object.keys(nextQuery)) if (!nextQuery[key]) delete nextQuery[key]
   router.replace({ query: nextQuery })
 }
+
+const SEARCH_PLACEHOLDERS = [
+  'THAT WEB?',
+  'THE INSPIRATION?',
+  'THAT PORTFOLIO?',
+  'THAT TYPEFACE?',
+  'THAT LANDING?',
+  'THE GOOD ONE?',
+]
+const searchPlaceholder = useTypewriter(SEARCH_PLACEHOLDERS)
 
 const searchInput = ref(searchFilter.value)
 let searchDebounceTimer: ReturnType<typeof setTimeout> | undefined
@@ -72,7 +85,6 @@ function toggleTag(name: string) {
 }
 
 const { data: tags } = useTags()
-const { data: collections } = useCollections()
 const { data: webs, isPending, error } = useQuery({
   queryKey: ['webs', searchFilter, selectedTags, collectionFilter, sortMode, sortDirection],
   queryFn: () =>
@@ -90,10 +102,13 @@ const { data: webs, isPending, error } = useQuery({
   placeholderData: keepPreviousData,
 })
 
-const webCountSummary = computed(() => {
-  const webCount = webs.value?.length ?? 0
-  const countText = `${webCount} ${webCount === 1 ? 'web' : 'webs'}`
-  return isCustomOrder.value && webCount > 1 ? `${countText} · drag to reorder` : countText
+const tagsLabel = computed(() =>
+  selectedTags.value.length > 0 ? `Tags · ${selectedTags.value.length}` : 'Tags',
+)
+
+const webCountLabel = computed(() => {
+  if (!webs.value) return ''
+  return webs.value.length === 1 ? '1 web' : `${webs.value.length} webs`
 })
 
 const hasFilters = computed(() =>
@@ -134,60 +149,52 @@ async function saveDroppedPosition(event: DraggableEvent) {
 <template>
   <main class="page wide stack">
     <div class="filter-bar">
-      <label class="filter-field">
-        <span class="field-label">Search</span>
-        <input v-model="searchInput" type="search" placeholder="Title contains…" />
-      </label>
-      <label class="filter-field">
-        <span class="field-label">Collection</span>
-        <select
-          :value="collectionFilter"
-          @change="updateFilters({ collection: ($event.target as HTMLSelectElement).value })"
-        >
-          <option value="">All collections</option>
-          <option v-for="collection in collections" :key="collection.id" :value="collection.id">
-            {{ collection.name }} ({{ collection.webCount }})
-          </option>
-        </select>
-      </label>
-      <label class="filter-field">
-        <span class="field-label">Sort</span>
-        <select
-          :value="sortMode"
-          @change="changeSortMode(($event.target as HTMLSelectElement).value as WebSortMode)"
-        >
-          <option v-for="mode in webSortModes" :key="mode" :value="mode">{{ SORT_MODE_LABELS[mode] }}</option>
-        </select>
-      </label>
-      <button
-        v-if="!isCustomOrder"
-        type="button"
-        class="filter-direction"
-        :title="sortDirection === 'asc' ? 'Ascending' : 'Descending'"
-        :aria-label="sortDirection === 'asc' ? 'Ascending, click to reverse' : 'Descending, click to reverse'"
-        @click="reverseSortDirection"
-      >
-        {{ sortDirection === 'asc' ? '↑' : '↓' }}
-      </button>
-    </div>
-
-    <div v-if="tags?.length || webs?.length" class="tag-filters">
-      <template v-if="tags?.length">
-        <span class="field-label">Tags</span>
-        <button
-          v-for="tag in tags"
-          :key="tag.name"
-          type="button"
-          class="tag-filter"
-          :class="{ active: selectedTags.includes(tag.name) }"
-          :aria-pressed="selectedTags.includes(tag.name)"
-          @click="toggleTag(tag.name)"
-        >
-          <span>{{ tag.name }}</span>
-          <span class="tag-filter-count">{{ tag.webCount }}</span>
-        </button>
-      </template>
-      <p v-if="webs?.length" class="page-summary">{{ webCountSummary }}</p>
+      <div class="search-sentence">
+        <label for="mosaic-search" class="search-sentence-text">I'm gonna search</label>
+        <div class="search-box">
+          <input
+            id="mosaic-search"
+            v-model="searchInput"
+            type="search"
+            :placeholder="searchPlaceholder.displayedText.value"
+            @focus="searchPlaceholder.pause"
+            @blur="searchPlaceholder.resume"
+          />
+          <span class="filter-stripes" aria-hidden="true"></span>
+        </div>
+        <span class="search-sentence-text">in this mosaic</span>
+      </div>
+      <div class="filter-frame">
+        <div class="filter-cells">
+          <FilterDropdown :label="tagsLabel">
+            <label v-for="tag in tags" :key="tag.name" class="filter-option">
+              <input type="checkbox" :checked="selectedTags.includes(tag.name)" @change="toggleTag(tag.name)" />
+              <span>{{ tag.name }}</span>
+              <span class="filter-option-count">{{ tag.webCount }}</span>
+            </label>
+            <p v-if="!tags?.length" class="filter-option muted">No tags yet.</p>
+          </FilterDropdown>
+          <FilterDropdown label="Order">
+            <label v-for="mode in webSortModes" :key="mode" class="filter-option">
+              <input type="radio" name="web-order" :checked="sortMode === mode" @change="changeSortMode(mode)" />
+              <span>{{ SORT_MODE_LABELS[mode] }}</span>
+            </label>
+            <div v-if="!isCustomOrder" class="order-direction" role="group" aria-label="Direction">
+              <button
+                v-for="direction in sortDirections"
+                :key="direction"
+                type="button"
+                :aria-pressed="sortDirection === direction"
+                @click="updateFilters({ direction })"
+              >
+                {{ SORT_DIRECTION_LABELS[direction] }}
+              </button>
+            </div>
+          </FilterDropdown>
+          <p class="filter-count">{{ webCountLabel }}</p>
+        </div>
+        <span class="filter-stripes" aria-hidden="true"></span>
+      </div>
     </div>
 
     <p v-if="error" class="error">{{ error.message }}</p>
