@@ -291,7 +291,15 @@ fieldset {
   font-size: 14px;
 }
 
+/* A column as tall as the window, so a page can fill the height the header leaves (Collections does). */
+.app-layout {
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+}
+
 .page {
+  width: 100%;
   max-width: 1200px;
   margin: 0 auto;
   padding: 16px;
@@ -524,7 +532,8 @@ fieldset {
   text-decoration: none;
 }
 
-.folder-tab[aria-current='page'] {
+.folder-tab[aria-current='page'],
+.folder-tab.router-link-active:not(.folder-tab-home) {
   min-height: 44px;
   font-weight: 700;
 }
@@ -1006,6 +1015,287 @@ fieldset {
   align-items: center;
   justify-content: center;
   gap: 8px;
+}
+
+/* Collections: one column per collection, as tall as the window allows, side by side. */
+.collections-page {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-height: 480px;
+  padding-top: 18px;
+}
+
+.collections-message {
+  margin: 0;
+  padding-inline: 32px;
+}
+
+.collection-columns {
+  flex: 1;
+  display: flex;
+  gap: 24px;
+  overflow-x: auto;
+  padding: 4px 32px 24px;
+  scroll-snap-type: x proximity;
+  scroll-padding-inline: 32px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-border) transparent;
+}
+
+.collection-column {
+  flex: 0 0 228px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  scroll-snap-align: start;
+}
+
+/* Auto margins center the row when it fits and drop to zero when it overflows, so scrolling still
+   starts at the first column (justify-content: center would cut it off). */
+.collection-column:first-child {
+  margin-left: auto;
+}
+
+.collection-column:last-child {
+  margin-right: auto;
+}
+
+.collection-count {
+  margin: 0;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.collection-column .collection-count {
+  align-self: flex-end;
+}
+
+/* The name runs around a band between the outer and the inner frame. */
+.collection-frame {
+  --frame-band: 26px;
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: var(--frame-band) minmax(0, 1fr) var(--frame-band);
+  grid-template-rows: var(--frame-band) minmax(0, 1fr) var(--frame-band);
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+  background: var(--color-background);
+  text-decoration: none;
+}
+
+.collection-frame:focus-visible {
+  outline: 2px solid var(--color-text);
+  outline-offset: 6px;
+}
+
+.frame-text {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  line-height: var(--frame-band);
+}
+
+.frame-text-left {
+  grid-column: 1;
+  grid-row: 1 / 4;
+}
+
+.frame-text-top {
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.frame-text-right {
+  grid-column: 3;
+  grid-row: 1 / 4;
+}
+
+.frame-text-bottom {
+  grid-column: 2;
+  grid-row: 3;
+}
+
+/* The sides read bottom to top. Positioned absolutely, so their long text never sets the column height. */
+.frame-text-left > span,
+.frame-text-right > span {
+  position: absolute;
+  inset: 0;
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+}
+
+.frame-title {
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.collection-covers {
+  position: relative;
+  grid-column: 2;
+  grid-row: 2;
+  min-height: 0;
+  overflow: hidden;
+  border: 1px solid var(--color-border);
+}
+
+.collection-covers::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: var(--color-stripe);
+  mask: url('./assets/dashed-stripes.svg');
+}
+
+/* Wider than the frame and stacked down it, so each circle overlaps the next and the sides are cut off. */
+.collection-cover {
+  position: absolute;
+  top: calc(4% + var(--cover-index) * 21%);
+  left: 50%;
+  width: 118%;
+  aspect-ratio: 1;
+  overflow: hidden;
+  border-radius: 50%;
+  background: var(--color-background);
+  transform: translateX(-50%);
+  animation: cover-drift calc(14s + var(--cover-index) * 2.5s) ease-in-out calc(var(--cover-index) * -3.7s) infinite
+    paused;
+}
+
+.collection-cover:only-child {
+  top: 30%;
+}
+
+/* On hover the circles drift like in space. Each one has its own pace and starting point (a negative
+   delay), so they never move together; leaving the column freezes them where they are. */
+.collection-cover:nth-child(even) {
+  animation-direction: reverse;
+}
+
+.collection-frame:hover .collection-cover,
+.collection-frame:focus-visible .collection-cover {
+  animation-play-state: running;
+}
+
+/* translate and rotate, not transform, so the drift adds to the centering transform of the circle. */
+@keyframes cover-drift {
+  0%,
+  100% {
+    translate: 0 0;
+    rotate: 0deg;
+  }
+
+  20% {
+    translate: 26px -22px;
+    rotate: 6deg;
+  }
+
+  40% {
+    translate: -18px -34px;
+    rotate: -4deg;
+  }
+
+  60% {
+    translate: -30px 12px;
+    rotate: 5deg;
+  }
+
+  80% {
+    translate: 14px 30px;
+    rotate: -6deg;
+  }
+}
+
+.collection-cover .thumb {
+  height: 100%;
+}
+
+.collection-empty {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  padding: 6px 12px;
+  border: 1px solid var(--color-border);
+  background: var(--color-background);
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: var(--color-muted);
+  transform: translate(-50%, -50%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .collection-cover {
+    animation: none;
+  }
+}
+
+@media (max-width: 760px) {
+  .collections-message {
+    padding-inline: 16px;
+  }
+
+  .collection-columns {
+    padding-inline: 16px;
+    scroll-padding-inline: 16px;
+  }
+
+  .collection-column {
+    flex-basis: 72%;
+  }
+}
+
+/* The page of one collection. */
+.collection-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px 24px;
+}
+
+.collection-heading {
+  flex: 1;
+  min-width: 240px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.collection-back {
+  align-self: flex-start;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-muted);
+}
+
+.collection-name {
+  font-size: 30px;
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  text-transform: uppercase;
+}
+
+.collection-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.collection-actions button {
+  padding: 8px 12px;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
 }
 
 .dropzone {

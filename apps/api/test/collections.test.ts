@@ -22,8 +22,40 @@ describe('collections', () => {
     const response = await user.get('/collections')
 
     expect(await response.json()).toEqual([
-      { id: expect.any(String), name: 'Blogs', description: null, webCount: 0 },
-      { id: landings.id, name: 'Landing pages', description: 'Hero sections', webCount: 1 },
+      { id: expect.any(String), name: 'Blogs', description: null, webCount: 0, coverWebs: [] },
+      {
+        id: landings.id,
+        name: 'Landing pages',
+        description: 'Hero sections',
+        webCount: 1,
+        coverWebs: [{ id: expect.any(String), url: 'https://example.com', previewUrl: null, faviconUrl: null }],
+      },
+    ])
+  })
+
+  it('covers each collection with its first four webs in the custom order', async () => {
+    const portfolios = await createCollection('Portfolios')
+    const otherCollection = await createCollection('Other')
+    const savedWebIds: string[] = []
+    for (const title of ['First saved', 'Second saved', 'Third saved', 'Fourth saved', 'Fifth saved']) {
+      const response = await user.post('/webs', { url: 'https://example.com', title, collectionIds: [portfolios.id] })
+      savedWebIds.push((await response.json()).id)
+    }
+    await user.post('/webs', { url: 'https://example.com', title: 'Elsewhere', collectionIds: [otherCollection.id] })
+    // New webs go first in the custom order; moving the first saved web to the front changes the cover.
+    await user.put(`/webs/${savedWebIds[0]}/position`, { afterWebId: null })
+
+    const listedCollections: { id: string; webCount: number; coverWebs: { id: string }[] }[] = await (
+      await user.get('/collections')
+    ).json()
+    const portfoliosCover = listedCollections.find((collection) => collection.id === portfolios.id)!
+
+    expect(portfoliosCover.webCount).toBe(5)
+    expect(portfoliosCover.coverWebs.map((web) => web.id)).toEqual([
+      savedWebIds[0],
+      savedWebIds[4],
+      savedWebIds[3],
+      savedWebIds[2],
     ])
   })
 

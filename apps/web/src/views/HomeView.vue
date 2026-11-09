@@ -25,9 +25,6 @@ const searchFilter = computed(() => (typeof route.query.search === 'string' ? ro
 const selectedTags = computed(() =>
   typeof route.query.tags === 'string' ? route.query.tags.split(',').filter(Boolean) : [],
 )
-const collectionFilter = computed(() =>
-  typeof route.query.collection === 'string' ? route.query.collection : '',
-)
 
 const SORT_MODE_LABELS: Record<WebSortMode, string> = {
   custom: 'Custom order',
@@ -86,14 +83,13 @@ function toggleTag(name: string) {
 
 const { data: tags } = useTags()
 const { data: webs, isPending, error } = useQuery({
-  queryKey: ['webs', searchFilter, selectedTags, collectionFilter, sortMode, sortDirection],
+  queryKey: ['webs', searchFilter, selectedTags, sortMode, sortDirection],
   queryFn: () =>
     responseBody(
       api.webs.$get({
         query: {
           search: searchFilter.value || undefined,
           tags: selectedTags.value.join(',') || undefined,
-          collection: collectionFilter.value || undefined,
           sort: sortMode.value,
           direction: isCustomOrder.value ? undefined : sortDirection.value,
         },
@@ -111,9 +107,7 @@ const webCountLabel = computed(() => {
   return webs.value.length === 1 ? '1 web' : `${webs.value.length} webs`
 })
 
-const hasFilters = computed(() =>
-  Boolean(searchFilter.value || selectedTags.value.length || collectionFilter.value),
-)
+const hasFilters = computed(() => Boolean(searchFilter.value || selectedTags.value.length))
 
 // Local copy that the drag and drop reorders right away, before the API answers.
 const orderedWebs = ref<WebCardData[]>([])
