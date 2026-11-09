@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import { authReady, session } from './lib/supabase'
 import CollectionsView from './views/CollectionsView.vue'
+import CollectionView from './views/CollectionView.vue'
 import HomeView from './views/HomeView.vue'
 import LoginView from './views/LoginView.vue'
 import NewWebView from './views/NewWebView.vue'
@@ -23,7 +24,14 @@ export const router = createRouter({
     { path: '/login', name: 'login', component: LoginView, meta: { public: true } },
     { path: '/new', name: 'new', component: NewWebView },
     { path: '/webs/:id', name: 'web', component: WebDetailView, props: true },
-    { path: '/collections', name: 'collections', component: CollectionsView },
+    // Nested, so the Collections tab stays active on the page of each collection.
+    {
+      path: '/collections',
+      children: [
+        { path: '', name: 'collections', component: CollectionsView },
+        { path: ':id', name: 'collection', component: CollectionView, props: true },
+      ],
+    },
     { path: '/vault', name: 'vault', component: VaultPlaceholderView, meta: { space: 'vault' } },
     { path: '/vault/new', name: 'vault-new', component: VaultPlaceholderView, meta: { space: 'vault' } },
     {

@@ -9,7 +9,7 @@ plan de despliegue (14-oct-2026) y hoja de ruta de producto (2-nov-2026) en `beg
 | Tema | Decisión | Motivo |
 |---|---|---|
 | Front | Vue 3 + Vite + TypeScript, SPA | Herramienta privada tras login: no necesita SSR ni SEO. |
-| Estilo | Brutalista (rediseño aparcado): todo el texto en Geist Mono, línea fina, celdas y sombra dura, con los colores en variables CSS y tema claro/oscuro. Lo siguen el login, la página de error, la pantalla de carga, la cabecera y el mosaico | El rediseño se retoma cuando se vea cómo funciona la división entre Mosaic y Vault. Cada pantalla lleva una propuesta previa en el lienzo de diseño; con las variables, cambiar la paleta solo cambia valores. |
+| Estilo | Brutalista (rediseño aparcado): todo el texto en Geist Mono, línea fina, celdas y sombra dura, con los colores en variables CSS y tema claro/oscuro. Lo siguen el login, la página de error, la pantalla de carga, la cabecera, el mosaico y Collections | El rediseño se retoma cuando se vea cómo funciona la división entre Mosaic y Vault. Cada pantalla lleva una propuesta previa en el lienzo de diseño; con las variables, cambiar la paleta solo cambia valores. |
 | Backend | Node + Hono + Drizzle | Mismo lenguaje que el front; el cliente `hc` de Hono tipa las llamadas del front sin duplicar tipos. |
 | Base de datos | PostgreSQL en Supabase | Relacional (tags y colecciones son muchos a muchos); `pg_trgm` para buscar por título. |
 | Login | Supabase Auth (email + contraseña, registro público desactivado) | Cuentas creadas a mano en Supabase (de momento, la usuaria y su compañera). Cada cuenta ve solo sus datos. La API valida el JWT de Supabase. |
@@ -67,12 +67,12 @@ Todas las rutas van bajo `/api` y exigen sesión.
 
 | Método | Ruta | |
 |---|---|---|
-| GET | `/webs?search=&tags=a,b&collection=&sort=&direction=` | Mosaico con filtros. `sort`: `custom` (por defecto), `date` o `title`; `direction`: `asc` o `desc` (el orden propio no se invierte) |
+| GET | `/webs?search=&tags=a,b&collection=&sort=&direction=` | Mosaico con filtros (`collection` lo usa la página de cada colección). `sort`: `custom` (por defecto), `date` o `title`; `direction`: `asc` o `desc` (el orden propio no se invierte) |
 | POST | `/webs` | Crear. Lee título, favicon y `og:image` de la página (`usePageImage: false` para no descargar la imagen) |
 | GET / PATCH / DELETE | `/webs/:id` | Detalle, edición (incluye tags y colecciones), borrado |
 | PUT | `/webs/:id/preview` | Subir imagen propia (multipart, campo `image`) |
 | PUT | `/webs/:id/position` | Mover en el orden propio: `{ afterWebId }` (o `null` para ponerla la primera) |
-| GET / POST | `/collections` | Listar (con contador) y crear |
+| GET / POST | `/collections` | Listar (con contador y `coverWebs`, las cuatro primeras webs en el orden propio, para la portada) y crear |
 | PATCH / DELETE | `/collections/:id` | Renombrar y borrar (las webs no se borran) |
 | GET | `/tags` | Tags en uso con contador, ordenados por uso |
 
@@ -85,6 +85,13 @@ Todas las rutas van bajo `/api` y exigen sesión.
   explicación, y las pestañas `Save web`, `Collections` y la de inicio del espacio, alineadas con el
   espacio activo. Las rutas `/vault` muestran por ahora `VaultPlaceholderView`, hasta que existan
   sus pantallas.
+- **Collections** (`CollectionsView.vue`, `CollectionColumn.vue`): una columna por colección, tan
+  alta como deja la ventana y en fila con scroll horizontal. El nombre recorre el marco en
+  minúscula, con el título en mayúsculas abajo a la izquierda, y dentro van en círculos las
+  capturas de sus primeras webs sobre las rayas de la cabecera; al pasar el ratón flotan despacio,
+  cada una a su ritmo (nada se mueve con movimiento reducido). `/collections/:id`
+  (`CollectionView.vue`) muestra sus webs y permite renombrarla o borrarla. Para que la fila ocupe
+  el alto, la app es una columna de la altura de la ventana (`.app-layout`).
 - **Mosaico**: al arrastrar una tarjeta, una copia local cambia de orden al momento y la API guarda
   la posición después. Si la API falla, se vuelve al orden de la caché.
 - **Ventanas de información** (`lib/infoWindows.ts`): ventanas flotantes de solo lectura, varias a
@@ -130,6 +137,7 @@ Todas las rutas van bajo `/api` y exigen sesión.
 | Login | Login con el mismo estilo que la página de error y errores claros (PR #4) | Hecha (14-oct-2026) |
 | Despliegue gratuito | Publicar la app sin coste para usarla la usuaria y su compañera (ver «Despliegue») | Hecha (15-oct-2026): https://begiz.onrender.com |
 | Diseño | Diseño visual de la plataforma. Hecho: cabecera de celdas con la pestaña activa invertida y mosaico a pantalla completa (hasta cinco tarjetas por fila según el ancho, barra de filtros en celdas, acciones View, Edit y Open), todo en Geist Mono (PR #9, 26-oct-2026). Falta: revisar el resto de páginas y definir la paleta | **Aparcada** (2-nov-2026) hasta ver cómo funciona la división entre Mosaic y Vault |
+| Collections | Una columna por colección con su portada y una página por colección, que sustituye al filtro oculto del mosaico | Hecha |
 | Vault | Segundo espacio para guardar marcadores en folders anidados, con selección múltiple y buscador (ver «Vault») | **Siguiente** |
 | Importar marcadores | Subir un `bookmarks.html` al Vault, conservando las carpetas (ver «Vault») | Planificada |
 | Exportar marcadores | Generar un `bookmarks.html` con los folders y una carpeta `Mosaic` (ver «Vault») | Planificada |

@@ -1,50 +1,28 @@
 <script setup lang="ts">
-import { ref } from 'vue'
-import { api, errorMessage, responseBody, type Collection } from '../lib/api'
-import { useCollections, useInvalidateAll } from '../lib/queries'
+import { computed } from 'vue'
+import CollectionColumn from '../components/CollectionColumn.vue'
+import { useCollections } from '../lib/queries'
 
 const { data: collections, isPending, error: loadError } = useCollections()
-const invalidateAll = useInvalidateAll()
-const actionError = ref('')
 
-async function runAndRefresh(action: () => Promise<unknown>) {
-  actionError.value = ''
-  try {
-    await action()
-    await invalidateAll()
-  } catch (error) {
-    actionError.value = errorMessage(error)
-  }
-}
-
-function renameCollection(collection: Collection) {
-  const newName = prompt('New name', collection.name)?.trim()
-  if (!newName || newName === collection.name) return
-  runAndRefresh(() =>
-    responseBody(api.collections[':id'].$patch({ param: { id: collection.id }, json: { name: newName } })),
-  )
-}
-
-function deleteCollection(collection: Collection) {
-  if (!confirm(`Delete the collection "${collection.name}"? Its webs are kept.`)) return
-  runAndRefresh(() => responseBody(api.collections[':id'].$delete({ param: { id: collection.id } })))
-}
+const collectionCountLabel = computed(() => {
+  const collectionCount = collections.value?.length ?? 0
+  return collectionCount === 1 ? '1 collection' : `${collectionCount} collections`
+})
 </script>
 
 <template>
-  <main class="page narrow stack">
-    <p class="muted">Collections are created when saving or editing a web.</p>
-    <p v-if="loadError" class="error">{{ loadError.message }}</p>
-    <p v-else-if="isPending">Loading…</p>
-    <p v-else-if="!collections?.length">No collections yet.</p>
-    <div v-for="collection in collections" :key="collection.id" class="row">
-      <RouterLink class="grow" :to="{ name: 'home', query: { collection: collection.id } }">
-        {{ collection.name }}
-      </RouterLink>
-      <span class="muted">{{ collection.webCount }} {{ collection.webCount === 1 ? 'web' : 'webs' }}</span>
-      <button type="button" @click="renameCollection(collection)">Rename</button>
-      <button type="button" @click="deleteCollection(collection)">Delete</button>
-    </div>
-    <p v-if="actionError" class="error">{{ actionError }}</p>
+  <main class="collections-page">
+    <p v-if="loadError" class="collections-message error">{{ loadError.message }}</p>
+    <p v-else-if="isPending" class="collections-message">Loading…</p>
+    <p v-else-if="!collections?.length" class="collections-message muted">
+      No collections yet. They are created when saving or editing a web.
+    </p>
+    <template v-else>
+      <p class="collections-message collection-count">{{ collectionCountLabel }}</p>
+      <div class="collection-columns">
+        <CollectionColumn v-for="collection in collections" :key="collection.id" :collection="collection" />
+      </div>
+    </template>
   </main>
 </template>

@@ -38,50 +38,52 @@ function signOut() {
   <ErrorPage v-if="appError" :kind="appError" />
   <AppSkeleton v-else-if="!isAuthReady" />
   <template v-else>
-    <header v-if="session" class="header">
-      <strong class="header-cell header-brand">
-        <span class="header-logo crossed" aria-hidden="true"></span>
-        Begiz
-      </strong>
-      <nav class="header-tabs">
-        <RouterLink
-          :to="{ name: 'home' }"
-          class="header-cell header-tab header-tab-mosaic"
-          :aria-current="currentSpace === 'mosaic' ? 'page' : undefined"
+    <div class="app-layout">
+      <header v-if="session" class="header">
+        <strong class="header-cell header-brand">
+          <span class="header-logo crossed" aria-hidden="true"></span>
+          Begiz
+        </strong>
+        <nav class="header-tabs">
+          <RouterLink
+            :to="{ name: 'home' }"
+            class="header-cell header-tab header-tab-mosaic"
+            :aria-current="currentSpace === 'mosaic' ? 'page' : undefined"
+          >
+            Mosaic
+          </RouterLink>
+          <RouterLink
+            :to="{ name: 'vault' }"
+            class="header-cell header-tab"
+            :aria-current="currentSpace === 'vault' ? 'page' : undefined"
+          >
+            Vault
+          </RouterLink>
+        </nav>
+        <span class="header-spacer"></span>
+        <span class="header-cell header-email">{{ session.user.email }}</span>
+        <button
+          type="button"
+          class="header-cell header-theme"
+          :title="themeToggleLabel"
+          :aria-label="themeToggleLabel"
+          @click="toggleTheme"
         >
-          Mosaic
-        </RouterLink>
-        <RouterLink
-          :to="{ name: 'vault' }"
-          class="header-cell header-tab"
-          :aria-current="currentSpace === 'vault' ? 'page' : undefined"
-        >
-          Vault
-        </RouterLink>
-      </nav>
-      <span class="header-spacer"></span>
-      <span class="header-cell header-email">{{ session.user.email }}</span>
-      <button
-        type="button"
-        class="header-cell header-theme"
-        :title="themeToggleLabel"
-        :aria-label="themeToggleLabel"
-        @click="toggleTheme"
-      >
-        <svg v-if="theme === 'dark'" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-          <circle cx="12" cy="12" r="4" />
-          <path
-            d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"
-          />
-        </svg>
-        <svg v-else viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-          <path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" />
-        </svg>
-      </button>
-      <button type="button" class="header-cell header-action" @click="signOut">Sign out</button>
-    </header>
-    <SpaceNav v-if="session" :space="currentSpace" />
-    <RouterView />
+          <svg v-if="theme === 'dark'" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+            <circle cx="12" cy="12" r="4" />
+            <path
+              d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"
+            />
+          </svg>
+          <svg v-else viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
+            <path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" />
+          </svg>
+        </button>
+        <button type="button" class="header-cell header-action" @click="signOut">Sign out</button>
+      </header>
+      <SpaceNav v-if="session" :space="currentSpace" />
+      <RouterView />
+    </div>
     <template v-if="session">
       <template v-for="infoWindow in infoWindows" :key="infoWindow.webId">
         <WebInfoWindow v-if="!infoWindow.isMinimized" :info-window="infoWindow" />
