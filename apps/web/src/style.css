@@ -13,14 +13,16 @@
   --color-muted: #555;
   --color-stripe: #888;
   --color-error: #b00020;
-  --font-mono: 'Geist Mono Variable', ui-monospace, 'SF Mono', Menlo, Consolas, 'DejaVu Sans Mono', monospace;
+  --font-mono:
+    "Geist Mono Variable", ui-monospace, "SF Mono", Menlo, Consolas,
+    "DejaVu Sans Mono", monospace;
   --header-height: 56px;
   /* Fixed so the options under the header can line up with the space tabs. */
   --brand-width: 136px;
   --mosaic-tab-width: 106px;
 }
 
-:root[data-theme='dark'] {
+:root[data-theme="dark"] {
   color-scheme: dark;
   --color-background: #000;
   --color-text: #fff;
@@ -95,8 +97,18 @@ fieldset {
    Boxes stand for content not known yet; an image is its frame crossed corner to corner. */
 .crossed {
   background:
-    linear-gradient(to top right, transparent calc(50% - 0.5px), var(--color-border) 50%, transparent calc(50% + 0.5px)),
-    linear-gradient(to bottom right, transparent calc(50% - 0.5px), var(--color-border) 50%, transparent calc(50% + 0.5px));
+    linear-gradient(
+      to top right,
+      transparent calc(50% - 0.5px),
+      var(--color-border) 50%,
+      transparent calc(50% + 0.5px)
+    ),
+    linear-gradient(
+      to bottom right,
+      transparent calc(50% - 0.5px),
+      var(--color-border) 50%,
+      transparent calc(50% + 0.5px)
+    );
 }
 
 .skeleton {
@@ -401,7 +413,7 @@ fieldset {
   stroke-linecap: round;
 }
 
-.header-tab[aria-current='page'] {
+.header-tab[aria-current="page"] {
   background: var(--color-text);
   color: var(--color-background);
 }
@@ -425,11 +437,11 @@ fieldset {
 
 /* A mask rather than a plain background image, so the stripes follow the theme colors. */
 .space-explainer::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   background: var(--color-stripe);
-  mask: url('./assets/dashed-stripes.svg');
+  mask: url("./assets/dashed-stripes.svg");
 }
 
 .what-is-button {
@@ -532,7 +544,7 @@ fieldset {
   text-decoration: none;
 }
 
-.folder-tab[aria-current='page'],
+.folder-tab[aria-current="page"],
 .folder-tab.router-link-active:not(.folder-tab-home) {
   min-height: 44px;
   font-weight: 700;
@@ -699,11 +711,11 @@ fieldset {
 }
 
 .filter-stripes::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   background: var(--color-stripe);
-  mask: url('./assets/dashed-stripes.svg');
+  mask: url("./assets/dashed-stripes.svg");
 }
 
 .filter-cells {
@@ -755,7 +767,7 @@ fieldset {
     visibility 0s 0.25s;
 }
 
-.filter-trigger[aria-expanded='true'] + .filter-panel {
+.filter-trigger[aria-expanded="true"] + .filter-panel {
   grid-template-rows: 1fr;
   visibility: visible;
   transition:
@@ -765,7 +777,7 @@ fieldset {
 
 @media (prefers-reduced-motion: reduce) {
   .filter-panel,
-  .filter-trigger[aria-expanded='true'] + .filter-panel {
+  .filter-trigger[aria-expanded="true"] + .filter-panel {
     transition: none;
   }
 }
@@ -783,7 +795,7 @@ fieldset {
 /* The hard shadow of the panel, drawn with the same stripes as the bars. */
 .filter-panel::before,
 .filter-panel::after {
-  content: '';
+  content: "";
   position: absolute;
   z-index: -1;
   inset: 9px -9px -9px 9px;
@@ -797,7 +809,7 @@ fieldset {
 
 .filter-panel::after {
   background: var(--color-stripe);
-  mask: url('./assets/dashed-stripes.svg');
+  mask: url("./assets/dashed-stripes.svg");
 }
 
 .filter-option {
@@ -841,7 +853,7 @@ fieldset {
   border-left: 1px solid var(--color-border);
 }
 
-.order-direction button[aria-pressed='true'] {
+.order-direction button[aria-pressed="true"] {
   background: var(--color-text);
   color: var(--color-background);
 }
@@ -1045,11 +1057,37 @@ fieldset {
 }
 
 .collection-column {
-  flex: 0 0 228px;
+  --column-width: 228px;
+  --column-widening: 72px;
+  flex: 0 0 var(--column-width);
   display: flex;
   flex-direction: column;
-  gap: 8px;
   scroll-snap-align: start;
+  /* A damped spring: the width overshoots, comes back and settles. */
+  transition: flex-basis 1.2s
+    linear(
+      0, 0.175, 0.4, 0.637, 0.857, 1.039, 1.174, 1.257, 1.292, 1.286, 1.25, 1.195, 1.131, 1.069, 1.014, 0.97,
+      0.941, 0.925, 0.921, 0.927, 0.939, 0.955, 0.973, 0.989, 1.002, 1.012, 1.019, 1.021, 1.021, 1.018, 1.014,
+      1.01, 1.005, 1.001, 0.998, 0.996, 0.995, 0.994, 0.995, 0.996, 1
+    );
+}
+
+/* The hovered column widens and its neighbours give up the same width, so the row keeps its size.
+   At either end of the row the only neighbour gives it all. */
+@media (hover: hover) {
+  .collection-column:hover {
+    flex-basis: calc(var(--column-width) + var(--column-widening));
+  }
+
+  .collection-column:has(+ .collection-column:hover),
+  .collection-column:hover + .collection-column {
+    flex-basis: calc(var(--column-width) - var(--column-widening) / 2);
+  }
+
+  .collection-column:first-child:hover + .collection-column,
+  .collection-column:has(+ .collection-column:last-child:hover) {
+    flex-basis: calc(var(--column-width) - var(--column-widening));
+  }
 }
 
 /* Auto margins center the row when it fits and drop to zero when it overflows, so scrolling still
@@ -1068,10 +1106,6 @@ fieldset {
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--color-muted);
-}
-
-.collection-column .collection-count {
-  align-self: flex-end;
 }
 
 /* The name runs around a band between the outer and the inner frame. */
@@ -1134,7 +1168,7 @@ fieldset {
 }
 
 .frame-title {
-  font-size: 15px;
+  font-size: 20px;
   letter-spacing: 0.02em;
   text-transform: uppercase;
 }
@@ -1149,26 +1183,28 @@ fieldset {
 }
 
 .collection-covers::before {
-  content: '';
+  content: "";
   position: absolute;
   inset: 0;
   background: var(--color-stripe);
-  mask: url('./assets/dashed-stripes.svg');
+  mask: url("./assets/dashed-stripes.svg");
 }
 
-/* Wider than the frame and stacked down it, so each circle overlaps the next and the sides are cut off. */
+/* Wider than the frame and stacked down it, so each circle overlaps the next and the sides are cut off.
+   The size comes from the resting column width (its inner frame, 118%), so circles keep their size
+   while the column widens or narrows on hover. */
 .collection-cover {
   position: absolute;
   top: calc(4% + var(--cover-index) * 21%);
   left: 50%;
-  width: 118%;
+  width: calc((var(--column-width) - 2 * var(--frame-band) - 4px) * 1.18);
   aspect-ratio: 1;
   overflow: hidden;
   border-radius: 50%;
   background: var(--color-background);
   transform: translateX(-50%);
-  animation: cover-drift calc(14s + var(--cover-index) * 2.5s) ease-in-out calc(var(--cover-index) * -3.7s) infinite
-    paused;
+  animation: cover-drift calc(14s + var(--cover-index) * 2.5s) ease-in-out
+    calc(var(--cover-index) * -3.7s) infinite paused;
 }
 
 .collection-cover:only-child {
@@ -1235,6 +1271,10 @@ fieldset {
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .collection-column {
+    transition: none;
+  }
+
   .collection-cover {
     animation: none;
   }
@@ -1252,6 +1292,11 @@ fieldset {
 
   .collection-column {
     flex-basis: 72%;
+  }
+
+  /* On phones the column width is a share of the screen, so the circles follow the frame instead. */
+  .collection-cover {
+    width: 118%;
   }
 }
 
