@@ -87,9 +87,10 @@ Todas las rutas van bajo `/api` y exigen sesión.
   sus pantallas.
 - **Collections** (`CollectionsView.vue`, `CollectionColumn.vue`): una columna por colección, tan
   alta como deja la ventana y en fila con scroll horizontal. El nombre recorre el marco en
-  minúscula, con el título en mayúsculas abajo a la izquierda, y dentro van en círculos las
-  capturas de sus primeras webs sobre las rayas de la cabecera; al pasar el ratón flotan despacio,
-  cada una a su ritmo (nada se mueve con movimiento reducido). `/collections/:id`
+  minúscula, con el título en mayúsculas arriba a la izquierda, y dentro van en círculos las
+  capturas de sus primeras webs sobre las rayas de la cabecera. Al pasar el ratón, la columna se
+  ensancha con un rebote elástico a costa de sus vecinas (la fila no cambia de ancho) y los
+  círculos flotan despacio, cada uno a su ritmo (nada se mueve con movimiento reducido). `/collections/:id`
   (`CollectionView.vue`) muestra sus webs y permite renombrarla o borrarla. Para que la fila ocupe
   el alto, la app es una columna de la altura de la ventana (`.app-layout`).
 - **Mosaico**: al arrastrar una tarjeta, una copia local cambia de orden al momento y la API guarda
