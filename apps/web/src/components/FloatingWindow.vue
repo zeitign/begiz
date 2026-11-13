@@ -5,9 +5,13 @@ const props = defineProps<{
   title: string
   x: number
   y: number
-  /** null keeps the default width from the stylesheet. The height always follows the content. */
+  /** null keeps the default width from the stylesheet. */
   width: number | null
+  /** null lets the height follow the content. */
+  height: number | null
   isMaximized: boolean
+  /** The window in front of the others: its title bar shows a blinking recording dot. */
+  isActive: boolean
   stackOrder: number
   /** Where the window shrinks to when minimized. Without it, the window just disappears. */
   getMinimizeTargetRect?: () => DOMRect | undefined
@@ -16,15 +20,17 @@ const props = defineProps<{
 const emit = defineEmits<{
   move: [x: number, y: number]
   resize: [x: number, width: number]
+  resizeHeight: [height: number]
   focus: []
   minimize: []
   toggleMaximize: []
   close: []
 }>()
 
-type ResizeEdge = 'left' | 'right'
-const RESIZE_EDGES: ResizeEdge[] = ['left', 'right']
+type ResizeHandle = 'left' | 'right' | 'bottom' | 'bottom-left' | 'bottom-right'
+const RESIZE_HANDLES: ResizeHandle[] = ['left', 'right', 'bottom', 'bottom-left', 'bottom-right']
 const MIN_WIDTH = 280
+const MIN_HEIGHT = 200
 const MINIMIZE_ANIMATION_MS = 320
 /** Clockwise when the window sits right of its target, counterclockwise when it sits left. */
 const MINIMIZE_ROTATION_DEG = 10
@@ -33,7 +39,14 @@ const MINIMIZE_EXTRA_SHRINK = 0.65
 
 const windowElement = ref<HTMLElement | null>(null)
 let dragStart: { pointerX: number; pointerY: number; windowX: number; windowY: number } | null = null
-let resizeStart: { edge: ResizeEdge; pointerX: number; x: number; width: number } | null = null
+let resizeStart: {
+  handle: ResizeHandle
+  pointerX: number
+  pointerY: number
+  x: number
+  width: number
+  height: number
+} | null = null
 
 const clamp = (value: number, min: number, max: number) => Math.min(Math.max(value, min), max)
 
@@ -66,25 +79,41 @@ function endDrag() {
   dragStart = null
 }
 
-function startResize(edge: ResizeEdge, event: PointerEvent) {
+function startResize(handle: ResizeHandle, event: PointerEvent) {
   const windowSize = windowElement.value?.getBoundingClientRect()
   if (!windowSize || event.button !== 0) return
-  const handle = event.currentTarget as HTMLElement
-  handle.setPointerCapture(event.pointerId)
-  resizeStart = { edge, pointerX: event.clientX, x: props.x, width: windowSize.width }
+  const handleElement = event.currentTarget as HTMLElement
+  handleElement.setPointerCapture(event.pointerId)
+  resizeStart = {
+    handle,
+    pointerX: event.clientX,
+    pointerY: event.clientY,
+    x: props.x,
+    width: windowSize.width,
+    height: windowSize.height,
+  }
 }
 
-/** Dragging the left edge also moves the window, so the right edge stays in place. */
+/**
+ * A bottom corner resizes like its side edge and the bottom edge at once. Dragging the left side also
+ * moves the window, so the right edge stays in place.
+ */
 function resize(event: PointerEvent) {
   if (!resizeStart) return
+  const { handle } = resizeStart
   const deltaX = event.clientX - resizeStart.pointerX
-  if (resizeStart.edge === 'right') {
+  if (handle === 'right' || handle === 'bottom-right') {
     const width = clamp(resizeStart.width + deltaX, MIN_WIDTH, window.innerWidth - resizeStart.x)
     emit('resize', resizeStart.x, width)
-  } else {
+  }
+  if (handle === 'left' || handle === 'bottom-left') {
     const rightEdge = resizeStart.x + resizeStart.width
     const width = clamp(resizeStart.width - deltaX, MIN_WIDTH, rightEdge)
     emit('resize', rightEdge - width, width)
+  }
+  if (handle.startsWith('bottom')) {
+    const height = resizeStart.height + event.clientY - resizeStart.pointerY
+    emit('resizeHeight', clamp(height, MIN_HEIGHT, window.innerHeight - props.y))
   }
 }
 
@@ -129,7 +158,8 @@ const windowStyle = computed(() => {
   const zIndex = 100 + props.stackOrder
   if (props.isMaximized) return { zIndex }
   const customWidth = props.width ? { width: `${props.width}px` } : {}
-  return { left: `${props.x}px`, top: `${props.y}px`, zIndex, ...customWidth }
+  const customHeight = props.height ? { height: `${props.height}px` } : {}
+  return { left: `${props.x}px`, top: `${props.y}px`, zIndex, ...customWidth, ...customHeight }
 })
 </script>
 
@@ -137,7 +167,7 @@ const windowStyle = computed(() => {
   <section
     ref="windowElement"
     class="window"
-    :class="{ maximized: isMaximized }"
+    :class="{ maximized: isMaximized, active: isActive }"
     :style="windowStyle"
     role="dialog"
     :aria-label="title"
@@ -150,18 +180,33 @@ const windowStyle = computed(() => {
       @pointerup="endDrag"
       @pointercancel="endDrag"
     >
+      <span class="window-recording-dot" aria-hidden="true"></span>
       <span class="window-title">{{ title }}</span>
       <div class="window-controls">
-        <button type="button" title="Minimize" aria-label="Minimize" @click="minimize">_</button>
+        <button type="button" title="Minimize" aria-label="Minimize" @click="minimize">
+          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+            <path d="M3 12h10" />
+          </svg>
+        </button>
         <button
           type="button"
           :title="isMaximized ? 'Restore' : 'Maximize'"
           :aria-label="isMaximized ? 'Restore' : 'Maximize'"
           @click="emit('toggleMaximize')"
         >
-          {{ isMaximized ? '❐' : '□' }}
+          <svg v-if="isMaximized" viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+            <path d="M3 6h7v7H3z" />
+            <path d="M6 6V3h7v7h-3" />
+          </svg>
+          <svg v-else viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+            <path d="M3 3h10v10H3z" />
+          </svg>
         </button>
-        <button type="button" title="Close" aria-label="Close" @click="emit('close')">×</button>
+        <button type="button" title="Close" aria-label="Close" @click="emit('close')">
+          <svg viewBox="0 0 16 16" width="16" height="16" aria-hidden="true">
+            <path d="M3.5 3.5l9 9M12.5 3.5l-9 9" />
+          </svg>
+        </button>
       </div>
     </header>
     <div class="window-body">
@@ -169,11 +214,11 @@ const windowStyle = computed(() => {
     </div>
     <template v-if="!isMaximized">
       <div
-        v-for="edge in RESIZE_EDGES"
-        :key="edge"
+        v-for="handle in RESIZE_HANDLES"
+        :key="handle"
         class="window-resize-handle"
-        :class="edge"
-        @pointerdown="startResize(edge, $event)"
+        :class="handle"
+        @pointerdown="startResize(handle, $event)"
         @pointermove="resize"
         @pointerup="endResize"
         @pointercancel="endResize"
