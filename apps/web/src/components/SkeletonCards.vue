@@ -13,12 +13,13 @@ const placeholderTitleWidths = ['72%', '54%', '86%', '63%', '48%', '78%', '58%',
     >
       <span class="skeleton-image crossed"></span>
       <div class="card-body">
-        <span class="skeleton-box skeleton-text" :style="{ width: titleWidth }"></span>
-      </div>
-      <div class="card-actions">
-        <span class="card-action">View</span>
-        <span class="card-action">Edit</span>
-        <span class="card-action">Open</span>
+        <span class="card-open">
+          <span class="skeleton-box skeleton-text" :style="{ width: titleWidth }"></span>
+        </span>
+        <div class="card-actions">
+          <span class="card-action"></span>
+          <span class="card-action"></span>
+        </div>
       </div>
     </article>
   </div>

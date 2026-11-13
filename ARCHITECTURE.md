@@ -95,8 +95,17 @@ Todas las rutas van bajo `/api` y exigen sesión.
   el alto, la app es una columna de la altura de la ventana (`.app-layout`).
 - **Mosaico**: al arrastrar una tarjeta, una copia local cambia de orden al momento y la API guarda
   la posición después. Si la API falla, se vuelve al orden de la caché.
-- **Ventanas de información** (`lib/infoWindows.ts`): ventanas flotantes de solo lectura, varias a
-  la vez, que se pueden mover, ensanchar, minimizar y maximizar.
+- **Tarjeta del mosaico** (`WebCard.vue`): el título, a la izquierda, abre la ventana de
+  información igual que la imagen; a la derecha, los iconos Edit y Open.
+- **Ventanas de información** (`lib/infoWindows.ts`, `FloatingWindow.vue`, `WebInfoWindow.vue`):
+  ventanas flotantes de solo lectura, varias a la vez, que se pueden mover, cambiar de tamaño por
+  los lados, el borde de abajo y las esquinas inferiores, minimizar y maximizar. La activa (la que
+  está delante) lleva un punto que parpadea. La imagen va a la izquierda y la información en una
+  columna a la derecha que se puede ensanchar; al abrirse, una imagen muy alta no pasa de 4:3 y hace
+  scroll. A pantalla completa, o si la ventana es estrecha, la información pasa debajo: su franja
+  con el título se queda visible abajo mientras la imagen sube, y después sube el texto sobre la
+  imagen. `WebInfoWindow` mide la imagen y el bloque de información y se los pasa al CSS
+  (`--image-height`, `--details-height`), que lo resuelve con `position: sticky`.
 - **Tema** (`lib/theme.ts`): pone `data-theme` en `<html>`. Sigue el tema del sistema hasta que se
   elige uno con el botón de la cabecera, que se recuerda en `localStorage`.
 - **Arranque** (`lib/supabase.ts`): la app se monta enseguida y el router espera a `authReady`, que

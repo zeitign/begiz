@@ -12,37 +12,41 @@ defineProps<{ web: WebCard }>()
       <WebThumb :web="web" />
     </div>
     <div class="card-body">
-      <strong class="card-title">{{ web.title }}</strong>
-    </div>
-    <div class="card-actions">
-      <button type="button" class="card-action" @click="openInfoWindow(web.id)">
-        <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
-          <path d="M2 12s3.6-6.5 10-6.5S22 12 22 12s-3.6 6.5-10 6.5S2 12 2 12z" />
-          <circle cx="12" cy="12" r="3" />
-        </svg>
-        View
-      </button>
-      <RouterLink :to="{ name: 'web', params: { id: web.id } }" class="card-action">
-        <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
-          <path d="M16.5 3.5l4 4L8 20H4v-4L16.5 3.5z" />
-          <path d="M14 6l4 4" />
-        </svg>
-        Edit
-      </RouterLink>
-      <a
-        :href="web.url"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="card-action"
-        :aria-label="`Open ${web.title} in a new tab`"
+      <button
+        type="button"
+        class="card-open"
+        :aria-label="`View ${web.title}`"
+        @click="openInfoWindow(web.id)"
       >
-        <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
-          <path d="M14 4h6v6" />
-          <path d="M20 4L10 14" />
-          <path d="M18 14v6H4V6h6" />
-        </svg>
-        Open
-      </a>
+        <strong class="card-title"><span class="card-title-text">{{ web.title }}</span></strong>
+      </button>
+      <div class="card-actions">
+        <RouterLink
+          :to="{ name: 'web', params: { id: web.id } }"
+          class="card-action"
+          title="Edit"
+          :aria-label="`Edit ${web.title}`"
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+            <path d="M16.5 3.5l4 4L8 20H4v-4L16.5 3.5z" />
+            <path d="M14 6l4 4" />
+          </svg>
+        </RouterLink>
+        <a
+          :href="web.url"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="card-action"
+          title="Open in a new tab"
+          :aria-label="`Open ${web.title} in a new tab`"
+        >
+          <svg viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+            <path d="M14 4h6v6" />
+            <path d="M20 4L10 14" />
+            <path d="M18 14v6H4V6h6" />
+          </svg>
+        </a>
+      </div>
     </div>
   </article>
 </template>
