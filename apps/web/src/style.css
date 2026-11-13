@@ -961,39 +961,55 @@ fieldset {
   transform: scale(1.04);
 }
 
+/* Title on the left, up to a short gap before the icons (it opens the info window, like the image). */
 .card-body {
   flex: 1;
-  padding: 10px;
   display: flex;
-  flex-direction: column;
-  gap: 8px;
+  justify-content: space-between;
+  gap: 24px;
+  min-height: 64px;
+}
+
+.card-open {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  padding: 0 10px;
+  border: none;
+  background: transparent;
+  text-align: left;
+}
+
+/* Only the words are highlighted, line by line, not the whole box. */
+.card-open:hover .card-title-text,
+.card-open:focus-visible .card-title-text {
+  background: var(--color-text);
+  color: var(--color-background);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
 }
 
 .card-title {
   font-weight: 600;
   line-height: 1.3;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  overflow-wrap: anywhere;
 }
 
 .card-actions {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  border-top: 1px solid var(--color-border);
-  font-size: 11px;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
+  display: flex;
+  border-left: 1px solid var(--color-border);
 }
 
 .card-action {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  min-height: 40px;
-  padding: 0;
-  border: none;
-  background: transparent;
-  letter-spacing: inherit;
-  text-transform: inherit;
+  width: 46px;
   text-decoration: none;
 }
 
