@@ -147,7 +147,7 @@ Todas las rutas van bajo `/api` y exigen sesión.
 | Login | Login con el mismo estilo que la página de error y errores claros (PR #4) | Hecha (14-oct-2026) |
 | Despliegue gratuito | Publicar la app sin coste para usarla la usuaria y su compañera (ver «Despliegue») | Hecha (15-oct-2026): https://begiz.onrender.com |
 | Diseño | Diseño visual de la plataforma. Hecho: cabecera de celdas con la pestaña activa invertida y mosaico a pantalla completa (hasta cinco tarjetas por fila según el ancho, barra de filtros en celdas, acciones View, Edit y Open), todo en Geist Mono (PR #9, 26-oct-2026). Falta: revisar el resto de páginas y definir la paleta | **Aparcada** (2-nov-2026) hasta ver cómo funciona la división entre Mosaic y Vault |
-| Collections | Una columna por colección con su portada y una página por colección, que sustituye al filtro oculto del mosaico | Hecha |
+| Collections | Una columna por colección con su portada y una página por colección, que sustituye al filtro oculto del mosaico | Hecha; renombrar y borrar validados con el Supabase real (17-nov-2026) |
 | Vault | Segundo espacio para guardar marcadores en folders anidados, con selección múltiple y buscador (ver «Vault») | **Siguiente** |
 | Importar marcadores | Subir un `bookmarks.html` al Vault, conservando las carpetas (ver «Vault») | Planificada |
 | Exportar marcadores | Generar un `bookmarks.html` con los folders y una carpeta `Mosaic` (ver «Vault») | Planificada |
