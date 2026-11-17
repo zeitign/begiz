@@ -9,7 +9,7 @@ import { validate } from '../lib/validate.ts'
 import { assertFolderExists, deleteUnusedVaultTags } from '../lib/vault.ts'
 
 function toFolderResponse(folder: typeof vaultFolders.$inferSelect, linkCount = 0) {
-  return { id: folder.id, name: folder.name, parentId: folder.parentId, linkCount }
+  return { id: folder.id, name: folder.name, parentId: folder.parentId, icon: folder.icon, linkCount }
 }
 
 /** Checks that a folder can move under a new parent: the parent exists and is not the folder or inside it. */
@@ -49,7 +49,7 @@ export const vaultFoldersRoutes = new Hono<AuthEnv>()
     await assertFolderExists(userId, input.parentId)
     const [createdFolder] = await db
       .insert(vaultFolders)
-      .values({ userId, name: input.name, parentId: input.parentId })
+      .values({ userId, name: input.name, parentId: input.parentId, icon: input.icon })
       .returning()
     return context.json(toFolderResponse(createdFolder!), 201)
   })
@@ -64,6 +64,7 @@ export const vaultFoldersRoutes = new Hono<AuthEnv>()
       .set({
         ...(input.name !== undefined && { name: input.name }),
         ...(input.parentId !== undefined && { parentId: input.parentId }),
+        ...(input.icon !== undefined && { icon: input.icon }),
       })
       .where(and(eq(vaultFolders.id, folderId), eq(vaultFolders.userId, userId)))
       .returning()

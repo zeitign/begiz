@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, it } from 'vitest'
 import { createUserClient, type UserClient } from './api-client.ts'
+import { publishHtmlPage } from './fake-web.ts'
 
 let user: UserClient
 
@@ -7,8 +8,8 @@ beforeEach(async () => {
   user = await createUserClient()
 })
 
-async function createFolder(name: string, parentId: string | null = null): Promise<{ id: string }> {
-  const response = await user.post('/vault/folders', { name, parentId })
+async function createFolder(name: string, parentId: string | null = null, icon?: string): Promise<{ id: string }> {
+  const response = await user.post('/vault/folders', { name, parentId, icon })
   expect(response.status).toBe(201)
   return response.json()
 }
@@ -35,9 +36,9 @@ describe('vault folders', () => {
     const response = await user.get('/vault/folders')
 
     expect(await response.json()).toEqual([
-      { id: expect.any(String), name: 'Art', parentId: null, linkCount: 0 },
-      { id: tools.id, name: 'Tools', parentId: work.id, linkCount: 2 },
-      { id: work.id, name: 'Work', parentId: null, linkCount: 0 },
+      { id: expect.any(String), name: 'Art', parentId: null, icon: null, linkCount: 0 },
+      { id: tools.id, name: 'Tools', parentId: work.id, icon: null, linkCount: 2 },
+      { id: work.id, name: 'Work', parentId: null, icon: null, linkCount: 0 },
     ])
   })
 
@@ -46,10 +47,33 @@ describe('vault folders', () => {
     const tools = await createFolder('Tols')
 
     const renamedAndMoved = await user.patch(`/vault/folders/${tools.id}`, { name: 'Tools', parentId: work.id })
-    expect(await renamedAndMoved.json()).toEqual({ id: tools.id, name: 'Tools', parentId: work.id, linkCount: 0 })
+    expect(await renamedAndMoved.json()).toEqual({
+      id: tools.id,
+      name: 'Tools',
+      parentId: work.id,
+      icon: null,
+      linkCount: 0,
+    })
 
     const backToRoot = await user.patch(`/vault/folders/${tools.id}`, { parentId: null })
     expect(await backToRoot.json()).toMatchObject({ name: 'Tools', parentId: null })
+  })
+
+  it('keeps the icon chosen for a folder, and goes back to the default one with null', async () => {
+    const work = await createFolder('Work', null, 'briefcase')
+    expect(work).toMatchObject({ icon: 'briefcase' })
+
+    const changed = await user.patch(`/vault/folders/${work.id}`, { icon: 'book-open' })
+    expect(await changed.json()).toMatchObject({ name: 'Work', icon: 'book-open' })
+
+    const reset = await user.patch(`/vault/folders/${work.id}`, { icon: null })
+    expect(await reset.json()).toMatchObject({ icon: null })
+  })
+
+  it('only accepts icon names', async () => {
+    const response = await user.post('/vault/folders', { name: 'Work', icon: '<svg onload=alert(1)>' })
+
+    expect(response.status).toBe(400)
   })
 
   it('does not move a folder inside itself or inside one of its subfolders', async () => {
@@ -107,9 +131,32 @@ describe('vault links', () => {
       url: 'https://figma.com',
       title: 'Figma',
       folderId: tools.id,
+      faviconUrl: null,
       tags: ['design apps'],
       createdAt: expect.any(String),
     })
+  })
+
+  it('reads the favicon of the page, and saves the link anyway when the page cannot be read', async () => {
+    publishHtmlPage('https://studio.example/', '<link rel="icon" href="/icon.svg">')
+
+    const readable = await createLink({ url: 'https://studio.example/', title: 'Studio' })
+    const unreachable = await createLink({ url: 'https://offline.example/', title: 'Offline' })
+
+    expect(readable).toMatchObject({ faviconUrl: 'https://studio.example/icon.svg' })
+    expect(unreachable).toMatchObject({ faviconUrl: null })
+  })
+
+  it('reads the favicon again only when the address changes', async () => {
+    const link = await createLink({ url: 'https://offline.example/', title: 'Studio' })
+    publishHtmlPage('https://offline.example/', '<link rel="icon" href="/old.svg">')
+    publishHtmlPage('https://studio.example/', '<link rel="icon" href="/icon.svg">')
+
+    const renamed = await (await user.patch(`/vault/links/${link.id}`, { title: 'Studio site' })).json()
+    expect(renamed).toMatchObject({ faviconUrl: null })
+
+    const moved = await (await user.patch(`/vault/links/${link.id}`, { url: 'https://studio.example/' })).json()
+    expect(moved).toMatchObject({ faviconUrl: 'https://studio.example/icon.svg' })
   })
 
   it('lists the links of a folder, of the root or of the whole vault, by title', async () => {

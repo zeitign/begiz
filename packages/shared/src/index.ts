@@ -71,17 +71,25 @@ export const collectionUpdate = collectionCreate.partial()
 export const idParam = z.object({ id: z.uuid() })
 
 const vaultFolderName = z.string().trim().min(1).max(200)
+/** An icon name from the front's icon library, such as "book-open". Null shows the default icon. */
+const vaultFolderIcon = z
+  .string()
+  .max(60)
+  .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, 'Must be an icon name such as "book-open"')
+  .nullable()
 /** null puts the folder or link at the root of the Vault. */
 const vaultFolderId = z.uuid().nullable()
 
 export const vaultFolderCreate = z.object({
   name: vaultFolderName,
   parentId: vaultFolderId.default(null),
+  icon: vaultFolderIcon.default(null),
 })
 
 export const vaultFolderUpdate = z.object({
   name: vaultFolderName.optional(),
   parentId: vaultFolderId.optional(),
+  icon: vaultFolderIcon.optional(),
 })
 
 export const vaultLinkCreate = z.object({

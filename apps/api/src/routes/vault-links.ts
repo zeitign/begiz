@@ -6,6 +6,7 @@ import type { AuthEnv } from '../auth.ts'
 import { db } from '../db/client.ts'
 import { vaultLinks } from '../db/schema.ts'
 import { escapeLikePattern } from '../lib/escape-like-pattern.ts'
+import { fetchPageMeta } from '../lib/preview.ts'
 import { validate } from '../lib/validate.ts'
 import { assertFolderExists, deleteUnusedVaultTags, findVaultTagNamesByLinkId, replaceVaultTags } from '../lib/vault.ts'
 
@@ -15,8 +16,19 @@ function toLinkResponse(link: typeof vaultLinks.$inferSelect, tagNames: string[]
     url: link.url,
     title: link.title,
     folderId: link.folderId,
+    faviconUrl: link.faviconUrl,
     tags: tagNames,
     createdAt: link.createdAt.toISOString(),
+  }
+}
+
+/** The favicon of the page, or null when it cannot be read: the link is saved anyway. */
+async function readFaviconUrl(pageUrl: string) {
+  try {
+    return (await fetchPageMeta(pageUrl)).faviconUrl
+  } catch (error) {
+    console.warn(`Could not read the favicon of ${pageUrl}: ${error}`)
+    return null
   }
 }
 
@@ -58,10 +70,11 @@ export const vaultLinksRoutes = new Hono<AuthEnv>()
     const userId = context.get('userId')
     const { tags: tagNames, ...fields } = context.req.valid('json')
     await assertFolderExists(userId, fields.folderId)
+    const faviconUrl = await readFaviconUrl(fields.url)
     const linkId = await db.transaction(async (transaction) => {
       const [createdLink] = await transaction
         .insert(vaultLinks)
-        .values({ userId, ...fields })
+        .values({ userId, ...fields, faviconUrl })
         .returning({ id: vaultLinks.id })
       await replaceVaultTags(transaction, userId, createdLink!.id, tagNames)
       return createdLink!.id
@@ -73,13 +86,15 @@ export const vaultLinksRoutes = new Hono<AuthEnv>()
     const userId = context.get('userId')
     const { id: linkId } = context.req.valid('param')
     const { tags: tagNames, ...fields } = context.req.valid('json')
-    await getLinkDetail(userId, linkId)
+    const currentLink = await getLinkDetail(userId, linkId)
     if (fields.folderId !== undefined) await assertFolderExists(userId, fields.folderId)
+    const changedUrl = fields.url !== undefined && fields.url !== currentLink.url ? fields.url : null
+    const faviconChange = changedUrl ? { faviconUrl: await readFaviconUrl(changedUrl) } : {}
 
     await db.transaction(async (transaction) => {
       await transaction
         .update(vaultLinks)
-        .set({ ...fields, updatedAt: new Date() })
+        .set({ ...fields, ...faviconChange, updatedAt: new Date() })
         .where(eq(vaultLinks.id, linkId))
       if (tagNames) await replaceVaultTags(transaction, userId, linkId, tagNames)
     })
