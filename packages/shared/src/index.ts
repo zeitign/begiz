@@ -70,5 +70,50 @@ export const collectionUpdate = collectionCreate.partial()
 
 export const idParam = z.object({ id: z.uuid() })
 
+const vaultFolderName = z.string().trim().min(1).max(200)
+/** null puts the folder or link at the root of the Vault. */
+const vaultFolderId = z.uuid().nullable()
+
+export const vaultFolderCreate = z.object({
+  name: vaultFolderName,
+  parentId: vaultFolderId.default(null),
+})
+
+export const vaultFolderUpdate = z.object({
+  name: vaultFolderName.optional(),
+  parentId: vaultFolderId.optional(),
+})
+
+export const vaultLinkCreate = z.object({
+  url: webUrl,
+  title: webTitle,
+  tags: tagList.default([]),
+  folderId: vaultFolderId.default(null),
+})
+
+export const vaultLinkUpdate = z.object({
+  url: webUrl.optional(),
+  title: webTitle.optional(),
+  tags: tagList.optional(),
+  folderId: vaultFolderId.optional(),
+})
+
+export const vaultLinkListQuery = z.object({
+  /** A folder id, or "root" for the links outside any folder. Without it, links from the whole Vault. */
+  folder: z.union([z.uuid(), z.literal('root')]).optional(),
+  /** Matches the title or the URL. */
+  search: z.string().trim().max(200).optional(),
+})
+
+/** Moves several links at once to a folder, or to the root when null. */
+export const vaultLinkMove = z.object({
+  linkIds: z
+    .array(z.uuid())
+    .min(1)
+    .max(1000)
+    .transform((linkIds) => [...new Set(linkIds)]),
+  folderId: vaultFolderId,
+})
+
 export type WebCreate = z.input<typeof webCreate>
 export type WebUpdate = z.input<typeof webUpdate>

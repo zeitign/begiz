@@ -8,6 +8,9 @@ import { requireAuth, type AuthEnv } from './auth.ts'
 import { env } from './env.ts'
 import { collectionsRoutes } from './routes/collections.ts'
 import { tagsRoutes } from './routes/tags.ts'
+import { vaultFoldersRoutes } from './routes/vault-folders.ts'
+import { vaultLinksRoutes } from './routes/vault-links.ts'
+import { vaultTagsRoutes } from './routes/vault-tags.ts'
 import { websRoutes } from './routes/webs.ts'
 import { localStorageRoot } from './storage/index.ts'
 
@@ -17,6 +20,9 @@ const api = new Hono<AuthEnv>()
   .route('/webs', websRoutes)
   .route('/collections', collectionsRoutes)
   .route('/tags', tagsRoutes)
+  .route('/vault/folders', vaultFoldersRoutes)
+  .route('/vault/links', vaultLinksRoutes)
+  .route('/vault/tags', vaultTagsRoutes)
 
 /** Used by the front (Hono's hc client) to get typed routes. */
 export type AppType = typeof api

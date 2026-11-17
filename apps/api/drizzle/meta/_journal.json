@@ -29,6 +29,13 @@
       "when": 1790954719138,
       "tag": "0003_custom_sort_position",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1794924124119,
+      "tag": "0004_vault",
+      "breakpoints": true
     }
   ]
 }

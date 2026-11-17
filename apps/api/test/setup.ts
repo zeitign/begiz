@@ -24,5 +24,5 @@ vi.mock('../src/lib/safe-fetch.ts', async () => ({
 
 beforeEach(async () => {
   fakeInternet.clear()
-  await db.execute(sql`truncate webs, tags, collections cascade`)
+  await db.execute(sql`truncate webs, tags, collections, vault_folders, vault_links, vault_tags cascade`)
 })
