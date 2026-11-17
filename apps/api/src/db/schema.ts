@@ -1,4 +1,5 @@
 import {
+  type AnyPgColumn,
   doublePrecision,
   index,
   pgTable,
@@ -88,4 +89,57 @@ export const collectionWebs = pgTable(
     primaryKey({ columns: [table.collectionId, table.webId] }),
     index('collection_webs_web_idx').on(table.webId),
   ],
+)
+
+// Vault: bookmarks without images, in nested folders. Its own tables, so the mosaic is never at risk.
+
+export const vaultFolders = pgTable(
+  'vault_folders',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    userId: uuid('user_id').notNull(),
+    /** Null for folders at the root. Deleting a folder deletes its subfolders. */
+    parentId: uuid('parent_id').references((): AnyPgColumn => vaultFolders.id, { onDelete: 'cascade' }),
+    name: text().notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('vault_folders_user_parent_idx').on(table.userId, table.parentId)],
+)
+
+export const vaultLinks = pgTable(
+  'vault_links',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    userId: uuid('user_id').notNull(),
+    /** Null for links at the root. Deleting a folder deletes its links. */
+    folderId: uuid('folder_id').references(() => vaultFolders.id, { onDelete: 'cascade' }),
+    url: text().notNull(),
+    title: text().notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [index('vault_links_user_folder_idx').on(table.userId, table.folderId)],
+)
+
+export const vaultTags = pgTable(
+  'vault_tags',
+  {
+    id: uuid().primaryKey().defaultRandom(),
+    userId: uuid('user_id').notNull(),
+    name: text().notNull(),
+  },
+  (table) => [uniqueIndex('vault_tags_user_name_idx').on(table.userId, table.name)],
+)
+
+export const vaultLinkTags = pgTable(
+  'vault_link_tags',
+  {
+    linkId: uuid('link_id')
+      .notNull()
+      .references(() => vaultLinks.id, { onDelete: 'cascade' }),
+    tagId: uuid('tag_id')
+      .notNull()
+      .references(() => vaultTags.id, { onDelete: 'cascade' }),
+  },
+  (table) => [primaryKey({ columns: [table.linkId, table.tagId] }), index('vault_link_tags_tag_idx').on(table.tagId)],
 )

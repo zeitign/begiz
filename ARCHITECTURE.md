@@ -49,6 +49,10 @@ tags            id, user_id, name                  (único por usuaria, normaliz
 web_tags        web_id, tag_id
 collections     id, user_id, name, description     (nombre único por usuaria)
 collection_webs collection_id, web_id
+vault_folders   id, user_id, parent_id, name, created_at       (parent_id null = raíz)
+vault_links     id, user_id, folder_id, url, title, created_at, updated_at   (folder_id null = raíz)
+vault_tags      id, user_id, name                  (único por usuaria, aparte de los del mosaico)
+vault_link_tags link_id, tag_id
 ```
 
 - `user_id` es el id de `auth.users` de Supabase. No es clave foránea, para no atar el esquema a Supabase.
@@ -56,6 +60,8 @@ collection_webs collection_id, web_id
   `full_key` es la imagen original subida a mano, que puede ser una captura de página completa.
 - Los tags sin webs se borran solos.
 - Filtrar por varios tags devuelve las webs que tienen **alguno** (O).
+- Vault (migración `0004`): borrar un folder borra en cascada sus subfolders y sus enlaces; los
+  tags del Vault sin enlaces también se borran solos. Folders y enlaces se ordenan por nombre.
 - `sort_position` guarda el orden propio del mosaico (migración `0003`). Es un número decimal con
   huecos de 1024: mover una web solo cambia su posición, que pasa a estar entre la de sus vecinas. Si
   el hueco se agota, se reparten de nuevo todas las posiciones de la usuaria. Las webs nuevas van
@@ -75,6 +81,12 @@ Todas las rutas van bajo `/api` y exigen sesión.
 | GET / POST | `/collections` | Listar (con contador y `coverWebs`, las cuatro primeras webs en el orden propio, para la portada) y crear |
 | PATCH / DELETE | `/collections/:id` | Renombrar y borrar (las webs no se borran) |
 | GET | `/tags` | Tags en uso con contador, ordenados por uso |
+| GET / POST | `/vault/folders` | Todos los folders en lista plana (`parentId` y `linkCount` propio; el front monta el árbol) y crear |
+| PATCH / DELETE | `/vault/folders/:id` | Renombrar o mover (`parentId`, nunca dentro de sí mismo) y borrar con todo su contenido |
+| GET / POST | `/vault/links?folder=&search=` | Enlaces de un folder (`folder=root` para los sueltos; sin `folder`, todo el Vault). `search` busca en título y URL |
+| GET / PATCH / DELETE | `/vault/links/:id` | Detalle, edición (incluye tags y folder) y borrado |
+| POST | `/vault/links/move` | Mover varios enlaces a la vez: `{ linkIds, folderId }` (`null` = raíz). Si alguno no existe, no se mueve ninguno |
+| GET | `/vault/tags` | Tags del Vault en uso con contador |
 
 ## Front
 
@@ -148,7 +160,7 @@ Todas las rutas van bajo `/api` y exigen sesión.
 | Despliegue gratuito | Publicar la app sin coste para usarla la usuaria y su compañera (ver «Despliegue») | Hecha (15-oct-2026): https://begiz.onrender.com |
 | Diseño | Diseño visual de la plataforma. Hecho: cabecera de celdas con la pestaña activa invertida y mosaico a pantalla completa (hasta cinco tarjetas por fila según el ancho, barra de filtros en celdas, acciones View, Edit y Open), todo en Geist Mono (PR #9, 26-oct-2026). Falta: revisar el resto de páginas y definir la paleta | **Aparcada** (2-nov-2026) hasta ver cómo funciona la división entre Mosaic y Vault |
 | Collections | Una columna por colección con su portada y una página por colección, que sustituye al filtro oculto del mosaico | Hecha; renombrar y borrar validados con el Supabase real (17-nov-2026) |
-| Vault | Segundo espacio para guardar marcadores en folders anidados, con selección múltiple y buscador (ver «Vault») | **Siguiente** |
+| Vault | Segundo espacio para guardar marcadores en folders anidados, con selección múltiple y buscador (ver «Vault») | **En curso**: tablas, API y tests hechos (17-nov-2026); falta el front |
 | Importar marcadores | Subir un `bookmarks.html` al Vault, conservando las carpetas (ver «Vault») | Planificada |
 | Exportar marcadores | Generar un `bookmarks.html` con los folders y una carpeta `Mosaic` (ver «Vault») | Planificada |
 | 2 · Captura | Pantallazo automático al guardar en Mosaic. Planteamiento aprobado el 2-nov-2026: un servicio externo de capturas en lugar de un contenedor con Chromium (parte 05 del PDF). Las webs actuales no cambian | Sin fecha |
@@ -157,7 +169,7 @@ Todas las rutas van bajo `/api` y exigen sesión.
 | Idiomas | Selector de idioma en la interfaz: inglés (por defecto) y español | Futuro |
 | Vista pública | Que otras personas puedan ver tu mosaico y tus colecciones con un enlace, sin cuenta | Futuro |
 
-### Vault (planificado)
+### Vault (en curso)
 
 Plan aprobado el 2-nov-2026; requisitos RF-13 a RF-21 en la parte 05 del PDF. Las pantallas pueden
 cambiar al diseñarlas.

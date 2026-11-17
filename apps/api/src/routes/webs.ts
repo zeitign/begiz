@@ -14,6 +14,7 @@ import {
   fetchPageMeta,
   type PageMeta,
 } from '../lib/preview.ts'
+import { escapeLikePattern } from '../lib/escape-like-pattern.ts'
 import { validate } from '../lib/validate.ts'
 import { moveWebAfter, positionBeforeAllWebs, webOrderBy } from '../lib/web-order.ts'
 import { deleteQuietly, fileUrl, storage } from '../storage/index.ts'
@@ -32,8 +33,6 @@ function toWebCard(web: WebRow, tagNames: string[]) {
     createdAt: web.createdAt.toISOString(),
   }
 }
-
-const escapeLikePattern = (text: string) => text.replace(/[\\%_]/g, '\\$&')
 
 async function findTagNamesByWebId(webIds: string[]) {
   const tagNamesByWebId = new Map<string, string[]>()
