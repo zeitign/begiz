@@ -36,6 +36,13 @@
       "when": 1794924124119,
       "tag": "0004_vault",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1794929038694,
+      "tag": "0005_vault_icons_and_favicons",
+      "breakpoints": true
     }
   ]
 }

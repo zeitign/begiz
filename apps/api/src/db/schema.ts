@@ -101,6 +101,8 @@ export const vaultFolders = pgTable(
     /** Null for folders at the root. Deleting a folder deletes its subfolders. */
     parentId: uuid('parent_id').references((): AnyPgColumn => vaultFolders.id, { onDelete: 'cascade' }),
     name: text().notNull(),
+    /** Name of the icon chosen in the front's icon library. Null shows the default icon. */
+    icon: text(),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index('vault_folders_user_parent_idx').on(table.userId, table.parentId)],
@@ -115,6 +117,8 @@ export const vaultLinks = pgTable(
     folderId: uuid('folder_id').references(() => vaultFolders.id, { onDelete: 'cascade' }),
     url: text().notNull(),
     title: text().notNull(),
+    /** Read from the page when the link is saved by hand. Null when the page could not be read. */
+    faviconUrl: text('favicon_url'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },
