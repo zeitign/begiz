@@ -153,9 +153,12 @@ defineExpose({ boardElement, tileElement: (tileId: string) => tileElements.get(t
   >
     <template v-if="showsTiles">
       <template v-for="boardCell in boardCells" :key="cellKey(boardCell)">
-        <div v-if="boardCell.kind === 'intro'" class="vault-intro">
-          <slot name="intro" />
-        </div>
+        <template v-if="boardCell.kind === 'intro'">
+          <div class="vault-intro">
+            <slot name="intro" />
+          </div>
+          <slot name="after-intro" />
+        </template>
         <div
           v-else-if="boardCell.kind === 'gap'"
           class="vault-gap"
