@@ -11,8 +11,9 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import FilterDropdown from '../components/FilterDropdown.vue'
 import VaultCategoryPanel from '../components/VaultCategoryPanel.vue'
+import VaultNewCategoryCard from '../components/VaultNewCategoryCard.vue'
 import VaultTileGrid, { type PlacedCell, type VaultTile } from '../components/VaultTileGrid.vue'
-import { api, errorMessage, responseBody } from '../lib/api'
+import { errorMessage } from '../lib/api'
 import {
   useInvalidateVault,
   usePlaceVaultTiles,
@@ -117,7 +118,11 @@ const categoryTiles = computed(() => sortForOrder(vaultTree.value.categories, pr
 const categoryCountLabel = computed(() => pluralize(vaultTree.value.categories.length, 'category', 'categories'))
 const matchingCategoryIds = computed(
   () =>
-    new Set(vaultTree.value.categories.filter((category) => categoryMatches(category, query.value)).map((category) => category.id)),
+    new Set(
+      vaultTree.value.categories
+        .filter((category) => categoryMatches(category, query.value))
+        .map((category) => category.id),
+    ),
 )
 
 const categoryGrid = ref<InstanceType<typeof VaultTileGrid>>()
@@ -132,7 +137,9 @@ const categoryExpansion = useTileExpansion(
   },
 )
 const openCategory = computed(() =>
-  categoryExpansion.openTileId.value ? vaultTree.value.categoriesById.get(categoryExpansion.openTileId.value) : undefined,
+  categoryExpansion.openTileId.value
+    ? vaultTree.value.categoriesById.get(categoryExpansion.openTileId.value)
+    : undefined,
 )
 
 function openCategoryTile(categoryId: string) {
@@ -165,18 +172,22 @@ watch(
   { immediate: true },
 )
 
-const createError = ref('')
+// A new category is edited in a card next to the intro. Once created, the card leaves its place to the
+// real tile, which stays hidden until the grid has it and then pops in.
+const isCreatingCategory = ref(false)
+const createdCategoryId = ref<string | null>(null)
+const poppingCategoryId = ref<string | null>(null)
+const POP_MS = 500
 
-async function createCategory() {
-  const name = prompt('Category name')?.trim()
-  if (!name) return
-  createError.value = ''
-  try {
-    await responseBody(api.vault.folders.$post({ json: { name } }))
-    await invalidateVault()
-  } catch (error) {
-    createError.value = errorMessage(error)
-  }
+async function showCreatedCategory(categoryId: string) {
+  createdCategoryId.value = categoryId
+  await invalidateVault()
+  isCreatingCategory.value = false
+  createdCategoryId.value = null
+  poppingCategoryId.value = categoryId
+  setTimeout(() => {
+    if (poppingCategoryId.value === categoryId) poppingCategoryId.value = null
+  }, POP_MS)
 }
 </script>
 
@@ -202,7 +213,12 @@ async function createCategory() {
         <div class="filter-cells vault-filter-cells">
           <FilterDropdown label="Order">
             <label v-for="order in vaultOrders" :key="order" class="filter-option">
-              <input type="radio" name="vault-order" :checked="preferences.order === order" @change="chooseOrder(order)" />
+              <input
+                type="radio"
+                name="vault-order"
+                :checked="preferences.order === order"
+                @change="chooseOrder(order)"
+              />
               <span>{{ ORDER_LABELS[order] }}</span>
             </label>
             <div v-if="hasDirection" class="order-direction" role="group" aria-label="Direction">
@@ -233,7 +249,8 @@ async function createCategory() {
       :tiles="categoryTiles"
       :order="preferences.order"
       :matching-tile-ids="query ? matchingCategoryIds : null"
-      :hidden-tile-id="categoryExpansion.hiddenTileId.value"
+      :hidden-tile-id="categoryExpansion.hiddenTileId.value ?? createdCategoryId"
+      :popping-tile-id="poppingCategoryId"
       :is-hiding-tiles="categoryExpansion.isHidingTiles.value"
       :shows-tiles="categoryExpansion.showsTiles.value"
       @open="openCategoryTile"
@@ -241,8 +258,21 @@ async function createCategory() {
     >
       <template #intro>
         <h1 class="vault-intro-title">Every link, in its vault.</h1>
-        <button type="button" class="vault-intro-button" @click="createCategory">+ New category</button>
-        <p v-if="createError" class="error">{{ createError }}</p>
+        <button
+          type="button"
+          class="vault-intro-button"
+          :disabled="isCreatingCategory"
+          @click="isCreatingCategory = true"
+        >
+          + New category
+        </button>
+      </template>
+      <template #after-intro>
+        <VaultNewCategoryCard
+          v-if="isCreatingCategory"
+          @cancel="isCreatingCategory = false"
+          @created="showCreatedCategory"
+        />
       </template>
 
       <span

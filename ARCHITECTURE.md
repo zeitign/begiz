@@ -110,7 +110,8 @@ Todas las rutas van bajo `/api` y exigen sesión.
   alineadas con el espacio activo.
 - **Vault** (`VaultView.vue`, cargada aparte para que el mosaico no descargue nada suyo): el inicio
   es una rejilla dispersa de categorías (`VaultTileGrid.vue`), con la presentación en la primera
-  celda (solo en el inicio). Al abrir una, la presentación se desvanece y el cuadro se desliza a la
+  celda (solo en el inicio). `+ New category` abre al lado una tarjeta doble con el nombre y el icono
+  dentro (`VaultNewCategoryCard.vue`); al crearla se contrae al tamaño de una tarjeta. Al abrir una, la presentación se desvanece y el cuadro se desliza a la
   esquina y, sin perder su borde, de él salen las líneas de un marco que llena la pantalla, con la esquina de arriba a la izquierda recta
   y las demás redondeadas (`VaultCategoryPanel.vue`, `?category=`): la categoría queda en una columna
   estrecha (debajo de la tarjeta, volver, editar y cerrar en una fila y, bajo ella, `New folder`, que abre
