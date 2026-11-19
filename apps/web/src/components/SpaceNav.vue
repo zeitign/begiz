@@ -19,7 +19,8 @@ const spaceOptions = {
       'Vault is your bookmark store: plain links in nested folders, easy to search, import and export.',
     homeRoute: 'vault',
     saveRoute: 'vault-new',
-    collectionsRoute: 'vault-collections',
+    // The Vault home already shows its folders, so it has no collections tab.
+    collectionsRoute: null,
   },
 }
 
@@ -54,7 +55,9 @@ const isExplanationOpen = ref(false)
     </section>
     <nav class="space-options" :aria-label="`${currentOptions.label} options`">
       <RouterLink :to="{ name: currentOptions.saveRoute }" class="folder-tab">Save web</RouterLink>
-      <RouterLink :to="{ name: currentOptions.collectionsRoute }" class="folder-tab">Collections</RouterLink>
+      <RouterLink v-if="currentOptions.collectionsRoute" :to="{ name: currentOptions.collectionsRoute }" class="folder-tab">
+        Collections
+      </RouterLink>
       <RouterLink
         :to="{ name: currentOptions.homeRoute }"
         class="folder-tab folder-tab-home"

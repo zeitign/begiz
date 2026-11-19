@@ -68,7 +68,8 @@ describe('isolation between users', () => {
   })
 
   it('does not let other users see, change, move or use vault folders and links', async () => {
-    const ownerFolder = await (await owner.post('/vault/folders', { name: 'Private' })).json()
+    const ownerCategory = await (await owner.post('/vault/folders', { name: 'Private' })).json()
+    const ownerFolder = await (await owner.post('/vault/folders', { name: 'Secrets', parentId: ownerCategory.id })).json()
     const ownerLink = await (
       await owner.post('/vault/links', {
         url: 'https://example.com',
@@ -77,9 +78,12 @@ describe('isolation between users', () => {
         folderId: ownerFolder.id,
       })
     ).json()
-    const strangerFolder = await (await stranger.post('/vault/folders', { name: 'Mine' })).json()
+    const strangerCategory = await (await stranger.post('/vault/folders', { name: 'Mine' })).json()
+    const strangerFolder = await (
+      await stranger.post('/vault/folders', { name: 'Mine too', parentId: strangerCategory.id })
+    ).json()
 
-    expect(await (await stranger.get('/vault/folders')).json()).toMatchObject([{ name: 'Mine' }])
+    expect(await (await stranger.get('/vault/folders')).json()).toMatchObject([{ name: 'Mine' }, { name: 'Mine too' }])
     expect(await (await stranger.get('/vault/links')).json()).toEqual([])
     expect(await (await stranger.get(`/vault/links?folder=${ownerFolder.id}`)).json()).toEqual([])
     expect(await (await stranger.get('/vault/tags')).json()).toEqual([])
@@ -87,15 +91,15 @@ describe('isolation between users', () => {
     expect((await stranger.get(`/vault/links/${ownerLink.id}`)).status).toBe(404)
     expect((await stranger.patch(`/vault/links/${ownerLink.id}`, { title: 'Hacked' })).status).toBe(404)
     expect((await stranger.delete(`/vault/links/${ownerLink.id}`)).status).toBe(404)
-    const strangerMove = await stranger.post('/vault/links/move', { linkIds: [ownerLink.id], folderId: null })
+    const strangerMove = await stranger.post('/vault/links/move', { linkIds: [ownerLink.id], folderId: strangerFolder.id })
     expect(strangerMove.status).toBe(404)
 
     expect((await stranger.patch(`/vault/folders/${ownerFolder.id}`, { name: 'Hacked' })).status).toBe(404)
     expect((await stranger.delete(`/vault/folders/${ownerFolder.id}`)).status).toBe(404)
-    const strangerSubfolder = await stranger.post('/vault/folders', { name: 'Inside', parentId: ownerFolder.id })
+    const strangerSubfolder = await stranger.post('/vault/folders', { name: 'Inside', parentId: ownerCategory.id })
     expect(strangerSubfolder.status).toBe(400)
     const strangerFolderMove = await stranger.patch(`/vault/folders/${strangerFolder.id}`, {
-      parentId: ownerFolder.id,
+      parentId: ownerCategory.id,
     })
     expect(strangerFolderMove.status).toBe(400)
     const strangerLink = await stranger.post('/vault/links', {
@@ -110,6 +114,9 @@ describe('isolation between users', () => {
       folderId: ownerFolder.id,
       tags: ['secret'],
     })
-    expect(await (await owner.get('/vault/folders')).json()).toMatchObject([{ name: 'Private', linkCount: 1 }])
+    expect(await (await owner.get('/vault/folders')).json()).toMatchObject([
+      { name: 'Private', linkCount: 0 },
+      { name: 'Secrets', linkCount: 1 },
+    ])
   })
 })

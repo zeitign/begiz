@@ -1,0 +1,1 @@
+ALTER TABLE "vault_links" ALTER COLUMN "folder_id" SET NOT NULL;

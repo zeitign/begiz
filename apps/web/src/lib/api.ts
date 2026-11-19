@@ -71,3 +71,5 @@ export type WebCard = InferResponseType<typeof api.webs.$get, 200>[number]
 export type WebDetail = InferResponseType<(typeof api.webs)[':id']['$get'], 200>
 export type Collection = InferResponseType<typeof api.collections.$get, 200>[number]
 export type Tag = InferResponseType<typeof api.tags.$get, 200>[number]
+export type VaultFolder = InferResponseType<typeof api.vault.folders.$get, 200>[number]
+export type VaultLink = InferResponseType<typeof api.vault.links.$get, 200>[number]

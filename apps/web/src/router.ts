@@ -5,7 +5,7 @@ import CollectionView from './views/CollectionView.vue'
 import HomeView from './views/HomeView.vue'
 import LoginView from './views/LoginView.vue'
 import NewWebView from './views/NewWebView.vue'
-import VaultPlaceholderView from './views/VaultPlaceholderView.vue'
+import VaultNewLinkView from './views/VaultNewLinkView.vue'
 import WebDetailView from './views/WebDetailView.vue'
 
 export type Space = 'mosaic' | 'vault'
@@ -32,14 +32,9 @@ export const router = createRouter({
         { path: ':id', name: 'collection', component: CollectionView, props: true },
       ],
     },
-    { path: '/vault', name: 'vault', component: VaultPlaceholderView, meta: { space: 'vault' } },
-    { path: '/vault/new', name: 'vault-new', component: VaultPlaceholderView, meta: { space: 'vault' } },
-    {
-      path: '/vault/collections',
-      name: 'vault-collections',
-      component: VaultPlaceholderView,
-      meta: { space: 'vault' },
-    },
+    // Loaded apart, so the mosaic never downloads the Vault and its icon font.
+    { path: '/vault', name: 'vault', component: () => import('./views/VaultView.vue'), meta: { space: 'vault' } },
+    { path: '/vault/new', name: 'vault-new', component: VaultNewLinkView, meta: { space: 'vault' } },
   ],
 })
 

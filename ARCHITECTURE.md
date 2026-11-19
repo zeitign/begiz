@@ -49,10 +49,12 @@ tags            id, user_id, name                  (único por usuaria, normaliz
 web_tags        web_id, tag_id
 collections     id, user_id, name, description     (nombre único por usuaria)
 collection_webs collection_id, web_id
-vault_folders   id, user_id, parent_id, name, icon, created_at (parent_id null = raíz)
-vault_links     id, user_id, folder_id, url, title, favicon_url, created_at, updated_at   (folder_id null = raíz)
+vault_folders   id, user_id, parent_id, name, icon, grid_cell, created_at (parent_id null = categoría;
+                grid_cell = casilla colocada a mano, null hasta entonces)
+vault_links     id, user_id, folder_id, url, title, favicon_url, created_at, updated_at   (folder_id obligatorio)
 vault_tags      id, user_id, name                  (único por usuaria, aparte de los del mosaico)
 vault_link_tags link_id, tag_id
+vault_preferences user_id, order, direction, updated_at (orden del Vault; sin fila, por nombre)
 ```
 
 - `user_id` es el id de `auth.users` de Supabase. No es clave foránea, para no atar el esquema a Supabase.
@@ -60,6 +62,9 @@ vault_link_tags link_id, tag_id
   `full_key` es la imagen original subida a mano, que puede ser una captura de página completa.
 - Los tags sin webs se borran solos.
 - Filtrar por varios tags devuelve las webs que tienen **alguno** (O).
+- Vault: **dos niveles exactos**. Las categorías (folders sin `parent_id`) solo contienen folders, y
+  los folders de dentro solo contienen enlaces (nunca un tercer nivel ni enlaces sueltos). Lo exige la
+  API al crear, editar y mover; `folder_id` es obligatorio en la base de datos (migración `0006`).
 - Vault (migración `0004`): borrar un folder borra en cascada sus subfolders y sus enlaces; los
   tags del Vault sin enlaces también se borran solos. Folders y enlaces se ordenan por nombre.
 - `icon` (migración `0005`) guarda el nombre de un icono de Phosphor elegido en el front; `null` es el
@@ -86,11 +91,13 @@ Todas las rutas van bajo `/api` y exigen sesión.
 | GET / POST | `/collections` | Listar (con contador y `coverWebs`, las cuatro primeras webs en el orden propio, para la portada) y crear |
 | PATCH / DELETE | `/collections/:id` | Renombrar y borrar (las webs no se borran) |
 | GET | `/tags` | Tags en uso con contador, ordenados por uso |
-| GET / POST | `/vault/folders` | Todos los folders en lista plana (`parentId`, `icon` y `linkCount` propio; el front monta el árbol) y crear |
-| PATCH / DELETE | `/vault/folders/:id` | Renombrar, cambiar el icono o mover (`parentId`, nunca dentro de sí mismo) y borrar con todo su contenido |
-| GET / POST | `/vault/links?folder=&search=` | Enlaces de un folder (`folder=root` para los sueltos; sin `folder`, todo el Vault). `search` busca en título y URL |
+| GET / POST | `/vault/folders` | Todos los folders en lista plana (`parentId`, `icon` y `linkCount` propio; el front monta el árbol) y crear (sin `parentId`, una categoría; con él, un folder dentro de esa categoría) |
+| PATCH / DELETE | `/vault/folders/:id` | Renombrar, cambiar el icono o mover (`parentId`, siempre respetando los dos niveles) y borrar con todo su contenido |
+| GET / POST | `/vault/links?folder=&search=` | Enlaces de un folder (sin `folder`, todo el Vault). `search` busca en título y URL. Al crear, `folderId` es obligatorio y tiene que ser un folder, no una categoría |
 | GET / PATCH / DELETE | `/vault/links/:id` | Detalle, edición (incluye tags y folder) y borrado |
-| POST | `/vault/links/move` | Mover varios enlaces a la vez: `{ linkIds, folderId }` (`null` = raíz). Si alguno no existe, no se mueve ninguno |
+| POST | `/vault/links/move` | Mover varios enlaces a la vez a otro folder: `{ linkIds, folderId }`. Si alguno no existe, no se mueve ninguno |
+| PUT | `/vault/folders/grid` | Colocar a mano los cuadros de una rejilla: `{ cells: [{ folderId, gridCell }] }`, todos del mismo nivel y sin repetir casilla |
+| GET / PUT | `/vault/preferences` | Orden del Vault: `{ order: random \| name \| date \| custom, direction }`. Sin guardar, por nombre |
 | GET | `/vault/tags` | Tags del Vault en uso con contador |
 
 ## Front
@@ -99,9 +106,32 @@ Todas las rutas van bajo `/api` y exigen sesión.
   Query. No hay Pinia.
 - **Navegación por espacios** (`SpaceNav.vue`): la cabecera solo elige entre Mosaic y Vault (el
   espacio de cada ruta está en `meta.space`). Debajo van el botón `What is it?`, que desenrolla la
-  explicación, y las pestañas `Save web`, `Collections` y la de inicio del espacio, alineadas con el
-  espacio activo. Las rutas `/vault` muestran por ahora `VaultPlaceholderView`, hasta que existan
-  sus pantallas.
+  explicación, y las pestañas `Save web`, `Collections` (solo en Mosaic) y la de inicio del espacio,
+  alineadas con el espacio activo.
+- **Vault** (`VaultView.vue`, cargada aparte para que el mosaico no descargue nada suyo): el inicio
+  es una rejilla dispersa de categorías (`VaultTileGrid.vue`), con la presentación en la primera
+  celda (solo en el inicio). Al abrir una, la presentación se desvanece y el cuadro se desliza a la
+  esquina y, sin perder su borde, de él salen las líneas de un marco que llena la pantalla, con la esquina de arriba a la izquierda recta
+  y las demás redondeadas (`VaultCategoryPanel.vue`, `?category=`): la categoría queda en una columna
+  estrecha (debajo de la tarjeta, volver, editar y cerrar en una fila y, bajo ella, `New folder`, que abre
+  una carpeta vacía con su editor para darle nombre e icono: `VaultNewFolderPanel.vue`), y
+  sus folders en rejilla a su lado. Un folder se abre
+  igual dentro del marco (`VaultFolderPanel.vue`, `&folder=`) y siempre hay una de las dos columnas
+  plegada en una tira con su icono y su nombre en vertical (al principio, la categoría; pulsar una tira
+  la despliega y pliega la otra; `VaultFoldStrip.vue`): otra columna estrecha y, a la derecha,
+  sus enlaces (`VaultLinkRow.vue`): favicon o inicial, título grande seguido de la URL, editar (en la
+  misma fila) y borrar, separados por espacio y no por líneas. El movimiento sale de
+  `lib/useTileExpansion.ts`. Cada cuadro lleva nombre, recuento e icono de
+  Phosphor (peso fill, como fuente). El desplegable `Order` (el mismo del mosaico) elige cómo se
+  colocan, en el inicio y dentro de las categorías, y se guarda en la cuenta (`lib/vaultLayout.ts`):
+  por nombre o fecha ocupan las mismas celdas de cada bloque de 15; al azar, celdas distintas cada vez
+  que se entra; a mano, la casilla donde se suelta cada uno al arrastrarlo (sobre otro, se
+  intercambian; los nunca colocados van a las celdas libres del patrón). El front pide todos los folders y enlaces una vez (`lib/vaultTree.ts`), así el buscador
+  filtra al escribir: mientras se busca, solo quedan los cuadros que coinciden, en orden y
+  seguidos, sin los huecos de la rejilla dispersa. Editar cambia nombre
+  e icono, con un selector que busca entre los ~1.500 de la librería (el catálogo se descarga al
+  abrir el editor), y borra con el recuento de lo que contiene. `Save web` (`/vault/new`) guarda URL,
+  título y folder, con los folders agrupados por categoría.
 - **Collections** (`CollectionsView.vue`, `CollectionColumn.vue`): una columna por colección, tan
   alta como deja la ventana y en fila con scroll horizontal. El nombre recorre el marco en
   minúscula, con el título en mayúsculas arriba a la izquierda, y dentro van en círculos las
@@ -165,7 +195,7 @@ Todas las rutas van bajo `/api` y exigen sesión.
 | Despliegue gratuito | Publicar la app sin coste para usarla la usuaria y su compañera (ver «Despliegue») | Hecha (15-oct-2026): https://begiz.onrender.com |
 | Diseño | Diseño visual de la plataforma. Hecho: cabecera de celdas con la pestaña activa invertida y mosaico a pantalla completa (hasta cinco tarjetas por fila según el ancho, barra de filtros en celdas, acciones View, Edit y Open), todo en Geist Mono (PR #9, 26-oct-2026). Falta: revisar el resto de páginas y definir la paleta | **Aparcada** (2-nov-2026) hasta ver cómo funciona la división entre Mosaic y Vault |
 | Collections | Una columna por colección con su portada y una página por colección, que sustituye al filtro oculto del mosaico | Hecha; renombrar y borrar validados con el Supabase real (17-nov-2026) |
-| Vault | Segundo espacio para guardar marcadores en folders anidados, con selección múltiple y buscador (ver «Vault») | **En curso**: tablas, API y tests hechos (17-nov-2026). Diseño elegido: rejilla dispersa de folders que se despliegan, con iconos de Phosphor (fill). Falta el front |
+| Vault | Segundo espacio para guardar marcadores en folders anidados, con selección múltiple y buscador (ver «Vault») | **En curso**: API, tests y front hechos (17-nov-2026): rejilla dispersa de folders que se despliegan, con iconos de Phosphor (fill). Falta validarlo con datos reales y la selección múltiple para mover enlaces |
 | Importar marcadores | Subir un `bookmarks.html` al Vault, conservando las carpetas (ver «Vault») | Planificada |
 | Exportar marcadores | Generar un `bookmarks.html` con los folders y una carpeta `Mosaic` (ver «Vault») | Planificada |
 | 2 · Captura | Pantallazo automático al guardar en Mosaic. Planteamiento aprobado el 2-nov-2026: un servicio externo de capturas en lugar de un contenedor con Chromium (parte 05 del PDF). Las webs actuales no cambian | Sin fecha |

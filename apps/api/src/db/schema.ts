@@ -2,6 +2,7 @@ import {
   type AnyPgColumn,
   doublePrecision,
   index,
+  integer,
   pgTable,
   primaryKey,
   text,
@@ -98,23 +99,37 @@ export const vaultFolders = pgTable(
   {
     id: uuid().primaryKey().defaultRandom(),
     userId: uuid('user_id').notNull(),
-    /** Null for folders at the root. Deleting a folder deletes its subfolders. */
-    parentId: uuid('parent_id').references((): AnyPgColumn => vaultFolders.id, { onDelete: 'cascade' }),
+    /** Null for categories, which hold folders. Deleting a category deletes its folders. */
+    parentId: uuid('parent_id').references((): AnyPgColumn => vaultFolders.id, {
+      onDelete: 'cascade',
+    }),
     name: text().notNull(),
     /** Name of the icon chosen in the front's icon library. Null shows the default icon. */
     icon: text(),
+    /** Cell of its grid where the user placed it, in reading order. Null until placed by hand. */
+    gridCell: integer('grid_cell'),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index('vault_folders_user_parent_idx').on(table.userId, table.parentId)],
 )
+
+/** How the Vault lays out its tiles. No row until the user changes it: the API answers with the default. */
+export const vaultPreferences = pgTable('vault_preferences', {
+  userId: uuid('user_id').primaryKey(),
+  order: text().notNull(),
+  direction: text().notNull(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
 
 export const vaultLinks = pgTable(
   'vault_links',
   {
     id: uuid().primaryKey().defaultRandom(),
     userId: uuid('user_id').notNull(),
-    /** Null for links at the root. Deleting a folder deletes its links. */
-    folderId: uuid('folder_id').references(() => vaultFolders.id, { onDelete: 'cascade' }),
+    /** Always a folder inside a category (checked by the API). Deleting the folder deletes its links. */
+    folderId: uuid('folder_id')
+      .notNull()
+      .references(() => vaultFolders.id, { onDelete: 'cascade' }),
     url: text().notNull(),
     title: text().notNull(),
     /** Read from the page when the link is saved by hand. Null when the page could not be read. */
