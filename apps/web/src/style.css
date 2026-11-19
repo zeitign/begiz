@@ -7,9 +7,10 @@
 /* lib/theme.ts sets data-theme on <html>. color-scheme makes native controls and scrollbars follow it. */
 :root {
   color-scheme: light;
-  --color-background: #fff;
-  --color-text: #000;
-  --color-border: #000;
+  /* Softer than pure white and black: a light grey and a dark grey, swapped in the dark theme. */
+  --color-background: #eeeeee;
+  --color-text: #131313;
+  --color-border: #131313;
   --color-muted: #555;
   --color-stripe: #888;
   --color-error: #b00020;
@@ -24,11 +25,22 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
-  --color-background: #000;
-  --color-text: #fff;
-  --color-border: #fff;
+  --color-background: #131313;
+  --color-text: #eeeeee;
+  --color-border: #eeeeee;
   --color-muted: #aaa;
-  --color-error: #ff6b81;
+  --color-error: #ff8a9b;
+}
+
+/* The extra theme: a light rose, with an ultramarine blue for type and lines (pure #0000ff, deepened a
+   little so it sits better on the rose and reads more easily). */
+:root[data-theme="rose"] {
+  --color-background: #e8cbd0;
+  --color-text: #2228c8;
+  --color-border: #2228c8;
+  --color-muted: #474a9e;
+  --color-stripe: #7d80bd;
+  --color-error: #8a0019;
 }
 
 body {
@@ -2514,16 +2526,16 @@ fieldset {
   height: 32px;
 }
 
-/* Favicons in pure black and white, like the rest of the page: grey first, then so much contrast that
-   every grey turns black or white. Hovering its link's row shows its real colours. In the dark theme they are
-   inverted, so they stay light on the dark page. */
+/* Favicons in the page's two colours (VaultFaviconFilter.vue). Hovering its link's row shows its real
+   colours. */
 img.vault-favicon {
-  --vault-favicon-filter: grayscale(1) contrast(1000);
-  filter: var(--vault-favicon-filter);
+  filter: url(#vault-favicon-duotone);
 }
 
-:root[data-theme="dark"] img.vault-favicon {
-  --vault-favicon-filter: grayscale(1) contrast(1000) invert(1);
+.vault-favicon-filter {
+  position: absolute;
+  width: 0;
+  height: 0;
 }
 
 .vault-link:hover img.vault-favicon,
