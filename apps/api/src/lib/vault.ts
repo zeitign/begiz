@@ -3,14 +3,30 @@ import { HTTPException } from 'hono/http-exception'
 import { db, type Transaction } from '../db/client.ts'
 import { vaultFolders, vaultLinkTags, vaultTags } from '../db/schema.ts'
 
-/** Rejects a folder chosen as destination when it does not exist or belongs to someone else. Null is the root. */
-export async function assertFolderExists(userId: string, folderId: string | null) {
-  if (folderId === null) return
+// The Vault has exactly two levels: categories (folders at the root) hold only folders,
+// and the folders inside a category hold only links.
+
+async function findChosenFolder(userId: string, folderId: string) {
   const [folder] = await db
-    .select({ id: vaultFolders.id })
+    .select({ id: vaultFolders.id, parentId: vaultFolders.parentId })
     .from(vaultFolders)
     .where(and(eq(vaultFolders.id, folderId), eq(vaultFolders.userId, userId)))
   if (!folder) throw new HTTPException(400, { message: 'Folder not found' })
+  return folder
+}
+
+/** Rejects a parent that is not one of the user's categories. */
+export async function assertCategory(userId: string, folderId: string) {
+  const folder = await findChosenFolder(userId, folderId)
+  if (folder.parentId !== null) throw new HTTPException(400, { message: 'Folders can only go inside a category' })
+}
+
+/** Rejects a destination for links that is not a folder inside a category. */
+export async function assertLinkFolder(userId: string, folderId: string) {
+  const folder = await findChosenFolder(userId, folderId)
+  if (folder.parentId === null) {
+    throw new HTTPException(400, { message: 'Links go in a folder inside a category, not in the category itself' })
+  }
 }
 
 export async function findVaultTagNamesByLinkId(linkIds: string[]) {

@@ -1,32 +1,64 @@
-import { and, count, eq } from 'drizzle-orm'
+import { and, count, eq, inArray } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
-import { idParam, vaultFolderCreate, vaultFolderUpdate } from '@webs/shared'
+import { idParam, vaultFolderCreate, vaultFolderUpdate, vaultGridUpdate } from '@webs/shared'
 import type { AuthEnv } from '../auth.ts'
 import { db } from '../db/client.ts'
 import { vaultFolders, vaultLinks } from '../db/schema.ts'
 import { validate } from '../lib/validate.ts'
-import { assertFolderExists, deleteUnusedVaultTags } from '../lib/vault.ts'
+import { assertCategory, deleteUnusedVaultTags } from '../lib/vault.ts'
 
 function toFolderResponse(folder: typeof vaultFolders.$inferSelect, linkCount = 0) {
-  return { id: folder.id, name: folder.name, parentId: folder.parentId, icon: folder.icon, linkCount }
+  return {
+    id: folder.id,
+    name: folder.name,
+    parentId: folder.parentId,
+    icon: folder.icon,
+    gridCell: folder.gridCell,
+    createdAt: folder.createdAt.toISOString(),
+    linkCount,
+  }
 }
 
-/** Checks that a folder can move under a new parent: the parent exists and is not the folder or inside it. */
-async function assertValidNewParent(userId: string, folderId: string, newParentId: string | null) {
-  const userFolders = await db
-    .select({ id: vaultFolders.id, parentId: vaultFolders.parentId })
+/** The cells placed by hand belong to one grid: every folder must be the user's and share its parent. */
+async function assertSameGrid(userId: string, folderIds: string[]) {
+  const folders = await db
+    .select({ parentId: vaultFolders.parentId })
     .from(vaultFolders)
-    .where(eq(vaultFolders.userId, userId))
-  const parentIdByFolderId = new Map(userFolders.map((folder) => [folder.id, folder.parentId]))
-  if (!parentIdByFolderId.has(folderId)) throw new HTTPException(404, { message: 'Folder not found' })
-  if (newParentId !== null && !parentIdByFolderId.has(newParentId)) {
-    throw new HTTPException(400, { message: 'Folder not found' })
+    .where(and(inArray(vaultFolders.id, folderIds), eq(vaultFolders.userId, userId)))
+  if (folders.length !== folderIds.length) throw new HTTPException(404, { message: 'Folder not found' })
+  if (new Set(folders.map((folder) => folder.parentId)).size > 1) {
+    throw new HTTPException(400, {
+      message: 'The folders must be in the same grid',
+    })
   }
-  for (let ancestorId = newParentId; ancestorId !== null; ancestorId = parentIdByFolderId.get(ancestorId) ?? null) {
-    if (ancestorId === folderId) {
-      throw new HTTPException(400, { message: 'A folder cannot be moved inside itself' })
+}
+
+/** Moving keeps the two levels: a folder with links stays inside a category, and a category with folders stays at the root. */
+async function assertValidNewParent(userId: string, folderId: string, newParentId: string | null) {
+  const [folder] = await db
+    .select({ id: vaultFolders.id })
+    .from(vaultFolders)
+    .where(and(eq(vaultFolders.id, folderId), eq(vaultFolders.userId, userId)))
+  if (!folder) throw new HTTPException(404, { message: 'Folder not found' })
+
+  if (newParentId === null) {
+    if (await db.$count(vaultLinks, eq(vaultLinks.folderId, folderId))) {
+      throw new HTTPException(400, {
+        message: 'A folder with links cannot become a category',
+      })
     }
+    return
+  }
+  if (newParentId === folderId)
+    throw new HTTPException(400, {
+      message: 'A folder cannot be moved inside itself',
+    })
+  await assertCategory(userId, newParentId)
+  if (await db.$count(vaultFolders, eq(vaultFolders.parentId, folderId))) {
+    throw new HTTPException(400, {
+      message: 'A category with folders cannot go inside another one',
+    })
   }
 }
 
@@ -46,10 +78,15 @@ export const vaultFoldersRoutes = new Hono<AuthEnv>()
   .post('/', validate('json', vaultFolderCreate), async (context) => {
     const userId = context.get('userId')
     const input = context.req.valid('json')
-    await assertFolderExists(userId, input.parentId)
+    if (input.parentId !== null) await assertCategory(userId, input.parentId)
     const [createdFolder] = await db
       .insert(vaultFolders)
-      .values({ userId, name: input.name, parentId: input.parentId, icon: input.icon })
+      .values({
+        userId,
+        name: input.name,
+        parentId: input.parentId,
+        icon: input.icon,
+      })
       .returning()
     return context.json(toFolderResponse(createdFolder!), 201)
   })
@@ -63,7 +100,11 @@ export const vaultFoldersRoutes = new Hono<AuthEnv>()
       .update(vaultFolders)
       .set({
         ...(input.name !== undefined && { name: input.name }),
-        ...(input.parentId !== undefined && { parentId: input.parentId }),
+        // In another grid, its cell means nothing: it goes to the first free one.
+        ...(input.parentId !== undefined && {
+          parentId: input.parentId,
+          gridCell: null,
+        }),
         ...(input.icon !== undefined && { icon: input.icon }),
       })
       .where(and(eq(vaultFolders.id, folderId), eq(vaultFolders.userId, userId)))
@@ -73,7 +114,26 @@ export const vaultFoldersRoutes = new Hono<AuthEnv>()
     return context.json(toFolderResponse(updatedFolder, linkCount))
   })
 
-  // Deletes the subfolders and links inside too (cascade). The front warns with the count first.
+  // Places the tiles of one grid by hand. Folders of that grid left out keep their cell.
+  .put('/grid', validate('json', vaultGridUpdate), async (context) => {
+    const userId = context.get('userId')
+    const { cells } = context.req.valid('json')
+    await assertSameGrid(
+      userId,
+      cells.map((cell) => cell.folderId),
+    )
+    await db.transaction(async (transaction) => {
+      for (const cell of cells) {
+        await transaction
+          .update(vaultFolders)
+          .set({ gridCell: cell.gridCell })
+          .where(and(eq(vaultFolders.id, cell.folderId), eq(vaultFolders.userId, userId)))
+      }
+    })
+    return context.body(null, 204)
+  })
+
+  // Deletes the folders and links inside too (cascade). The front warns with the count first.
   .delete('/:id', validate('param', idParam), async (context) => {
     const userId = context.get('userId')
     const { id: folderId } = context.req.valid('param')

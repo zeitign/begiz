@@ -1762,3 +1762,871 @@ fieldset {
 .window-resize-handle.right {
   right: -4px;
 }
+
+/* Vault: a scattered grid of tiles. Opening one slides it to the top-left corner and grows it over the
+   board (useTileExpansion animates the box; these rules only style it). */
+.vault-page {
+  flex: 1;
+}
+
+.vault-board {
+  position: relative;
+  display: grid;
+  grid-template-columns: repeat(6, minmax(0, 1fr));
+  align-items: start;
+  align-content: start;
+  gap: 16px;
+}
+
+@media (max-width: 1280px) {
+  .vault-board {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1000px) {
+  .vault-board {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 760px) {
+  .vault-board {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* The boards take the height left on the screen, so the panel that grows over one fills it. */
+.vault-page > .vault-board,
+.vault-folder-board {
+  flex: 1;
+}
+
+.vault-board.shows-panel {
+  grid-template-rows: 1fr;
+  align-items: stretch;
+}
+
+/* The folders sit inside the category's frame, a third smaller than the categories, with smaller type. */
+.vault-board.vault-folder-board {
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  padding: 24px;
+}
+
+@media (max-width: 1280px) {
+  .vault-board.vault-folder-board {
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 1000px) {
+  .vault-board.vault-folder-board {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+.vault-folder-board > .vault-tile .vault-identity {
+  padding: 10px 12px;
+}
+
+.vault-folder-board > .vault-tile .vault-identity-name {
+  font-size: 17px;
+}
+
+.vault-folder-board > .vault-tile .vault-identity-count {
+  font-size: 12px;
+}
+
+.vault-folder-board > .vault-tile .vault-icon {
+  left: 10px;
+  bottom: 8px;
+  font-size: 64px;
+}
+
+@media (max-width: 760px) {
+  .vault-board.vault-folder-board {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+.vault-board.vault-folder-board.shows-panel {
+  padding: 0;
+}
+
+/* The intro fills its cell like a tile: the title grows with the cell (cqi = 1% of its width). */
+.vault-intro {
+  container-type: inline-size;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+  aspect-ratio: 1;
+  transition: opacity 0.3s;
+}
+
+.vault-intro-title {
+  font-size: 19cqi;
+  line-height: 0.95;
+  letter-spacing: -0.04em;
+}
+
+.vault-intro-button,
+.vault-editor-actions button {
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* The Vault has a single dropdown, Order, next to the count. */
+.vault-filter-cells {
+  grid-template-columns: 120px auto;
+}
+
+.vault-gap {
+  aspect-ratio: 1;
+}
+
+/* Custom order: while a tile is dragged, the empty cells show where it can go, crossed like the logo. */
+.vault-board.is-dragging .vault-gap {
+  border: 1px solid var(--color-border);
+}
+
+.vault-tile-open[draggable="true"] {
+  cursor: grab;
+}
+
+.vault-tile.is-dragged {
+  opacity: 0.4;
+}
+
+.vault-tile {
+  position: relative;
+  aspect-ratio: 1;
+  border: 1px solid var(--color-border);
+  background: var(--color-background);
+  transition:
+    opacity 0.3s,
+    transform 0.3s,
+    box-shadow 0.15s;
+}
+
+/* The categories already have the shape of the frame they open into: square top-left corner, the
+   others rounded. */
+.vault-page > .vault-board > .vault-tile {
+  border-radius: 0 24px 24px 24px;
+}
+
+.vault-tile:hover {
+  box-shadow: 4px 4px 0 var(--color-border);
+  transform: translate(-2px, -2px);
+}
+
+.hiding-tiles .vault-tile,
+.hiding-tiles .vault-intro {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* The tiles left by a search settle with a little wiggle, like something put down in place. Each tile
+   gets its own lean, speed and delay (VaultTileGrid.vue). */
+.vault-board.is-wiggling > .vault-tile {
+  transform-origin: 50% 100%;
+  animation: vault-tile-wiggle var(--vault-wiggle-duration, 0.5s) ease-out var(--vault-wiggle-delay, 0s);
+}
+
+@keyframes vault-tile-wiggle {
+  20% {
+    transform: rotate(var(--vault-wiggle-turn, -2.5deg));
+  }
+
+  45% {
+    transform: rotate(calc(var(--vault-wiggle-turn, -2.5deg) * -0.7));
+  }
+
+  70% {
+    transform: rotate(calc(var(--vault-wiggle-turn, -2.5deg) * 0.35));
+  }
+
+  85% {
+    transform: rotate(calc(var(--vault-wiggle-turn, -2.5deg) * -0.12));
+  }
+}
+
+/* Back in its grid after its column folded away. Its length is POP_MS in useTileExpansion.ts. */
+.vault-tile.is-popping {
+  animation: vault-tile-pop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes vault-tile-pop {
+  from {
+    opacity: 0;
+    transform: scale(0.6);
+  }
+}
+
+/* The panel stands in for the tile while it moves. */
+.vault-tile.is-hidden {
+  visibility: hidden;
+}
+
+.vault-tile-open {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  width: 100%;
+  padding: 0;
+  border: none;
+  background: transparent;
+}
+
+.vault-tile-open:focus-visible {
+  outline: 2px solid var(--color-text);
+  outline-offset: -6px;
+}
+
+.vault-identity {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 14px 16px;
+}
+
+.vault-identity-name {
+  margin: 0;
+  font-size: 22px;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+.vault-identity-count {
+  color: var(--color-muted);
+}
+
+.vault-icon {
+  display: block;
+  line-height: 1;
+}
+
+.vault-identity .vault-icon {
+  position: absolute;
+  left: 14px;
+  bottom: 10px;
+  font-size: 104px;
+}
+
+/* An open category or folder: a narrow column with its card and actions, and its contents beside it.
+   While it slides it looks like the tile; once it grows it takes the panel's shape. The rules use ">"
+   because a folder panel sits inside the category panel and has its own state. */
+.vault-panel {
+  display: grid;
+  grid-template-columns: var(--vault-tile-size, 0px) minmax(0, 1fr);
+  grid-column: 1 / -1;
+  border: 1px solid var(--color-border);
+  background: var(--color-background);
+  /* Folding and unfolding ease in and overshoot a little, like a soft spring. */
+  transition:
+    grid-template-columns 0.6s cubic-bezier(0.34, 1.3, 0.64, 1),
+    border-radius 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* The open column fits its name (--vault-side-width, set by the panel from sideColumnWidth). */
+.vault-panel.grown {
+  grid-template-columns: var(--vault-side-width) minmax(0, 1fr);
+}
+
+/* The category's frame is the limit of everything inside it; its square corner is the card's. */
+.vault-category-panel {
+  border-radius: 0 24px 24px 24px;
+}
+
+/* While a tile opens, its card narrows to its column's width as it slides to the corner, and keeps to one
+   column until it becomes the panel. */
+.vault-panel:not(.grown) {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+/* The frame's lines come out of the category's card in the corner: the frame is revealed from the
+   card's size to the whole board. Its length is DRAW_FRAME_MS in useTileExpansion.ts. */
+.vault-frame-drawing {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+  border: 1px solid var(--color-border);
+  border-radius: 0 24px 24px 24px;
+  pointer-events: none;
+  animation: vault-frame-draw 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+@keyframes vault-frame-draw {
+  from {
+    clip-path: inset(0 calc(100% - var(--vault-corner-width)) calc(100% - var(--vault-corner-height)) 0);
+  }
+
+  to {
+    clip-path: inset(0);
+  }
+}
+
+/* A folder being created fills the frame beside the category, like an open one. */
+.vault-panel-main > .vault-folder-panel {
+  flex: 1;
+}
+
+/* An open folder has no box of its own: the frame around it, rounded corners included, is the category's.
+   Neither when its column folds away to close. */
+.vault-folder-panel.grown {
+  border-color: transparent;
+  background: none;
+}
+
+/* Closing, the folder's column folds onto its left edge: its right edge moves left like a curtain,
+   covering the content, which keeps its place. */
+.vault-folder-panel.grown.floating {
+  border-right-color: var(--color-border);
+}
+
+.vault-folder-panel.grown.floating > .vault-panel-side {
+  border-right: none;
+}
+
+.vault-panel.floating {
+  position: absolute;
+  /* Placed against the board's own edges, not inside its padding (an absolute grid item that spans the
+     columns would be). */
+  grid-column: auto;
+  z-index: 2;
+  overflow: hidden;
+  transition:
+    left 0.38s cubic-bezier(0.4, 0, 0.2, 1),
+    top 0.38s cubic-bezier(0.4, 0, 0.2, 1),
+    width 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+    height 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+    grid-template-columns 0.45s cubic-bezier(0.4, 0, 0.2, 1),
+    border-radius 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.vault-panel.moving > .vault-panel-main {
+  display: none;
+}
+
+/* The contents beside the card fade in once the panel is open. */
+.vault-panel-main {
+  animation: vault-fade-in 0.4s ease;
+}
+
+@keyframes vault-fade-in {
+  from {
+    opacity: 0;
+  }
+}
+
+/* The buttons come out from under the card once the panel is open, and go back under it to close. */
+.vault-panel-actions {
+  transition: transform 0.5s cubic-bezier(0.34, 1.2, 0.64, 1);
+}
+
+.vault-panel.moving > .vault-panel-side > .vault-side-content > .vault-panel-actions {
+  transform: translateY(-100%);
+  pointer-events: none;
+}
+
+/* The column clips its content while it folds: the open content keeps its width, so it slides out of
+   view instead of reflowing, and fades into the strip (the vault-fold transition). */
+.vault-panel-side {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.vault-side-content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.vault-panel.grown > .vault-panel-side > .vault-side-content {
+  width: var(--vault-side-width);
+}
+
+.vault-fold-enter-active,
+.vault-fold-leave-active {
+  transition: opacity 0.3s ease;
+}
+
+.vault-fold-leave-active {
+  position: absolute;
+  inset: 0 auto 0 0;
+}
+
+.vault-fold-enter-from,
+.vault-fold-leave-to {
+  opacity: 0;
+}
+
+.vault-panel.grown > .vault-panel-side {
+  border-right: 1px solid var(--color-border);
+}
+
+/* The card of an open panel keeps its shape: it moves from the tile's sizes to the column's smoothly,
+   the type and icon as soon as it heads for the corner, the height once it becomes the column. */
+.vault-panel-side > .vault-side-content > .vault-identity {
+  position: relative;
+  z-index: 1;
+  flex: none;
+  background: var(--color-background);
+  height: var(--vault-tile-size, auto);
+  transition: height 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.vault-panel-side > .vault-side-content > .vault-identity > .vault-identity-name,
+.vault-panel-side > .vault-side-content > .vault-identity > .vault-identity-count,
+.vault-panel-side > .vault-side-content > .vault-identity > .vault-icon {
+  transition: font-size 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.vault-panel.in-corner > .vault-panel-side > .vault-side-content > .vault-identity > .vault-identity-name {
+  font-size: 26px;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+}
+
+.vault-panel.in-corner > .vault-panel-side > .vault-side-content > .vault-identity > .vault-identity-count {
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.vault-panel.in-corner > .vault-panel-side > .vault-side-content > .vault-identity > .vault-icon {
+  font-size: 64px;
+}
+
+/* In the column, the card keeps the height it had as a tile, so it does not move once in the corner;
+   never less than its name, counts and icon need. */
+.vault-panel.grown > .vault-panel-side > .vault-side-content > .vault-identity {
+  height: max(190px, var(--vault-tile-size, 210px));
+  gap: 8px;
+}
+
+/* The window-like bar on top of an open panel: back on the left, edit and close on the right. */
+/* Under the card, so the card keeps its place when the panel opens: back, edit and close side by side,
+   then New folder (or New link) across the column. */
+.vault-panel-bar {
+  display: flex;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.vault-panel-bar + .vault-panel-buttons {
+  border-top: none;
+}
+
+.vault-bar-button {
+  flex: 1;
+  display: grid;
+  place-items: center;
+  height: 36px;
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+.vault-bar-button + .vault-bar-button {
+  border-left: 1px solid var(--color-border);
+}
+
+.vault-bar-button:hover:not(:disabled) {
+  background: var(--color-text);
+  color: var(--color-background);
+}
+
+.vault-bar-button svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: square;
+}
+
+/* With a folder open, the category folds into a strip: its icon and its name upright. */
+.vault-panel.grown.folded {
+  grid-template-columns: 52px minmax(0, 1fr);
+}
+
+.vault-fold-strip {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+  width: 100%;
+  height: 100%;
+  padding: 0 0 12px;
+  border: none;
+  background: none;
+}
+
+/* The arrow sits in a cell at the top of the strip, the size of the back arrow's. */
+.vault-fold-arrow {
+  display: grid;
+  place-items: center;
+  align-self: stretch;
+  height: 36px;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.vault-fold-strip .vault-icon {
+  font-size: 28px;
+}
+
+.vault-fold-name {
+  writing-mode: vertical-rl;
+  transform: rotate(180deg);
+  font-size: 36px;
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+/* The folded category sits in the frame's rounded corner: its hover fill follows the curve
+   (the frame's radius minus its line). */
+.vault-category-panel > .vault-panel-side > .vault-fold-strip {
+  border-bottom-left-radius: 23px;
+}
+
+.vault-fold-strip:hover {
+  background: var(--color-text);
+  color: var(--color-background);
+}
+
+.vault-fold-strip svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: square;
+}
+
+/* The links are inside the folders: one step in under them. */
+.vault-identity-counts {
+  display: flex;
+  flex-direction: column;
+}
+
+.vault-identity-subcount {
+  padding-left: 12px;
+}
+
+.vault-panel-actions {
+  display: flex;
+  flex-direction: column;
+  padding: 28px 0 24px;
+}
+
+/* New folder (or link), across the whole column. */
+.vault-panel-buttons {
+  display: flex;
+  border-top: 1px solid var(--color-border);
+  border-bottom: 1px solid var(--color-border);
+}
+
+.vault-panel-button {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 40px;
+  padding: 0 8px;
+  border: none;
+  background: none;
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.vault-panel-button:hover:not(:disabled),
+.vault-link-action:hover {
+  background: var(--color-text);
+  color: var(--color-background);
+}
+
+.vault-panel-note,
+.vault-panel-actions .error {
+  margin: 12px 16px 0;
+  font-size: 12px;
+  text-align: center;
+}
+
+.vault-panel-note {
+  color: var(--color-muted);
+}
+
+.vault-panel-main {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.vault-panel-heading {
+  padding: 20px 16px 0;
+  color: var(--color-muted);
+}
+
+.vault-panel-message {
+  margin: 0;
+  padding: 20px 16px;
+}
+
+/* Links are told apart by space and type size, not by lines. */
+.vault-links {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 0;
+  padding: 20px 16px;
+  list-style: none;
+}
+
+.vault-link {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 16px;
+  padding: 10px 12px 10px 8px;
+}
+
+.vault-favicon {
+  width: 32px;
+  height: 32px;
+}
+
+/* Favicons in pure black and white, like the rest of the page: grey first, then so much contrast that
+   every grey turns black or white. Hovering its link's row shows its real colours. In the dark theme they are
+   inverted, so they stay light on the dark page. */
+img.vault-favicon {
+  --vault-favicon-filter: grayscale(1) contrast(1000);
+  filter: var(--vault-favicon-filter);
+}
+
+:root[data-theme="dark"] img.vault-favicon {
+  --vault-favicon-filter: grayscale(1) contrast(1000) invert(1);
+}
+
+.vault-link:hover img.vault-favicon,
+.vault-link:has(:focus-visible) img.vault-favicon {
+  filter: none;
+}
+
+.vault-favicon-initial {
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--color-border);
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.vault-link-text {
+  display: flex;
+  align-items: baseline;
+  gap: 16px;
+  min-width: 0;
+}
+
+/* The URL follows the title; a long title leaves room for some of it. */
+.vault-link-title {
+  flex: none;
+  max-width: 70%;
+  overflow: hidden;
+  font-size: 22px;
+  line-height: 1.15;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vault-link-title:hover {
+  text-decoration: underline;
+}
+
+.vault-link-url {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-muted);
+  font-size: 12px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Dimmed so they do not compete with the title, until the row is hovered or reached with the keyboard
+   (not merely clicked: a link opened stays focused, and should not look different from the others). */
+.vault-link-actions {
+  display: flex;
+  gap: 4px;
+  opacity: 0.55;
+  transition: opacity 0.15s;
+}
+
+.vault-link:hover .vault-link-actions,
+.vault-link:has(:focus-visible) .vault-link-actions {
+  opacity: 1;
+}
+
+.vault-link-action {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: none;
+  background: none;
+}
+
+.vault-link-action svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linejoin: round;
+  stroke-linecap: round;
+}
+
+.vault-link-form {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  grid-column: 2 / -1;
+}
+
+.vault-link-form input {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+.vault-link-error {
+  grid-column: 2 / -1;
+  margin: 6px 0 0;
+}
+
+.vault-folder-editor {
+  max-width: 760px;
+  padding: 20px 16px;
+}
+
+.vault-icon-picker {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.vault-icon-options {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(56px, 1fr));
+  gap: 8px;
+}
+
+.vault-icon-option {
+  display: grid;
+  place-items: center;
+  height: 56px;
+  padding: 0;
+  font-size: 28px;
+}
+
+.vault-icon-option[aria-pressed="true"] {
+  background: var(--color-text);
+  color: var(--color-background);
+}
+
+.vault-editor-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.vault-primary-button {
+  background: var(--color-text);
+  color: var(--color-background);
+}
+
+/* On a phone the column goes on top, without the line beside it. */
+@media (max-width: 760px) {
+  .vault-identity .vault-icon {
+    font-size: 64px;
+  }
+
+  .vault-panel.grown {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .vault-panel.grown > .vault-panel-side {
+    border-right: none;
+  }
+
+  /* The folded category lies across the top instead. */
+  .vault-panel.grown.folded {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .vault-panel.grown > .vault-panel-side > .vault-side-content {
+    width: auto;
+  }
+
+  .vault-fold-strip {
+    flex-direction: row;
+    padding: 0 16px 0 0;
+  }
+
+  .vault-category-panel > .vault-panel-side > .vault-fold-strip {
+    border-radius: 0 23px 0 0;
+  }
+
+  .vault-fold-arrow {
+    width: 44px;
+    height: auto;
+    border-bottom: none;
+    border-right: 1px solid var(--color-border);
+  }
+
+  .vault-fold-name {
+    writing-mode: horizontal-tb;
+    transform: none;
+    font-size: 22px;
+  }
+
+  .vault-board.vault-folder-board {
+    padding: 16px;
+  }
+
+  .vault-link-text {
+    flex-wrap: wrap;
+    gap: 2px 12px;
+  }
+
+  .vault-link-title {
+    max-width: 100%;
+    font-size: 18px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vault-tile,
+  .vault-intro,
+  .vault-panel,
+  .vault-panel.floating,
+  .vault-fold-enter-active,
+  .vault-fold-leave-active,
+  .vault-panel-actions,
+  .vault-link-actions {
+    transition: none;
+  }
+
+  .vault-panel-main,
+  .vault-tile.is-popping,
+  .vault-board.is-wiggling > .vault-tile {
+    animation: none;
+  }
+}

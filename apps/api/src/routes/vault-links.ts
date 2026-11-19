@@ -1,4 +1,4 @@
-import { and, eq, ilike, inArray, isNull, or } from 'drizzle-orm'
+import { and, eq, ilike, inArray, or } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import { idParam, vaultLinkCreate, vaultLinkListQuery, vaultLinkMove, vaultLinkUpdate } from '@webs/shared'
@@ -8,7 +8,7 @@ import { vaultLinks } from '../db/schema.ts'
 import { escapeLikePattern } from '../lib/escape-like-pattern.ts'
 import { fetchPageMeta } from '../lib/preview.ts'
 import { validate } from '../lib/validate.ts'
-import { assertFolderExists, deleteUnusedVaultTags, findVaultTagNamesByLinkId, replaceVaultTags } from '../lib/vault.ts'
+import { assertLinkFolder, deleteUnusedVaultTags, findVaultTagNamesByLinkId, replaceVaultTags } from '../lib/vault.ts'
 
 function toLinkResponse(link: typeof vaultLinks.$inferSelect, tagNames: string[]) {
   return {
@@ -46,8 +46,7 @@ export const vaultLinksRoutes = new Hono<AuthEnv>()
   .get('/', validate('query', vaultLinkListQuery), async (context) => {
     const { folder, search } = context.req.valid('query')
     const conditions = [eq(vaultLinks.userId, context.get('userId'))]
-    if (folder === 'root') conditions.push(isNull(vaultLinks.folderId))
-    else if (folder) conditions.push(eq(vaultLinks.folderId, folder))
+    if (folder) conditions.push(eq(vaultLinks.folderId, folder))
     if (search) {
       const pattern = `%${escapeLikePattern(search)}%`
       conditions.push(or(ilike(vaultLinks.title, pattern), ilike(vaultLinks.url, pattern))!)
@@ -69,7 +68,7 @@ export const vaultLinksRoutes = new Hono<AuthEnv>()
   .post('/', validate('json', vaultLinkCreate), async (context) => {
     const userId = context.get('userId')
     const { tags: tagNames, ...fields } = context.req.valid('json')
-    await assertFolderExists(userId, fields.folderId)
+    await assertLinkFolder(userId, fields.folderId)
     const faviconUrl = await readFaviconUrl(fields.url)
     const linkId = await db.transaction(async (transaction) => {
       const [createdLink] = await transaction
@@ -87,7 +86,7 @@ export const vaultLinksRoutes = new Hono<AuthEnv>()
     const { id: linkId } = context.req.valid('param')
     const { tags: tagNames, ...fields } = context.req.valid('json')
     const currentLink = await getLinkDetail(userId, linkId)
-    if (fields.folderId !== undefined) await assertFolderExists(userId, fields.folderId)
+    if (fields.folderId !== undefined) await assertLinkFolder(userId, fields.folderId)
     const changedUrl = fields.url !== undefined && fields.url !== currentLink.url ? fields.url : null
     const faviconChange = changedUrl ? { faviconUrl: await readFaviconUrl(changedUrl) } : {}
 
@@ -105,7 +104,7 @@ export const vaultLinksRoutes = new Hono<AuthEnv>()
   .post('/move', validate('json', vaultLinkMove), async (context) => {
     const userId = context.get('userId')
     const { linkIds, folderId } = context.req.valid('json')
-    await assertFolderExists(userId, folderId)
+    await assertLinkFolder(userId, folderId)
     await db.transaction(async (transaction) => {
       const movedLinks = await transaction
         .update(vaultLinks)
