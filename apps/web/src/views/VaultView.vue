@@ -44,7 +44,7 @@ const invalidateVault = useInvalidateVault()
 
 const { data: folders, isPending: areFoldersPending, error: foldersError } = useVaultFolders()
 const { data: links, isPending: areLinksPending, error: linksError } = useVaultLinks()
-const isPending = computed(() => areFoldersPending.value || areLinksPending.value)
+
 const loadError = computed(() => foldersError.value ?? linksError.value)
 const vaultTree = computed(() => buildVaultTree(folders.value ?? [], links.value ?? []))
 
@@ -60,8 +60,10 @@ const DIRECTION_LABELS: Record<SortDirection, string> = {
   desc: '↓ Desc',
 }
 
-const { data: savedPreferences } = useVaultPreferences()
+const { data: savedPreferences, isPending: arePreferencesPending } = useVaultPreferences()
 const preferences = computed(() => savedPreferences.value ?? defaultVaultPreferences)
+// The grid waits for the saved order too, so the tiles appear in their places instead of jumping to them.
+const isPending = computed(() => areFoldersPending.value || areLinksPending.value || arePreferencesPending.value)
 const hasDirection = computed(() => preferences.value.order === 'name' || preferences.value.order === 'date')
 const saveVaultPreferences = useSaveVaultPreferences()
 const placeVaultTiles = usePlaceVaultTiles()
