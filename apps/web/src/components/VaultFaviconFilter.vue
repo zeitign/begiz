@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { ref, watch } from 'vue'
-import { theme } from '../lib/theme'
+import { theme, themeColour } from '../lib/theme'
 
 // Favicons are drawn in the page's two colours: their dark parts in the text colour and their light parts
 // in the background's, whatever the theme. An SVG filter does it (style.css applies it to the favicons):
@@ -18,7 +18,7 @@ const channelsOf = (cssColour: string): Channels => {
 }
 
 watch(
-  theme,
+  [theme, themeColour],
   () => {
     const pageStyle = getComputedStyle(document.body)
     darkChannels.value = channelsOf(pageStyle.color)
