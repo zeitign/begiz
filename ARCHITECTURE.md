@@ -197,8 +197,7 @@ Todas las rutas van bajo `/api` y exigen sesión.
 | Diseño | Diseño visual de la plataforma. Hecho: cabecera de celdas con la pestaña activa invertida y mosaico a pantalla completa (hasta cinco tarjetas por fila según el ancho, barra de filtros en celdas, acciones View, Edit y Open), todo en Geist Mono (PR #9, 26-oct-2026). Falta: revisar el resto de páginas y definir la paleta | **Aparcada** (2-nov-2026) hasta ver cómo funciona la división entre Mosaic y Vault |
 | Collections | Una columna por colección con su portada y una página por colección, que sustituye al filtro oculto del mosaico | Hecha; renombrar y borrar validados con el Supabase real (17-nov-2026) |
 | Vault | Segundo espacio para guardar marcadores en folders anidados, con selección múltiple y buscador (ver «Vault») | **En curso**: API, tests y front hechos (17-nov-2026): rejilla dispersa de folders que se despliegan, con iconos de Phosphor (fill). Falta validarlo con datos reales y la selección múltiple para mover enlaces |
-| Importar marcadores | Subir un `bookmarks.html` al Vault, conservando las carpetas (ver «Vault») | Planificada |
-| Exportar marcadores | Generar un `bookmarks.html` con los folders y una carpeta `Mosaic` (ver «Vault») | Planificada |
+| Vault anidado | Plan del 20-nov-2026 (parte 06 del PDF, ver «Vault anidado»). A · anidado en la API · B · vista de lista · C · tercer nivel en el tapiz · D · herramientas (seleccionar, mover, borrar) · E · importar · F · exportar | **Siguiente**: A |
 | 2 · Captura | Pantallazo automático al guardar en Mosaic. Planteamiento aprobado el 2-nov-2026: un servicio externo de capturas en lugar de un contenedor con Chromium (parte 05 del PDF). Las webs actuales no cambian | Sin fecha |
 | 3 · Extensión | Extensión de navegador (WXT + Vue) usando la misma API | Planificada |
 | 4 · Componentes | RF-F1: guardar componentes concretos (tabla `components` que apunta a `webs`) | Futuro |
@@ -219,6 +218,32 @@ cambiar al diseñarlas.
 - **Importar y exportar**: formato HTML de marcadores de Netscape. Importar conserva el árbol y los
   tags, omite los enlaces repetidos y termina con un resumen. Exportar añade una carpeta `Mosaic`
   con los enlaces y tags del mosaico; si se vuelve a importar, entra como un folder más.
+
+### Vault anidado (plan del 20-nov-2026)
+
+Parte 06 del PDF. El 17-nov el Vault quedó en dos niveles exactos; al preparar la importación se vio
+que los marcadores del navegador anidan a cualquier profundidad, y aplanarlos con la ruta en el
+nombre (`Design / Fonts`) se descartó.
+
+- **Reglas**: las categorías siguen siendo el primer nivel y solo contienen folders. Los folders, de
+  cualquier nivel, pueden tener enlaces y subfolders a la vez. Mover un folder dentro de sí mismo o
+  de un descendiente se rechaza (bucle). Recuentos totales, incluidos los subfolders. El buscador
+  muestra la ruta de cada resultado. Todo se ordena por nombre. No cambia el esquema: `parent_id` ya
+  lo permite; cambian las reglas de la API y sus tests.
+- **Vista de lista** (RF-23): alternativa más pequeña al tapiz, un nivel cada vez, elegida junto a
+  `Order` y guardada en la cuenta. El tapiz sigue siendo la vista por defecto.
+- **Tercer nivel y siguientes** (RF-24): dentro de un folder abierto, sus subfolders salen a la
+  derecha como cuadros más pequeños; al abrir uno, sus enlaces se despliegan debajo con sangría.
+- **Herramientas** (RF-25, solo en la lista de momento): seleccionar enlaces y folders, uno o
+  varios; moverlos arrastrando o eligiendo destino; borrar varios; crear subfolders. Retoma la
+  propuesta de «Move to» sin que la barra desplace la lista. RF-26: el selector de folder de
+  `Save web` muestra el árbol.
+- **Importar**: el front sube el archivo y la API lo lee y lo guarda en una transacción (máximo
+  ~5 MB). Cada importación crea una categoría «Imported <fecha>» con el árbol tal cual (las
+  carpetas raíz del navegador son sus folders); los enlaces fuera de carpetas van a «Unsorted».
+  Deshacer = borrar la categoría.
+- **Para más adelante**: herramientas también en el tapiz; revisar la sangría en niveles profundos;
+  orden propio arrastrando y conservar el orden del navegador al importar.
 
 ### Arranque y sesión
 
