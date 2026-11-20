@@ -11,6 +11,7 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import FilterDropdown from '../components/FilterDropdown.vue'
 import VaultCategoryPanel from '../components/VaultCategoryPanel.vue'
+import VaultFaviconFilter from '../components/VaultFaviconFilter.vue'
 import VaultNewCategoryCard from '../components/VaultNewCategoryCard.vue'
 import VaultTileGrid, { type PlacedCell, type VaultTile } from '../components/VaultTileGrid.vue'
 import { errorMessage } from '../lib/api'
@@ -193,6 +194,7 @@ async function showCreatedCategory(categoryId: string) {
 
 <template>
   <main class="page wide stack vault-page">
+    <VaultFaviconFilter />
     <div class="filter-bar">
       <div class="search-sentence">
         <label for="vault-search" class="search-sentence-text">I'm gonna search</label>

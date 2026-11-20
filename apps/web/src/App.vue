@@ -9,7 +9,7 @@ import WebInfoWindow from './components/WebInfoWindow.vue'
 import { appError } from './lib/appError'
 import { closeAllInfoWindows, infoWindows } from './lib/infoWindows'
 import { isAuthReady, session, supabase } from './lib/supabase'
-import { theme, toggleTheme } from './lib/theme'
+import { nextTheme, theme, toggleTheme } from './lib/theme'
 
 const route = useRoute()
 const router = useRouter()
@@ -17,9 +17,8 @@ const queryClient = useQueryClient()
 
 const currentSpace = computed(() => route.meta.space ?? 'mosaic')
 
-const themeToggleLabel = computed(() =>
-  theme.value === 'dark' ? 'Switch to light theme' : 'Switch to dark theme',
-)
+// The button shows the theme in use; its label says which one a click brings.
+const themeToggleLabel = computed(() => `Theme: ${theme.value} · click for ${nextTheme.value}`)
 
 // Signing out here, in another tab, or the API rejecting the session all end the same way.
 watch(session, (newSession, oldSession) => {
@@ -69,14 +68,24 @@ function signOut() {
           :aria-label="themeToggleLabel"
           @click="toggleTheme"
         >
-          <svg v-if="theme === 'dark'" viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-            <circle cx="12" cy="12" r="4" />
+          <svg v-if="theme === 'light'" viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
+            <circle cx="12" cy="12" r="5" />
             <path
-              d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"
+              d="M12 1v2.5M12 20.5V23M1 12h2.5M20.5 12H23M4.2 4.2l1.8 1.8M18 18l1.8 1.8M4.2 19.8 6 18M18 6l1.8-1.8"
             />
           </svg>
-          <svg v-else viewBox="0 0 24 24" width="18" height="18" aria-hidden="true">
-            <path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z" />
+          <svg v-else-if="theme === 'dark'" viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
+            <!-- Scaled up to match the sun and the smiley, keeping the same line width. -->
+            <path
+              d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"
+              transform="translate(12 12) scale(1.45) translate(-12.6 -11.4)"
+              vector-effect="non-scaling-stroke"
+            />
+          </svg>
+          <svg v-else viewBox="0 0 24 24" width="26" height="26" aria-hidden="true">
+            <circle cx="12" cy="12" r="11" />
+            <path d="M7.5 14.5a5.5 5.5 0 0 0 9 0" />
+            <path d="M8.5 8.75v1.5M15.5 8.75v1.5" />
           </svg>
         </button>
         <button type="button" class="header-cell header-action" @click="signOut">Sign out</button>
