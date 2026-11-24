@@ -92,7 +92,7 @@ code {
 }
 
 .cover-part-body {
-  padding: 3.5mm 8mm;
+  padding: 2mm 8mm;
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -354,7 +354,7 @@ pre {
 
 <section class="cover">
   <div class="cover-top">
-    <div class="cover-kicker">Documento de proyecto · 29 sep – 17 nov 2026</div>
+    <div class="cover-kicker">Documento de proyecto · 29 sep – 20 nov 2026</div>
     <div class="cover-title">Begiz</div>
     <div class="cover-subtitle">App personal para guardar webs de inspiración. Requisitos, plan de arquitectura, procesos, despliegue y hoja de ruta, en un solo documento.</div>
   </div>
@@ -397,6 +397,14 @@ pre {
         <div class="cover-part-meta">Producto y hoja de ruta · 2 nov 2026</div>
         <div class="cover-part-name">Producto y hoja de ruta</div>
         <div class="cover-part-sections">Resumen · Requisitos originales · Vault · Importar y exportar · Pantallazo automático · Otras ideas y mejoras pequeñas</div>
+      </div>
+    </div>
+    <div class="cover-part">
+      <div class="cover-part-number">06</div>
+      <div class="cover-part-body">
+        <div class="cover-part-meta">Plan del Vault · 20 nov 2026</div>
+        <div class="cover-part-name">Vault anidado</div>
+        <div class="cover-part-sections">Resumen · Reglas del Vault anidado · Pantallas y requisitos · Importar y exportar · Orden de trabajo · Para más adelante</div>
       </div>
     </div>
   </div>
@@ -1151,6 +1159,80 @@ pre {
   <tr><td class="key">Mover varios enlaces del Vault</td><td>Seleccionar varios enlaces de una carpeta y moverlos a otra (o borrarlos) de una vez. La API ya lo permite (<code>POST /vault/links/move</code>, todos o ninguno); falta el diseño del front: la primera propuesta (casillas y barra «Move to») no convenció.</td><td>20 nov 2026</td></tr>
 </table>
 <p class="quiet">Estado al día y detalle técnico: <code>ARCHITECTURE.md</code>.</p>
+
+<!-- ================= PART 06 · VAULT PLAN: NESTING, VIEWS AND IMPORT ================= -->
+
+<header class="part">
+  <div class="part-kicker"><span>Parte 06</span><span>Plan del Vault · 20 nov 2026</span></div>
+  <h1>Carpetas anidadas, vistas e importación</h1>
+  <p class="part-subtitle">Los marcadores reales tienen carpetas dentro de carpetas: el Vault tiene que admitirlas antes de importar.</p>
+</header>
+
+<h2 class="first"><span class="number">01</span>Resumen</h2>
+<p>El 17 de noviembre el Vault quedó en <strong>dos niveles exactos</strong>: categorías, que contienen folders, y folders, que contienen enlaces. Al preparar la importación se vio que los marcadores de un navegador anidan carpetas a cualquier profundidad. Aplanarlas, con nombres como <code>Design / Type / Serif</code>, se descartó: no es como funcionan los marcadores.</p>
+<p><strong>Decisión.</strong> El Vault admite carpetas anidadas sin límite, pero el diseño actual de dos niveles se queda como el principal. Antes de importar hacen falta tres cosas: una vista de lista para manejar muchas carpetas, cómo se ven los niveles a partir del tercero y herramientas para ordenar lo importado.</p>
+<div class="note">
+  <span class="note-label">Amplía</span>
+  <p>Esta parte recupera el anidado sin límite del RF-16 (parte 05) y sustituye al orden de trabajo de la parte 05 en lo que toca al Vault, la importación y la exportación. Las pantallas se proponen antes en el lienzo de diseño y pueden cambiar al diseñarlas.</p>
+</div>
+
+<h2><span class="number">02</span>Reglas del Vault anidado</h2>
+<table>
+  <thead><tr><th style="width:24%">Tema</th><th>Regla</th></tr></thead>
+  <tr><td class="key">Categorías</td><td>Siguen siendo el primer nivel y solo contienen folders, nunca enlaces sueltos.</td></tr>
+  <tr><td class="key">Folders</td><td>De cualquier nivel. Pueden tener enlaces y subfolders a la vez, como en el navegador.</td></tr>
+  <tr><td class="key">Mover</td><td>Un folder se puede mover a cualquier otro sitio, salvo dentro de sí mismo o de uno de sus subfolders (se crearía un bucle).</td></tr>
+  <tr><td class="key">Recuentos</td><td>Totales: un folder cuenta también lo que hay en sus subfolders, para que uno con solo subcarpetas no parezca vacío.</td></tr>
+  <tr><td class="key">Buscador</td><td>Cada resultado muestra dónde está: <code>Design › Type › Serif</code>.</td></tr>
+  <tr><td class="key">Orden</td><td>Dentro de un folder, enlaces y subfolders por nombre, como ahora.</td></tr>
+  <tr><td class="key">Borrar</td><td>Borrar un folder borra todo lo que contiene, tras el aviso con el recuento (RF-17).</td></tr>
+</table>
+<p><strong>Datos.</strong> No hace falta cambiar las tablas: cada folder ya apunta a su folder madre. Cambian las reglas que comprueba la API, con sus tests.</p>
+
+<h2><span class="number">03</span>Pantallas y requisitos</h2>
+<table>
+  <thead><tr><th style="width:9%">ID</th><th style="width:24%">Requisito</th><th>Descripción</th><th style="width:17%">Prioridad</th></tr></thead>
+  <tr><td class="key">RF-23</td><td>Vista de lista</td><td>Una segunda vista del Vault, más pequeña, en forma de lista de carpetas. Muestra un nivel cada vez y se entra en una carpeta para ver el siguiente. Se elige junto a <code>Order</code> y se guarda en la cuenta. La vista actual sigue siendo la de por defecto.</td><td><span class="tag solid">Imprescindible</span></td></tr>
+  <tr><td class="key">RF-24</td><td>Tercer nivel y siguientes</td><td>En el tapiz, dentro de un folder abierto, sus subfolders aparecen a la derecha como cuadros más pequeños. Al abrir uno, su lista de enlaces se despliega debajo con una pequeña sangría.</td><td><span class="tag solid">Imprescindible</span></td></tr>
+  <tr><td class="key">RF-25</td><td>Herramientas de organización</td><td>En la vista de lista: seleccionar enlaces y folders, uno o varios, y moverlos a otra carpeta arrastrándolos o eligiendo el destino; borrar varios a la vez; borrar folders; crear subfolders a mano.</td><td><span class="tag solid">Imprescindible</span></td></tr>
+  <tr><td class="key">RF-26</td><td>Guardar en cualquier folder</td><td>Al guardar un enlace en el Vault, el selector de folder muestra el árbol completo.</td><td><span class="tag solid">Imprescindible</span></td></tr>
+</table>
+<p><strong>Selección múltiple.</strong> RF-25 incluye el RF-18 y la mejora anotada «Mover varios enlaces del Vault». Se retoma su propuesta del lienzo con un cambio: la barra de acciones no puede aparecer encima de la lista y desplazarla.</p>
+
+<h2><span class="number">04</span>Importar y exportar</h2>
+<p>RF-20 y RF-21 (parte 05) se mantienen. Con el anidado, se concretan así:</p>
+<table>
+  <thead><tr><th style="width:24%">Tema</th><th>Cómo funciona</th></tr></thead>
+  <tr><td class="key">Dónde entra</td><td>Cada importación crea una categoría nueva, «Imported 20 Nov», con el árbol del navegador tal cual: sus carpetas raíz («Bookmarks bar», «Other bookmarks») pasan a ser los folders de la categoría. No se mezcla con lo que ya hay, y deshacerla es borrar esa categoría.</td></tr>
+  <tr><td class="key">Enlaces sueltos</td><td>Los que el archivo tiene fuera de cualquier carpeta van a un folder «Unsorted».</td></tr>
+  <tr><td class="key">Repetidos</td><td>Un enlace cuya URL ya está en el Vault se omite y se cuenta en el resumen: enlaces añadidos, folders creados y repetidos omitidos.</td></tr>
+  <tr><td class="key">Tags y favicons</td><td>Los tags de Firefox se conservan. No se visita cada web, así que los enlaces importados salen con su inicial en lugar del favicon.</td></tr>
+  <tr><td class="key">Orden</td><td>Por nombre, como el resto del Vault. El orden del navegador se pierde, pero sigue en el archivo original.</td></tr>
+  <tr><td class="key">Seguridad</td><td>Todo en una sola operación: si algo falla, no se importa nada. El archivo tiene un tamaño máximo (unos 5 MB).</td></tr>
+  <tr><td class="key">Exportar</td><td>Un <code>begiz-bookmarks.html</code> con el árbol completo, las fechas y los tags, más una carpeta <code>Mosaic</code> con todas sus webs y sus tags. Las imágenes y las colecciones se quedan en Begiz.</td></tr>
+</table>
+<p><strong>Cómo.</strong> El front sube el archivo y la API lo lee, aplica las reglas y lo guarda; así toda la lógica queda en la API, con sus tests, y la futura extensión puede usarla igual.</p>
+
+<h2><span class="number">05</span>Orden de trabajo</h2>
+<p>Cada fase se cierra y se valida antes de empezar la siguiente. Las que cambian pantallas empiezan con una propuesta en el lienzo de diseño.</p>
+<table>
+  <thead><tr><th style="width:7%">#</th><th style="width:30%">Trabajo</th><th>Motivo</th><th style="width:15%">Estado</th></tr></thead>
+  <tr><td class="key">A</td><td>Anidado en la API</td><td>Reglas, recuentos y tests. No se ve, pero todo lo demás depende de ella.</td><td><span class="tag solid">Siguiente</span></td></tr>
+  <tr><td class="key">B</td><td>Vista de lista (RF-23)</td><td>El sitio donde manejar muchas carpetas.</td><td><span class="tag">Planificado</span></td></tr>
+  <tr><td class="key">C</td><td>Tercer nivel en el tapiz (RF-24)</td><td>Que el diseño principal muestre lo que hay por debajo.</td><td><span class="tag">Planificado</span></td></tr>
+  <tr><td class="key">D</td><td>Herramientas (RF-25, RF-26)</td><td>Necesita la vista de lista para tener dónde vivir.</td><td><span class="tag">Planificado</span></td></tr>
+  <tr><td class="key">E</td><td>Importar (RF-20)</td><td>Con B y D ya se puede ordenar lo importado.</td><td><span class="tag">Planificado</span></td></tr>
+  <tr><td class="key">F</td><td>Exportar (RF-21)</td><td>La más sencilla; se puede adelantar si hace falta.</td><td><span class="tag">Planificado</span></td></tr>
+</table>
+
+<h2><span class="number">06</span>Para más adelante</h2>
+<table>
+  <thead><tr><th style="width:30%">Idea</th><th>Descripción</th><th style="width:15%">Anotada</th></tr></thead>
+  <tr><td class="key">Herramientas en el tapiz</td><td>Seleccionar, mover y borrar también desde la vista principal, no solo desde la lista.</td><td>20 nov 2026</td></tr>
+  <tr><td class="key">Sangría en niveles profundos</td><td>Con muchos niveles, la sangría puede comerse el ancho. Se revisa cuando dé problemas, por ejemplo dejando de sangrar a partir de cierto nivel.</td><td>20 nov 2026</td></tr>
+  <tr><td class="key">Orden propio en el Vault</td><td>Ordenar enlaces y folders arrastrándolos y, al importar, conservar el orden del navegador.</td><td>20 nov 2026</td></tr>
+</table>
+<p class="quiet">Descartado: aplanar las carpetas importadas en dos niveles con la ruta en el nombre (propuesta del lienzo, 20 nov 2026). Estado al día y detalle técnico: <code>ARCHITECTURE.md</code>.</p>
 
 </body>
 </html>
