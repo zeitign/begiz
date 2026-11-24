@@ -3209,3 +3209,176 @@ img.vault-favicon {
     transition: none;
   }
 }
+
+/* Folder stack (VaultFolderStack.vue): an open folder's folders as cards, a level per open folder.
+   Sizes glide as levels come and go: the deepest level is the largest, the ones above shrink to strips. */
+.vault-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  padding: 20px 16px;
+  --vault-stack-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+
+.vault-stack-level {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.vault-stack-label {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  transition: font-size 0.5s var(--vault-stack-ease);
+}
+
+.vault-stack-label.current {
+  color: var(--color-text);
+  font-size: 11px;
+  font-weight: 800;
+}
+
+.vault-stack-cards {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 10px;
+}
+
+.vault-stack-card {
+  position: relative;
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow: hidden;
+  width: 172px;
+  height: 172px;
+  padding: 14px;
+  border: 1px solid var(--color-border);
+  background: var(--color-background);
+  color: var(--color-text);
+  font: inherit;
+  text-align: left;
+  transition:
+    width 0.5s var(--vault-stack-ease),
+    height 0.5s var(--vault-stack-ease),
+    padding 0.5s var(--vault-stack-ease),
+    box-shadow 0.15s;
+  animation: vault-stack-in 0.45s var(--vault-stack-ease) backwards;
+}
+
+.vault-stack-card:hover {
+  box-shadow: 4px 4px 0 var(--color-border);
+}
+
+.vault-stack-card.open {
+  background: var(--color-text);
+  color: var(--color-background);
+}
+
+.vault-stack-card-name {
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1.05;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+  transition: font-size 0.5s var(--vault-stack-ease);
+}
+
+.vault-stack-card-count {
+  color: var(--color-muted);
+  font-size: 11px;
+  transition: opacity 0.3s;
+}
+
+.vault-stack-card.open .vault-stack-card-count {
+  color: inherit;
+  opacity: 0.8;
+}
+
+.vault-stack-card .vault-icon {
+  position: absolute;
+  left: 12px;
+  bottom: 10px;
+  font-size: 58px;
+  transition:
+    font-size 0.5s var(--vault-stack-ease),
+    opacity 0.3s;
+}
+
+.vault-stack-card.size-1 {
+  width: 118px;
+  height: 118px;
+  padding: 10px;
+}
+
+.vault-stack-card.size-1 .vault-stack-card-name {
+  font-size: 15px;
+}
+
+.vault-stack-card.size-1 .vault-icon {
+  font-size: 34px;
+}
+
+/* Two or more levels above the deepest one: a strip with just the name. */
+.vault-stack-card.size-2,
+.vault-stack-card.size-3 {
+  width: 132px;
+  height: 38px;
+  padding: 9px;
+}
+
+.vault-stack-card.size-3 {
+  width: 112px;
+  height: 28px;
+  padding: 5px 9px;
+}
+
+.vault-stack-card.size-2 .vault-stack-card-name {
+  font-size: 13px;
+}
+
+.vault-stack-card.size-3 .vault-stack-card-name {
+  font-size: 11px;
+}
+
+.vault-stack-card.size-2 .vault-stack-card-count,
+.vault-stack-card.size-3 .vault-stack-card-count,
+.vault-stack-card.size-2 .vault-icon,
+.vault-stack-card.size-3 .vault-icon {
+  opacity: 0;
+}
+
+.vault-stack-links .vault-links {
+  padding: 4px 0 0;
+}
+
+.vault-stack-links .vault-panel-message {
+  padding: 4px 0 0;
+}
+
+.vault-stack .vault-link {
+  animation: vault-stack-in 0.4s var(--vault-stack-ease) backwards;
+}
+
+@keyframes vault-stack-in {
+  from {
+    opacity: 0;
+    transform: translateY(18px) scale(0.94);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vault-stack-card,
+  .vault-stack-card-name,
+  .vault-stack-card .vault-icon,
+  .vault-stack-label,
+  .vault-stack .vault-link {
+    transition: none;
+    animation: none;
+  }
+}

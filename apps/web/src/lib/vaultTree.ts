@@ -6,17 +6,20 @@ import type { VaultFolder, VaultLink } from './api'
 
 export const DEFAULT_FOLDER_ICON = 'folder'
 
-/** What both levels share: the tile they show and where it goes. */
+/** What both levels share: the tile they show and where it goes, and everything below it at any depth
+ * (`nested`), which counts and searches read. */
 type GridNode = {
   id: string
   name: string
   icon: string
   gridCell: number | null
   createdAt: string
+  nested: NestedFolder
 }
 
 export type FolderNode = GridNode & {
   categoryId: string
+  /** Its own links, without those of its subfolders. */
   links: VaultLink[]
 }
 
@@ -32,10 +35,8 @@ export type VaultTree = {
 
 /** Turns the flat lists of the API into categories with their folders. Both keep the API order (by name). */
 export function buildVaultTree(folders: VaultFolder[], links: VaultLink[]): VaultTree {
-  const linksByFolderId = new Map<string, VaultLink[]>()
-  for (const link of links) {
-    linksByFolderId.set(link.folderId, [...(linksByFolderId.get(link.folderId) ?? []), link])
-  }
+  const nestedVault = buildNestedVault(folders, links)
+  const nestedOf = (folderId: string) => nestedVault.foldersById.get(folderId)!
 
   const categoriesById = new Map<string, CategoryNode>()
   for (const folder of folders) {
@@ -46,6 +47,7 @@ export function buildVaultTree(folders: VaultFolder[], links: VaultLink[]): Vaul
       icon: folder.icon ?? DEFAULT_FOLDER_ICON,
       gridCell: folder.gridCell,
       createdAt: folder.createdAt,
+      nested: nestedOf(folder.id),
       folders: [],
     })
   }
@@ -60,8 +62,9 @@ export function buildVaultTree(folders: VaultFolder[], links: VaultLink[]): Vaul
       icon: folder.icon ?? DEFAULT_FOLDER_ICON,
       gridCell: folder.gridCell,
       createdAt: folder.createdAt,
+      nested: nestedOf(folder.id),
       categoryId: category.id,
-      links: linksByFolderId.get(folder.id) ?? [],
+      links: nestedOf(folder.id).links,
     }
     category.folders.push(folderNode)
     foldersById.set(folderNode.id, folderNode)
@@ -76,6 +79,31 @@ export const listOrders = vaultOrders.filter((order) => order !== 'random')
 /** The order the list follows: the saved one, or by name while the tiles are set to random. */
 export const listOrder = (order: VaultOrder): VaultOrder => (order === 'random' ? 'name' : order)
 
+type ListSortKeys = { name: string; createdAt: string; sortPosition: number }
+
+/** Sorts what the list and the folder stack show: by name or date, or by the custom positions. */
+export function sortByListOrder<Item>(
+  items: Item[],
+  preferences: VaultPreferences,
+  sortKeys: (item: Item) => ListSortKeys,
+): Item[] {
+  const order = listOrder(preferences.order)
+  const sortable = items.map((item) => ({ item, ...sortKeys(item) }))
+  const sorted =
+    order === 'custom'
+      ? sortable.sort((first, second) => first.sortPosition - second.sortPosition)
+      : sortForOrder(sortable, { ...preferences, order })
+  return sorted.map((sortableItem) => sortableItem.item)
+}
+
+export const folderSortKeys = ({ name, createdAt, sortPosition }: NestedFolder) => ({ name, createdAt, sortPosition })
+/** A link sorts by its title, as a folder does by its name. */
+export const linkSortKeys = (link: VaultLink) => ({
+  name: link.title,
+  createdAt: link.createdAt,
+  sortPosition: link.sortPosition,
+})
+
 /** By name or by date when the order asks for it; random and custom orders start from the name order. */
 export function sortForOrder<Node extends { name: string; createdAt: string }>(
   nodes: Node[],
@@ -88,8 +116,6 @@ export function sortForOrder<Node extends { name: string; createdAt: string }>(
   return direction === 'desc' ? sorted.reverse() : sorted
 }
 
-export const categoryLinkCount = (category: CategoryNode) =>
-  category.folders.reduce((total, folder) => total + folder.links.length, 0)
 
 export const normalizeSearch = (search: string) => search.trim().toLowerCase()
 
@@ -97,14 +123,29 @@ export function linkMatches(link: VaultLink, query: string) {
   return link.title.toLowerCase().includes(query) || link.url.toLowerCase().includes(query)
 }
 
-/** A folder matches when its name or one of its links matches. */
-export function folderMatches(folder: FolderNode, query: string) {
-  return folder.name.toLowerCase().includes(query) || folder.links.some((link) => linkMatches(link, query))
+/** A folder matches when its name, one of its links or anything below it matches, at any depth. */
+export function nestedMatches(folder: NestedFolder, query: string): boolean {
+  return (
+    folder.name.toLowerCase().includes(query) ||
+    folder.links.some((link) => linkMatches(link, query)) ||
+    folder.subfolders.some((subfolder) => nestedMatches(subfolder, query))
+  )
 }
 
-/** A category matches when its name or one of its folders matches. */
-export function categoryMatches(category: CategoryNode, query: string) {
-  return category.name.toLowerCase().includes(query) || category.folders.some((folder) => folderMatches(folder, query))
+/** How many links match below a folder, at any depth. */
+export function countMatchingLinks(folder: NestedFolder, query: string): number {
+  return folder.subfolders.reduce(
+    (total, subfolder) => total + countMatchingLinks(subfolder, query),
+    folder.links.filter((link) => linkMatches(link, query)).length,
+  )
+}
+
+/** A tile's count: its folders and links at any depth (only links when it has no folders), or how many
+ * links match while searching. */
+export function contentsCountLabel(folder: NestedFolder, query: string) {
+  if (query) return `${countMatchingLinks(folder, query)} of ${pluralize(folder.linkTotal, 'link')}`
+  const linkLabel = pluralize(folder.linkTotal, 'link')
+  return folder.folderTotal ? `${pluralize(folder.folderTotal, 'folder')} · ${linkLabel}` : linkLabel
 }
 
 /** Past this, a word of a name breaks into lines instead of widening its column. */
@@ -130,6 +171,7 @@ export const pluralize = (count: number, singular: string, plural = `${singular}
 export type NestedFolder = {
   id: string
   name: string
+  icon: string
   parentId: string | null
   createdAt: string
   sortPosition: number
@@ -152,6 +194,7 @@ export function buildNestedVault(folders: VaultFolder[], links: VaultLink[]): Ne
       {
         id: folder.id,
         name: folder.name,
+        icon: folder.icon ?? DEFAULT_FOLDER_ICON,
         parentId: folder.parentId,
         createdAt: folder.createdAt,
         sortPosition: folder.sortPosition,

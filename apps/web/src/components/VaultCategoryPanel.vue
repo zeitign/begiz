@@ -4,9 +4,8 @@ import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useTileExpansion } from '../lib/useTileExpansion'
 import {
-  categoryLinkCount,
-  folderMatches,
-  linkMatches,
+  contentsCountLabel,
+  nestedMatches,
   pluralize,
   sideColumnWidth,
   sortForOrder,
@@ -33,16 +32,16 @@ const emit = defineEmits<{ close: []; deleted: []; place: [cells: PlacedCell[]] 
 const route = useRoute()
 const router = useRouter()
 
-const folderCountLabel = computed(() => pluralize(props.category.folders.length, 'folder'))
-const linkCountLabel = computed(() => pluralize(categoryLinkCount(props.category), 'link'))
+const folderCountLabel = computed(() => pluralize(props.category.nested.folderTotal, 'folder'))
+const linkCountLabel = computed(() => pluralize(props.category.nested.linkTotal, 'link'))
 
 // Editing the category replaces its folders on the right, like editing a folder replaces its links.
 const isEditing = ref(false)
 const draftIcon = ref(props.category.icon)
 const shownIcon = computed(() => (isEditing.value ? draftIcon.value : props.category.icon))
 const contentsLabel = computed(() =>
-  props.category.folders.length
-    ? `${pluralize(props.category.folders.length, 'folder')} and ${pluralize(categoryLinkCount(props.category), 'link')}`
+  props.category.nested.folderTotal
+    ? `${pluralize(props.category.nested.folderTotal, 'folder')} and ${pluralize(props.category.nested.linkTotal, 'link')}`
     : '',
 )
 
@@ -51,22 +50,20 @@ function startEditing() {
   isEditing.value = true
 }
 
-const countMatchingLinks = (folder: FolderNode) => folder.links.filter((link) => linkMatches(link, props.query)).length
-
 const folderTiles = computed<VaultTile[]>(() =>
   sortForOrder(props.category.folders, props.preferences).map((folder) => ({
     id: folder.id,
     name: folder.name,
     icon: folder.icon,
     gridCell: folder.gridCell,
-    countLabel: props.query
-      ? `${countMatchingLinks(folder)} of ${pluralize(folder.links.length, 'link')}`
-      : pluralize(folder.links.length, 'link'),
+    countLabel: contentsCountLabel(folder.nested, props.query),
   })),
 )
 const matchingFolderIds = computed(
   () =>
-    new Set(props.category.folders.filter((folder) => folderMatches(folder, props.query)).map((folder) => folder.id)),
+    new Set(
+      props.category.folders.filter((folder) => nestedMatches(folder.nested, props.query)).map((folder) => folder.id),
+    ),
 )
 /** Only when it adds something to the card: while searching, or when the category is empty. */
 const introText = computed(() => {
@@ -250,6 +247,7 @@ function openCreatedFolder(folderId: string) {
           :style="folderExpansion.panelStyle.value"
           :folder="openFolder"
           :query="query"
+          :preferences="preferences"
           :is-moving="folderExpansion.isMoving.value"
           :is-folded="isFolderFolded"
           @unfold="foldedColumn = 'category'"

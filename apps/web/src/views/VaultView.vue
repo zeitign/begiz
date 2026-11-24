@@ -31,11 +31,10 @@ import { useTileExpansion } from '../lib/useTileExpansion'
 import { useTypewriter } from '../lib/typewriter'
 import {
   buildVaultTree,
-  categoryLinkCount,
-  categoryMatches,
-  linkMatches,
+  contentsCountLabel,
   listOrder,
   listOrders,
+  nestedMatches,
   normalizeSearch,
   pluralize,
   sideColumnWidth,
@@ -127,22 +126,13 @@ const searchPlaceholder = useTypewriter(['THAT FONT SITE?', 'THAT TOOL?', 'THE A
 const searchInput = ref('')
 const query = computed(() => normalizeSearch(searchInput.value))
 
-function categoryTile(category: CategoryNode): VaultTile {
-  const linkCount = categoryLinkCount(category)
-  const matchingLinkCount = category.folders.reduce(
-    (total, folder) => total + folder.links.filter((link) => linkMatches(link, query.value)).length,
-    0,
-  )
-  return {
-    id: category.id,
-    name: category.name,
-    icon: category.icon,
-    gridCell: category.gridCell,
-    countLabel: query.value
-      ? `${matchingLinkCount} of ${pluralize(linkCount, 'link')}`
-      : `${pluralize(category.folders.length, 'folder')} · ${pluralize(linkCount, 'link')}`,
-  }
-}
+const categoryTile = (category: CategoryNode): VaultTile => ({
+  id: category.id,
+  name: category.name,
+  icon: category.icon,
+  gridCell: category.gridCell,
+  countLabel: contentsCountLabel(category.nested, query.value),
+})
 
 const categoryTiles = computed(() => sortForOrder(vaultTree.value.categories, preferences.value).map(categoryTile))
 const categoryCountLabel = computed(() => pluralize(vaultTree.value.categories.length, 'category', 'categories'))
@@ -150,7 +140,7 @@ const matchingCategoryIds = computed(
   () =>
     new Set(
       vaultTree.value.categories
-        .filter((category) => categoryMatches(category, query.value))
+        .filter((category) => nestedMatches(category.nested, query.value))
         .map((category) => category.id),
     ),
 )

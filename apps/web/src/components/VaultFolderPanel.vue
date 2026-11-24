@@ -1,15 +1,17 @@
 <script setup lang="ts">
+import type { VaultPreferences } from '@webs/shared'
 import { computed, ref } from 'vue'
-import { linkMatches, pluralize, sideColumnWidth, type FolderNode } from '../lib/vaultTree'
+import { contentsCountLabel, pluralize, sideColumnWidth, type FolderNode } from '../lib/vaultTree'
 import VaultFolderEditor from './VaultFolderEditor.vue'
+import VaultFolderStack from './VaultFolderStack.vue'
 import VaultFoldStrip from './VaultFoldStrip.vue'
 import VaultIcon from './VaultIcon.vue'
 import VaultPanelBar from './VaultPanelBar.vue'
-import VaultLinkRow from './VaultLinkRow.vue'
 
 const props = defineProps<{
   folder: FolderNode
   query: string
+  preferences: VaultPreferences
   /** While it slides and grows, only the name and icon are shown. */
   isMoving: boolean
   /** Folded into a strip while the category beside it is unfolded; the links stay. */
@@ -26,15 +28,13 @@ function startEditing() {
 }
 
 const shownIcon = computed(() => (isEditing.value ? draftIcon.value : props.folder.icon))
-const shownLinks = computed(() =>
-  props.query ? props.folder.links.filter((link) => linkMatches(link, props.query)) : props.folder.links,
-)
-const linkCountLabel = computed(() =>
-  props.query
-    ? `${shownLinks.value.length} of ${pluralize(props.folder.links.length, 'link')}`
-    : pluralize(props.folder.links.length, 'link'),
-)
-const contentsLabel = computed(() => (props.folder.links.length ? pluralize(props.folder.links.length, 'link') : ''))
+const linkCountLabel = computed(() => contentsCountLabel(props.folder.nested, props.query))
+/** What deleting it takes along, for the warning: every folder and link below it. */
+const contentsLabel = computed(() => {
+  const { folderTotal, linkTotal } = props.folder.nested
+  const linkLabel = linkTotal ? pluralize(linkTotal, 'link') : ''
+  return folderTotal ? `${pluralize(folderTotal, 'folder')}${linkLabel ? ` and ${linkLabel}` : ''}` : linkLabel
+})
 </script>
 
 <template>
@@ -82,12 +82,7 @@ const contentsLabel = computed(() => (props.folder.links.length ? pluralize(prop
           @deleted="emit('deleted')"
         />
       </template>
-      <p v-else-if="!shownLinks.length" class="muted vault-panel-message">
-        {{ query ? 'No links here match the search.' : 'No links in this folder yet.' }}
-      </p>
-      <ul v-else class="vault-links">
-        <VaultLinkRow v-for="link in shownLinks" :key="link.id" :link="link" />
-      </ul>
+      <VaultFolderStack v-else :folder="folder.nested" :query="query" :preferences="preferences" />
     </div>
   </section>
 </template>

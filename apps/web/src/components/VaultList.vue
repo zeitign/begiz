@@ -11,8 +11,10 @@ import {
   folderTrail,
   listOrder,
   pluralize,
+  folderSortKeys,
+  linkSortKeys,
   searchNestedVault,
-  sortForOrder,
+  sortByListOrder,
   type NestedFolder,
 } from '../lib/vaultTree'
 import VaultListLinkRow from './VaultListLinkRow.vue'
@@ -36,34 +38,21 @@ const vault = computed(() => buildNestedVault(props.folders, props.links))
 const trail = computed(() => (typeof route.query.in === 'string' ? folderTrail(route.query.in, vault.value) : []))
 const currentFolder = computed<NestedFolder | undefined>(() => trail.value.at(-1))
 /** Sorts folders, links or search results by the chosen order, from the name and date each one gives. */
-type SortKeys = { name: string; createdAt: string; sortPosition: number }
-
 const isCustomOrder = computed(() => listOrder(props.preferences.order) === 'custom')
 
-/** Sorts folders, links or search results by the chosen order, from the keys each one gives. */
-function sortByOrder<Item>(items: Item[], sortKeys: (item: Item) => SortKeys) {
-  const sortable = items.map((item) => ({ item, ...sortKeys(item) }))
-  const sorted = isCustomOrder.value
-    ? sortable.sort((first, second) => first.sortPosition - second.sortPosition)
-    : sortForOrder(sortable, { ...props.preferences, order: listOrder(props.preferences.order) })
-  return sorted.map((sortableItem) => sortableItem.item)
-}
-const folderSortKeys = ({ name, createdAt, sortPosition }: NestedFolder) => ({ name, createdAt, sortPosition })
-/** A link sorts by its title, as a folder does by its name. */
-const linkSortKeys = (link: VaultLink) => ({ name: link.title, createdAt: link.createdAt, sortPosition: link.sortPosition })
 
 const shownFolders = computed(() =>
-  sortByOrder(currentFolder.value?.subfolders ?? vault.value.categories, folderSortKeys),
+  sortByListOrder(currentFolder.value?.subfolders ?? vault.value.categories, props.preferences, folderSortKeys),
 )
-const shownLinks = computed(() => sortByOrder(currentFolder.value?.links ?? [], linkSortKeys))
+const shownLinks = computed(() => sortByListOrder(currentFolder.value?.links ?? [], props.preferences, linkSortKeys))
 // Positions only compare within one folder, so in the custom order results keep the tree's order.
 const searchResults = computed(() => {
   if (!props.query) return null
   const results = searchNestedVault(vault.value, props.query)
   if (isCustomOrder.value) return results
   return {
-    folders: sortByOrder(results.folders, (result) => folderSortKeys(result.folder)),
-    links: sortByOrder(results.links, (result) => linkSortKeys(result.link)),
+    folders: sortByListOrder(results.folders, props.preferences, (result) => folderSortKeys(result.folder)),
+    links: sortByListOrder(results.links, props.preferences, (result) => linkSortKeys(result.link)),
   }
 })
 

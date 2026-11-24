@@ -224,7 +224,7 @@ Todas las rutas van bajo `/api` y exigen sesión.
 | Diseño | Diseño visual de la plataforma. Hecho: cabecera de celdas con la pestaña activa invertida y mosaico a pantalla completa (hasta cinco tarjetas por fila según el ancho, barra de filtros en celdas, acciones View, Edit y Open), todo en Geist Mono (PR #9, 26-oct-2026). Falta: revisar el resto de páginas y definir la paleta | **Aparcada** (2-nov-2026) hasta ver cómo funciona la división entre Mosaic y Vault |
 | Collections | Una columna por colección con su portada y una página por colección, que sustituye al filtro oculto del mosaico | Hecha; renombrar y borrar validados con el Supabase real (17-nov-2026) |
 | Vault | Segundo espacio para guardar marcadores en folders anidados, con selección múltiple y buscador (ver «Vault») | **En curso**: API, tests y front hechos (17-nov-2026): rejilla dispersa de folders que se despliegan, con iconos de Phosphor (fill). Falta validarlo con datos reales y la selección múltiple para mover enlaces |
-| Vault anidado | Plan del 20-nov-2026 (parte 06 del PDF, ver «Vault anidado»). A · anidado en la API · B · vista de lista · C · tercer nivel en el tapiz · D · herramientas (seleccionar, mover, borrar) · E · importar · F · exportar | **En curso**: A y B hechas (24-nov-2026); siguiente, C |
+| Vault anidado | Plan del 20-nov-2026 (parte 06 del PDF, ver «Vault anidado»). A · anidado en la API · B · vista de lista · C · tercer nivel en el tapiz · D · herramientas (seleccionar, mover, borrar) · E · importar · F · exportar | **En curso**: A, B y C hechas (24-nov-2026); siguiente, D |
 | 2 · Captura | Pantallazo automático al guardar en Mosaic. Planteamiento aprobado el 2-nov-2026: un servicio externo de capturas en lugar de un contenedor con Chromium (parte 05 del PDF). Las webs actuales no cambian | Sin fecha |
 | 3 · Extensión | Extensión de navegador (WXT + Vue) usando la misma API | Planificada |
 | 4 · Componentes | RF-F1: guardar componentes concretos (tabla `components` que apunta a `webs`) | Futuro |
@@ -261,8 +261,15 @@ nombre (`Design / Fonts`) se descartó.
   fases B y C, el front solo muestra los dos primeros niveles.
 - **Vista de lista** (RF-23, hecha): alternativa más pequeña al tapiz, un nivel cada vez, elegida
   junto a `Order` y guardada en la cuenta. El tapiz sigue siendo la vista por defecto.
-- **Pendiente para C**: el tapiz todavía solo ve dos niveles, también al buscar y en sus recuentos
-  (una búsqueda que solo encuentra enlaces del tercer nivel oculta todas las categorías).
+- **Tercer nivel en el tapiz** (RF-24, hecho con la propuesta «C · Pila» del lienzo,
+  `VaultFolderStack.vue`): dentro de un folder abierto, sus subcarpetas son tarjetas y debajo van los
+  enlaces de la carpeta en la que se está. Abrir una tarjeta que tiene carpetas añade su nivel debajo,
+  con las tarjetas entrando una tras otra; los niveles de arriba se encogen con una transición (a
+  tarjetas medianas y después a tiras con solo el nombre), así que el más hondo siempre tiene el sitio.
+  Pulsar una tarjeta de arriba vuelve a ese nivel; pulsar la abierta la cierra. Sin animación si el
+  sistema pide reducir el movimiento. Ordena tarjetas y enlaces como la lista. Cada nodo del tapiz
+  lleva su subárbol completo (`nested`), así que los recuentos de los cuadros y la búsqueda cuentan
+  todos los niveles.
 - **Tercer nivel y siguientes** (RF-24): dentro de un folder abierto, sus subfolders salen a la
   derecha como cuadros más pequeños; al abrir uno, sus enlaces se despliegan debajo con sangría.
 - **Herramientas** (RF-25, solo en la lista de momento): seleccionar enlaces y folders, uno o
