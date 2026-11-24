@@ -78,7 +78,7 @@ const vaultFolderIcon = z
   .max(60)
   .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, 'Must be an icon name such as "book-open"')
   .nullable()
-/** The category a folder goes in, or null to make it a category. */
+/** The folder a folder goes in (a category or any folder below it), or null to make it a category. */
 const vaultParentId = z.uuid().nullable()
 
 export const vaultFolderCreate = z.object({

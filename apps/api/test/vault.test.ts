@@ -71,10 +71,16 @@ describe('vault categories and folders', () => {
     expect(response.status).toBe(400)
   })
 
-  it('only creates folders inside a category, never a third level', async () => {
-    const response = await user.post('/vault/folders', { name: 'Serif', parentId: typography.id })
+  it('creates folders inside folders, at any depth', async () => {
+    const serif = await createFolder('Serif', typography.id)
+    const display = await createFolder('Display', serif.id)
 
-    expect(response.status).toBe(400)
+    expect(await (await user.get('/vault/folders')).json()).toMatchObject([
+      { id: design.id, parentId: null },
+      { id: display.id, parentId: serif.id },
+      { id: serif.id, parentId: typography.id },
+      { id: typography.id, parentId: design.id },
+    ])
   })
 
   it('moves a folder to another category, or makes an empty one a category', async () => {
@@ -87,17 +93,50 @@ describe('vault categories and folders', () => {
     expect(await madeCategory.json()).toMatchObject({ parentId: null })
   })
 
-  it('never moves a folder in a way that breaks the two levels', async () => {
+  it('moves a folder with everything inside it into any other folder', async () => {
     const leisure = await createCategory('Leisure')
+    const games = await createFolder('Games', leisure.id)
+    const serif = await createFolder('Serif', typography.id)
+
+    const moved = await user.patch(`/vault/folders/${design.id}`, { parentId: games.id })
+
+    expect(await moved.json()).toMatchObject({ parentId: games.id })
+    expect(await (await user.get('/vault/folders')).json()).toMatchObject([
+      { id: design.id, parentId: games.id },
+      { id: games.id, parentId: leisure.id },
+      { id: leisure.id, parentId: null },
+      { id: serif.id, parentId: typography.id },
+      { id: typography.id, parentId: design.id },
+    ])
+  })
+
+  it('never moves a folder inside itself or its subfolders, nor makes one with links a category', async () => {
+    const serif = await createFolder('Serif', typography.id)
     await createLink({ url: 'https://fontshare.com', title: 'Fontshare' })
 
     // A folder with links cannot become a category, which only holds folders.
     expect((await user.patch(`/vault/folders/${typography.id}`, { parentId: null })).status).toBe(400)
-    // A category with folders cannot go inside another category: its folders would be a third level.
-    expect((await user.patch(`/vault/folders/${design.id}`, { parentId: leisure.id })).status).toBe(400)
-    // Nothing goes inside a folder, nor inside itself.
-    expect((await user.patch(`/vault/folders/${leisure.id}`, { parentId: typography.id })).status).toBe(400)
-    expect((await user.patch(`/vault/folders/${leisure.id}`, { parentId: leisure.id })).status).toBe(400)
+    // Inside itself or below itself, it would leave the tree.
+    expect((await user.patch(`/vault/folders/${design.id}`, { parentId: design.id })).status).toBe(400)
+    expect((await user.patch(`/vault/folders/${design.id}`, { parentId: typography.id })).status).toBe(400)
+    expect((await user.patch(`/vault/folders/${design.id}`, { parentId: serif.id })).status).toBe(400)
+    expect(await (await user.get('/vault/folders')).json()).toMatchObject([
+      { id: design.id, parentId: null },
+      { id: serif.id, parentId: typography.id },
+      { id: typography.id, parentId: design.id },
+    ])
+  })
+
+  it('deletes a folder with all its subfolders and their links, at any depth', async () => {
+    const serif = await createFolder('Serif', typography.id)
+    const display = await createFolder('Display', serif.id)
+    await createLink({ url: 'https://klim.co.nz', title: 'Klim', folderId: display.id, tags: ['foundry'] })
+
+    expect((await user.delete(`/vault/folders/${typography.id}`)).status).toBe(204)
+
+    expect(await (await user.get('/vault/folders')).json()).toMatchObject([{ id: design.id }])
+    expect(await listLinkTitles()).toEqual([])
+    expect(await (await user.get('/vault/tags')).json()).toEqual([])
   })
 
   it('deletes a category with its folders, their links and the tags left unused', async () => {
@@ -149,6 +188,17 @@ describe('vault links', () => {
 
     expect(inCategory.status).toBe(400)
     expect(withoutFolder.status).toBe(400)
+  })
+
+  it('saves and moves links in folders at any depth, next to their subfolders', async () => {
+    const serif = await createFolder('Serif', typography.id)
+    const display = await createFolder('Display', serif.id)
+    const klim = await createLink({ url: 'https://klim.co.nz', title: 'Klim', folderId: serif.id })
+
+    const moved = await user.post('/vault/links/move', { linkIds: [klim.id], folderId: display.id })
+
+    expect(moved.status).toBe(204)
+    expect(await listLinkTitles(`?folder=${display.id}`)).toEqual(['Klim'])
   })
 
   it('reads the favicon of the page, and saves the link anyway when the page cannot be read', async () => {

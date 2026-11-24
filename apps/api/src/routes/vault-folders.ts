@@ -6,7 +6,7 @@ import type { AuthEnv } from '../auth.ts'
 import { db } from '../db/client.ts'
 import { vaultFolders, vaultLinks } from '../db/schema.ts'
 import { validate } from '../lib/validate.ts'
-import { assertCategory, deleteUnusedVaultTags } from '../lib/vault.ts'
+import { deleteUnusedVaultTags, findChosenFolder, isWithinFolder } from '../lib/vault.ts'
 
 function toFolderResponse(folder: typeof vaultFolders.$inferSelect, linkCount = 0) {
   return {
@@ -34,7 +34,8 @@ async function assertSameGrid(userId: string, folderIds: string[]) {
   }
 }
 
-/** Moving keeps the two levels: a folder with links stays inside a category, and a category with folders stays at the root. */
+/** A folder can go inside any other, except itself or its own subfolders (it would leave the tree).
+ * It only becomes a category without links of its own, since categories only hold folders. */
 async function assertValidNewParent(userId: string, folderId: string, newParentId: string | null) {
   const [folder] = await db
     .select({ id: vaultFolders.id })
@@ -50,14 +51,10 @@ async function assertValidNewParent(userId: string, folderId: string, newParentI
     }
     return
   }
-  if (newParentId === folderId)
+  await findChosenFolder(userId, newParentId)
+  if (await isWithinFolder(newParentId, folderId)) {
     throw new HTTPException(400, {
-      message: 'A folder cannot be moved inside itself',
-    })
-  await assertCategory(userId, newParentId)
-  if (await db.$count(vaultFolders, eq(vaultFolders.parentId, folderId))) {
-    throw new HTTPException(400, {
-      message: 'A category with folders cannot go inside another one',
+      message: 'A folder cannot be moved inside itself or its subfolders',
     })
   }
 }
@@ -78,7 +75,7 @@ export const vaultFoldersRoutes = new Hono<AuthEnv>()
   .post('/', validate('json', vaultFolderCreate), async (context) => {
     const userId = context.get('userId')
     const input = context.req.valid('json')
-    if (input.parentId !== null) await assertCategory(userId, input.parentId)
+    if (input.parentId !== null) await findChosenFolder(userId, input.parentId)
     const [createdFolder] = await db
       .insert(vaultFolders)
       .values({

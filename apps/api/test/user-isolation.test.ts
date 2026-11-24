@@ -98,6 +98,8 @@ describe('isolation between users', () => {
     expect((await stranger.delete(`/vault/folders/${ownerFolder.id}`)).status).toBe(404)
     const strangerSubfolder = await stranger.post('/vault/folders', { name: 'Inside', parentId: ownerCategory.id })
     expect(strangerSubfolder.status).toBe(400)
+    const strangerNestedFolder = await stranger.post('/vault/folders', { name: 'Deeper', parentId: ownerFolder.id })
+    expect(strangerNestedFolder.status).toBe(400)
     const strangerFolderMove = await stranger.patch(`/vault/folders/${strangerFolder.id}`, {
       parentId: ownerCategory.id,
     })
