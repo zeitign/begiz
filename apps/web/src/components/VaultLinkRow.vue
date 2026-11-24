@@ -1,56 +1,13 @@
 <script setup lang="ts">
 import { ref } from 'vue'
-import { api, errorMessage, responseBody, type VaultLink } from '../lib/api'
-import { useInvalidateVault } from '../lib/queries'
+import type { VaultLink } from '../lib/api'
+import { displayUrl, useVaultLinkActions } from '../lib/useVaultLinkActions'
 
 const props = defineProps<{ link: VaultLink }>()
 
-const invalidateVault = useInvalidateVault()
 const hasFaviconFailed = ref(false)
-const isEditing = ref(false)
-const isSaving = ref(false)
-const draftTitle = ref('')
-const draftUrl = ref('')
-const actionError = ref('')
-
-const displayUrl = (url: string) => url.replace(/^https?:\/\//, '').replace(/\/$/, '')
-
-function startEditing() {
-  draftTitle.value = props.link.title
-  draftUrl.value = props.link.url
-  actionError.value = ''
-  isEditing.value = true
-}
-
-async function saveLink() {
-  isSaving.value = true
-  actionError.value = ''
-  try {
-    await responseBody(
-      api.vault.links[':id'].$patch({
-        param: { id: props.link.id },
-        json: { title: draftTitle.value, url: draftUrl.value },
-      }),
-    )
-    await invalidateVault()
-    isEditing.value = false
-  } catch (error) {
-    actionError.value = errorMessage(error)
-  } finally {
-    isSaving.value = false
-  }
-}
-
-async function deleteLink() {
-  if (!confirm(`Delete “${props.link.title}”?`)) return
-  actionError.value = ''
-  try {
-    await responseBody(api.vault.links[':id'].$delete({ param: { id: props.link.id } }))
-    await invalidateVault()
-  } catch (error) {
-    actionError.value = errorMessage(error)
-  }
-}
+const { isEditing, isSaving, draftTitle, draftUrl, actionError, startEditing, saveLink, deleteLink } =
+  useVaultLinkActions(() => props.link)
 </script>
 
 <template>

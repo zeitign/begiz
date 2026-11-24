@@ -4,14 +4,18 @@ import {
   defaultVaultPreferences,
   sortDirections,
   vaultOrders,
+  vaultViews,
   type SortDirection,
   type VaultOrder,
+  type VaultPreferences,
+  type VaultView,
 } from '@webs/shared'
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import FilterDropdown from '../components/FilterDropdown.vue'
 import VaultCategoryPanel from '../components/VaultCategoryPanel.vue'
 import VaultFaviconFilter from '../components/VaultFaviconFilter.vue'
+import VaultList from '../components/VaultList.vue'
 import VaultNewCategoryCard from '../components/VaultNewCategoryCard.vue'
 import VaultTileGrid, { type PlacedCell, type VaultTile } from '../components/VaultTileGrid.vue'
 import { errorMessage } from '../lib/api'
@@ -62,6 +66,11 @@ const DIRECTION_LABELS: Record<SortDirection, string> = {
   desc: '↓ Desc',
 }
 
+const VIEW_LABELS: Record<VaultView, string> = {
+  tiles: 'Tiles',
+  list: 'List',
+}
+
 const { data: savedPreferences, isPending: arePreferencesPending } = useVaultPreferences()
 const preferences = computed(() => savedPreferences.value ?? defaultVaultPreferences)
 // The grid waits for the saved order too, so the tiles appear in their places instead of jumping to them.
@@ -71,10 +80,10 @@ const saveVaultPreferences = useSaveVaultPreferences()
 const placeVaultTiles = usePlaceVaultTiles()
 const orderError = ref('')
 
-async function savePreferences(order: VaultOrder, direction: SortDirection) {
+async function savePreferences(changes: Partial<VaultPreferences>) {
   orderError.value = ''
   try {
-    await saveVaultPreferences({ order, direction })
+    await saveVaultPreferences({ ...preferences.value, ...changes })
   } catch (error) {
     orderError.value = errorMessage(error)
   }
@@ -82,7 +91,14 @@ async function savePreferences(order: VaultOrder, direction: SortDirection) {
 
 /** A new order starts in its usual direction, as in the mosaic: names A→Z, newest first. */
 const chooseOrder = (order: VaultOrder) =>
-  savePreferences(order, order === 'date' ? defaultSortDirection.date : defaultSortDirection.title)
+  savePreferences({ order, direction: order === 'date' ? defaultSortDirection.date : defaultSortDirection.title })
+
+/** Each view keeps its own place in the URL, so switching starts the other one from its top. */
+function chooseView(view: VaultView) {
+  router.replace({ query: {} })
+  categoryExpansion.reset()
+  savePreferences({ view })
+}
 
 /** Shared by both grids: tiles dropped in a new cell. */
 async function placeTiles(cells: PlacedCell[]) {
@@ -229,13 +245,24 @@ async function showCreatedCategory(categoryId: string) {
                 :key="direction"
                 type="button"
                 :aria-pressed="preferences.direction === direction"
-                @click="savePreferences(preferences.order, direction)"
+                @click="savePreferences({ direction })"
               >
                 {{ DIRECTION_LABELS[direction] }}
               </button>
             </div>
             <p v-if="preferences.order === 'custom'" class="filter-option muted">Drag a card to any cell.</p>
           </FilterDropdown>
+          <div class="vault-view-switch" role="group" aria-label="View">
+            <button
+              v-for="view in vaultViews"
+              :key="view"
+              type="button"
+              :aria-pressed="preferences.view === view"
+              @click="chooseView(view)"
+            >
+              {{ VIEW_LABELS[view] }}
+            </button>
+          </div>
           <p class="filter-count">{{ categoryCountLabel }}</p>
         </div>
         <span class="filter-stripes" aria-hidden="true"></span>
@@ -245,6 +272,14 @@ async function showCreatedCategory(categoryId: string) {
 
     <p v-if="loadError" class="error">{{ loadError.message }}</p>
     <p v-else-if="isPending">Loading…</p>
+    <VaultList
+      v-else-if="preferences.view === 'list'"
+      :folders="folders ?? []"
+      :links="links ?? []"
+      :query="query"
+      :preferences="preferences"
+      @clear-search="searchInput = ''"
+    />
     <VaultTileGrid
       v-else
       ref="categoryGrid"

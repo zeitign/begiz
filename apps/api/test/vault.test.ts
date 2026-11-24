@@ -362,20 +362,23 @@ describe('vault layout', () => {
     expect((await listGridCells()).Typography).toBeNull()
   })
 
-  it('remembers the order chosen, starting by name', async () => {
-    expect(await (await user.get('/vault/preferences')).json()).toEqual({ order: 'name', direction: 'asc' })
+  it('remembers the order and the view chosen, starting by name in tiles', async () => {
+    const byNameInTiles = { order: 'name', direction: 'asc', view: 'tiles' }
+    expect(await (await user.get('/vault/preferences')).json()).toEqual(byNameInTiles)
 
-    expect((await user.put('/vault/preferences', { order: 'custom', direction: 'asc' })).status).toBe(200)
-    expect((await user.put('/vault/preferences', { order: 'date', direction: 'desc' })).status).toBe(200)
+    expect((await user.put('/vault/preferences', { order: 'custom', direction: 'asc', view: 'tiles' })).status).toBe(200)
+    expect((await user.put('/vault/preferences', { order: 'date', direction: 'desc', view: 'list' })).status).toBe(200)
 
-    expect(await (await user.get('/vault/preferences')).json()).toEqual({ order: 'date', direction: 'desc' })
+    expect(await (await user.get('/vault/preferences')).json()).toEqual({ order: 'date', direction: 'desc', view: 'list' })
     const stranger = await createUserClient()
-    expect(await (await stranger.get('/vault/preferences')).json()).toEqual({ order: 'name', direction: 'asc' })
+    expect(await (await stranger.get('/vault/preferences')).json()).toEqual(byNameInTiles)
   })
 
-  it('only accepts known orders', async () => {
-    const response = await user.put('/vault/preferences', { order: 'size', direction: 'asc' })
+  it('only accepts known orders and views', async () => {
+    const unknownOrder = await user.put('/vault/preferences', { order: 'size', direction: 'asc', view: 'tiles' })
+    const unknownView = await user.put('/vault/preferences', { order: 'name', direction: 'asc', view: 'columns' })
 
-    expect(response.status).toBe(400)
+    expect(unknownOrder.status).toBe(400)
+    expect(unknownView.status).toBe(400)
   })
 })

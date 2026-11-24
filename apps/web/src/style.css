@@ -797,7 +797,8 @@ fieldset {
 }
 
 .filter-trigger:focus-visible,
-.order-direction button:focus-visible {
+.order-direction button:focus-visible,
+.vault-view-switch button:focus-visible {
   outline: 2px solid var(--color-text);
   outline-offset: -2px;
 }
@@ -888,7 +889,8 @@ fieldset {
   border-top: 1px solid var(--color-border);
 }
 
-.order-direction button {
+.order-direction button,
+.vault-view-switch button {
   flex: 1;
   min-height: 34px;
   padding: 0;
@@ -898,11 +900,13 @@ fieldset {
   text-transform: uppercase;
 }
 
-.order-direction button + button {
+.order-direction button + button,
+.vault-view-switch button + button {
   border-left: 1px solid var(--color-border);
 }
 
-.order-direction button[aria-pressed="true"] {
+.order-direction button[aria-pressed="true"],
+.vault-view-switch button[aria-pressed="true"] {
   background: var(--color-text);
   color: var(--color-background);
 }
@@ -1926,9 +1930,28 @@ fieldset {
   text-transform: uppercase;
 }
 
-/* The Vault has a single dropdown, Order, next to the count. */
+/* The Vault has a single dropdown, Order, then the view switch and the count. */
 .vault-filter-cells {
-  grid-template-columns: 120px auto;
+  grid-template-columns: 120px auto auto;
+}
+
+/* Tiles | List: two cells, the chosen one inverted, like the direction buttons of Order. */
+.vault-view-switch {
+  display: flex;
+  border-left: 1px solid var(--color-border);
+}
+
+/* On a phone the cells stack, as in the mosaic's filter bar. */
+@media (max-width: 760px) {
+  .vault-filter-cells {
+    grid-template-columns: 1fr;
+  }
+
+  .vault-view-switch {
+    min-height: 40px;
+    border-left: none;
+    border-top: 1px solid var(--color-border);
+  }
 }
 
 .vault-gap {
@@ -2789,5 +2812,370 @@ img.vault-favicon {
   .vault-tile.is-popping,
   .vault-board.is-wiggling > .vault-tile {
     animation: none;
+  }
+}
+
+.vault-view-switch button {
+  padding: 0 14px;
+}
+
+/* Vault list view: one level at a time inside the frame's outline, laid out on a 12-column grid. Only
+   the frame and the add buttons have lines; size and weight set the hierarchy, and space separates. */
+.vault-list {
+  padding: 28px 32px 40px;
+  border: 1px solid var(--color-border);
+  border-radius: 0 24px 24px 24px;
+}
+
+.vault-list-grid,
+.vault-list-row {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: 24px;
+}
+
+.vault-list-crumbs {
+  align-items: center;
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Up sits alone in the first column; the trail starts after an empty one. Its arrow's stroke starts
+   on the grid line, like the title, the counts and the favicons below it. */
+.vault-list-up {
+  grid-column: 1 / 2;
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vault-list-up svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  stroke-linecap: square;
+}
+
+.vault-list-trail {
+  grid-column: 3 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vault-list-trail li {
+  display: flex;
+  gap: 10px;
+}
+
+.vault-list-crumb {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--color-muted);
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+}
+
+.vault-list-crumb[aria-current="location"] {
+  color: var(--color-text);
+  font-weight: 800;
+}
+
+.vault-list-crumb:not(:disabled):hover {
+  color: var(--color-text);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.vault-list-up:disabled {
+  cursor: default;
+}
+
+.vault-list-separator {
+  color: var(--color-muted);
+}
+
+.vault-list-header {
+  align-items: end;
+  padding-top: 40px;
+}
+
+.vault-list-heading {
+  grid-column: 1 / 10;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.vault-list-title {
+  margin: 0;
+  font-size: 64px;
+  font-weight: 800;
+  line-height: 0.92;
+  letter-spacing: -0.045em;
+  overflow-wrap: anywhere;
+}
+
+.vault-list-adds {
+  grid-column: 10 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.vault-list-button {
+  display: inline-flex;
+  align-items: center;
+  min-height: 40px;
+  padding: 0 14px;
+  border: 1px solid var(--color-border);
+  background: none;
+  color: var(--color-text);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.vault-list-button:not(:disabled):hover {
+  background: var(--color-text);
+  color: var(--color-background);
+}
+
+.vault-list-rows {
+  margin: 0;
+  padding: 32px 0 0;
+  list-style: none;
+}
+
+.vault-list-row {
+  align-items: baseline;
+  width: 100%;
+  padding: 12px 0;
+}
+
+.vault-list-main {
+  grid-column: 1 / 9;
+  display: flex;
+  align-items: baseline;
+  gap: 12px;
+  min-width: 0;
+}
+
+.vault-list-meta {
+  grid-column: 9 / 12;
+  color: var(--color-muted);
+  font-size: 13px;
+}
+
+.vault-list-heading .vault-list-meta {
+  font-size: 14px;
+}
+
+.vault-list-end {
+  grid-column: 12 / 13;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* A folder is a whole-row button: its name underlines and its arrow nudges on hover. */
+.vault-list-folder {
+  border: none;
+  background: none;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+}
+
+.vault-list-folder-name {
+  font-size: 26px;
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
+  overflow-wrap: anywhere;
+}
+
+.vault-list-folder:hover .vault-list-folder-name,
+.vault-list-folder:focus-visible .vault-list-folder-name {
+  text-decoration: underline;
+  text-decoration-thickness: 2px;
+  text-underline-offset: 5px;
+}
+
+.vault-list-chevron svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  transition: transform 0.15s;
+}
+
+.vault-list-folder:hover .vault-list-chevron svg {
+  transform: translateX(4px);
+}
+
+/* The favicon as in the tiles; without one, its initial takes the same width so the titles line up. */
+.vault-list-favicon,
+.vault-list-initial {
+  flex: none;
+  width: 32px;
+}
+
+.vault-list-favicon,
+.vault-list-initial {
+  align-self: center;
+}
+
+.vault-list-link:hover img.vault-favicon,
+.vault-list-link:has(:focus-visible) img.vault-favicon {
+  filter: none;
+}
+
+/* Without a favicon, a solid block in its place, with the letter in the page's colour: its edge sits
+   on the grid line like the favicons, which the theme's two colours also draw. */
+.vault-list-initial {
+  display: grid;
+  place-items: center;
+  height: 32px;
+  background: var(--color-text);
+  color: var(--color-background);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.vault-list-link-title {
+  overflow: hidden;
+  color: inherit;
+  font-size: 20px;
+  font-weight: 500;
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vault-list-link-title:hover {
+  text-decoration: underline;
+}
+
+/* The URL gives way first, so the title keeps as much room as it can. */
+.vault-list-url {
+  flex: 1 1 0;
+  min-width: 0;
+  overflow: hidden;
+  color: var(--color-muted);
+  font-size: 14px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vault-list-actions {
+  align-self: center;
+  gap: 2px;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+
+.vault-list-link:hover .vault-list-actions,
+.vault-list-actions:focus-within {
+  opacity: 1;
+}
+
+.vault-list-actions .vault-link-action {
+  width: 32px;
+  height: 32px;
+}
+
+.vault-list-link-form,
+.vault-list-new-folder {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.vault-list-link-form input {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+/* Typed in place with the weight of a folder name, underlined like the new category card's name. */
+.vault-list-new-folder .vault-list-folder-name {
+  flex: 1 1 240px;
+  min-width: 0;
+  padding: 0 0 4px;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  background: none;
+  color: inherit;
+  font-family: inherit;
+}
+
+.vault-list-new-folder .vault-list-folder-name:focus {
+  outline: none;
+  box-shadow: inset 0 -1px 0 var(--color-border);
+}
+
+.vault-list-error {
+  grid-column: 1 / -1;
+  margin: 6px 0 0;
+}
+
+.vault-list-empty {
+  padding: 10px 0;
+  color: var(--color-muted);
+}
+
+@media (max-width: 720px) {
+  .vault-list {
+    padding: 20px 16px 28px;
+  }
+
+  .vault-list-title {
+    font-size: 40px;
+  }
+
+  .vault-list-heading,
+  .vault-list-adds,
+  .vault-list-trail {
+    grid-column: 1 / -1;
+  }
+
+  .vault-list-adds {
+    justify-content: flex-start;
+    padding-top: 16px;
+  }
+
+  .vault-list-up {
+    grid-column: 1 / -1;
+    padding-bottom: 8px;
+  }
+
+  .vault-list-main {
+    grid-column: 1 / 11;
+  }
+
+  .vault-list-meta {
+    grid-column: 1 / 11;
+    grid-row: 2;
+  }
+
+  .vault-list-end {
+    grid-column: 11 / -1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vault-list-chevron svg,
+  .vault-list-actions {
+    transition: none;
   }
 }

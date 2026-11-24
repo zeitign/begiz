@@ -1,0 +1,1 @@
+ALTER TABLE "vault_preferences" ADD COLUMN "view" text DEFAULT 'tiles' NOT NULL;

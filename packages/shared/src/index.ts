@@ -107,15 +107,21 @@ export const vaultGridUpdate = z.object({
 export const vaultOrders = ['random', 'name', 'date', 'custom'] as const
 export type VaultOrder = (typeof vaultOrders)[number]
 
+/** Tiles: the grid of categories that open into frames. List: one level at a time, at any depth. */
+export const vaultViews = ['tiles', 'list'] as const
+export type VaultView = (typeof vaultViews)[number]
+
 export const vaultPreferencesUpdate = z.object({
   order: z.enum(vaultOrders),
   direction: z.enum(sortDirections),
+  view: z.enum(vaultViews),
 })
 export type VaultPreferences = z.infer<typeof vaultPreferencesUpdate>
 
 export const defaultVaultPreferences: VaultPreferences = {
   order: 'name',
   direction: 'asc',
+  view: 'tiles',
 }
 
 export const vaultLinkCreate = z.object({

@@ -1,7 +1,8 @@
 import type { VaultPreferences } from '@webs/shared'
 import type { VaultFolder, VaultLink } from './api'
 
-// The Vault has two levels: categories (folders at the root) hold folders, and folders hold links.
+// Categories (folders at the root) hold folders, and folders hold links and subfolders at any depth.
+// The tiles show the first two levels (buildVaultTree); the list shows every level (buildNestedVault).
 
 export const DEFAULT_FOLDER_ICON = 'folder'
 
@@ -70,7 +71,10 @@ export function buildVaultTree(folders: VaultFolder[], links: VaultLink[]): Vaul
 }
 
 /** By name or by date when the order asks for it; random and custom orders start from the name order. */
-export function sortForOrder<Node extends GridNode>(nodes: Node[], { order, direction }: VaultPreferences): Node[] {
+export function sortForOrder<Node extends { name: string; createdAt: string }>(
+  nodes: Node[],
+  { order, direction }: VaultPreferences,
+): Node[] {
   if (order !== 'name' && order !== 'date') return nodes
   const sorted = [...nodes].sort((first, second) =>
     order === 'name' ? first.name.localeCompare(second.name) : first.createdAt.localeCompare(second.createdAt),
@@ -115,3 +119,85 @@ export function sideColumnWidth(name: string) {
 
 export const pluralize = (count: number, singular: string, plural = `${singular}s`) =>
   `${count} ${count === 1 ? singular : plural}`
+
+/** A folder at any depth, with its own subfolders and links and how many of each there are below it. */
+export type NestedFolder = {
+  id: string
+  name: string
+  parentId: string | null
+  createdAt: string
+  subfolders: NestedFolder[]
+  links: VaultLink[]
+  folderTotal: number
+  linkTotal: number
+}
+
+export type NestedVault = {
+  categories: NestedFolder[]
+  foldersById: Map<string, NestedFolder>
+}
+
+/** Turns the flat lists of the API into the whole tree. Folders and links keep the API order (by name). */
+export function buildNestedVault(folders: VaultFolder[], links: VaultLink[]): NestedVault {
+  const foldersById = new Map<string, NestedFolder>(
+    folders.map((folder) => [
+      folder.id,
+      {
+        id: folder.id,
+        name: folder.name,
+        parentId: folder.parentId,
+        createdAt: folder.createdAt,
+        subfolders: [],
+        links: [],
+        folderTotal: 0,
+        linkTotal: 0,
+      },
+    ]),
+  )
+  for (const link of links) foldersById.get(link.folderId)?.links.push(link)
+
+  const categories: NestedFolder[] = []
+  for (const folder of foldersById.values()) {
+    if (folder.parentId === null) categories.push(folder)
+    else foldersById.get(folder.parentId)?.subfolders.push(folder)
+  }
+  categories.forEach(countContents)
+  return { categories, foldersById }
+}
+
+function countContents(folder: NestedFolder) {
+  folder.subfolders.forEach(countContents)
+  folder.folderTotal = folder.subfolders.reduce((total, subfolder) => total + 1 + subfolder.folderTotal, 0)
+  folder.linkTotal = folder.subfolders.reduce((total, subfolder) => total + subfolder.linkTotal, folder.links.length)
+}
+
+/** The folder and the ones above it, from its category down. */
+export function folderTrail(folderId: string, vault: NestedVault): NestedFolder[] {
+  const trail: NestedFolder[] = []
+  for (let folder = vault.foldersById.get(folderId); folder; folder = vault.foldersById.get(folder.parentId ?? '')) {
+    trail.unshift(folder)
+  }
+  return trail
+}
+
+export const trailLabel = (trail: NestedFolder[]) => trail.map((folder) => folder.name).join(' › ')
+
+export type SearchResults = {
+  folders: { folder: NestedFolder; location: string }[]
+  links: { link: VaultLink; location: string }[]
+}
+
+/** Folders by name and links by title or URL, anywhere in the Vault, each with the trail of where it lives. */
+export function searchNestedVault(vault: NestedVault, query: string): SearchResults {
+  const results: SearchResults = { folders: [], links: [] }
+  const visit = (folder: NestedFolder, trail: NestedFolder[]) => {
+    if (folder.name.toLowerCase().includes(query)) results.folders.push({ folder, location: trailLabel(trail) })
+    const trailWithFolder = [...trail, folder]
+    for (const link of folder.links) {
+      if (linkMatches(link, query)) results.links.push({ link, location: trailLabel(trailWithFolder) })
+    }
+    for (const subfolder of folder.subfolders) visit(subfolder, trailWithFolder)
+  }
+  for (const category of vault.categories) visit(category, [])
+  return results
+}

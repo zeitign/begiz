@@ -54,7 +54,7 @@ vault_folders   id, user_id, parent_id, name, icon, grid_cell, created_at (paren
 vault_links     id, user_id, folder_id, url, title, favicon_url, created_at, updated_at   (folder_id obligatorio)
 vault_tags      id, user_id, name                  (único por usuaria, aparte de los del mosaico)
 vault_link_tags link_id, tag_id
-vault_preferences user_id, order, direction, updated_at (orden del Vault; sin fila, por nombre)
+vault_preferences user_id, order, direction, view, updated_at (orden y vista del Vault; sin fila, por nombre y en tapiz)
 ```
 
 - `user_id` es el id de `auth.users` de Supabase. No es clave foránea, para no atar el esquema a Supabase.
@@ -100,7 +100,7 @@ Todas las rutas van bajo `/api` y exigen sesión.
 | GET / PATCH / DELETE | `/vault/links/:id` | Detalle, edición (incluye tags y folder) y borrado |
 | POST | `/vault/links/move` | Mover varios enlaces a la vez a otro folder: `{ linkIds, folderId }`. Si alguno no existe, no se mueve ninguno |
 | PUT | `/vault/folders/grid` | Colocar a mano los cuadros de una rejilla: `{ cells: [{ folderId, gridCell }] }`, todos del mismo nivel y sin repetir casilla |
-| GET / PUT | `/vault/preferences` | Orden del Vault: `{ order: random \| name \| date \| custom, direction }`. Sin guardar, por nombre |
+| GET / PUT | `/vault/preferences` | Orden y vista del Vault: `{ order: random \| name \| date \| custom, direction, view: tiles \| list }`. Sin guardar, por nombre y en tapiz (`view`, migración `0008`) |
 | GET | `/vault/tags` | Tags del Vault en uso con contador |
 
 ## Front
@@ -135,7 +135,20 @@ Todas las rutas van bajo `/api` y exigen sesión.
   seguidos, sin los huecos de la rejilla dispersa. Editar cambia nombre
   e icono, con un selector que busca entre los ~1.500 de la librería (el catálogo se descarga al
   abrir el editor), y borra con el recuento de lo que contiene. `Save web` (`/vault/new`) guarda URL,
-  título y folder, con los folders agrupados por categoría.
+  título y folder, con los folders de cualquier nivel agrupados por categoría y nombrados por su ruta
+  (`Typography › Serif`); al guardar vuelve al folder en la vista elegida.
+- **Vista de lista del Vault** (`VaultList.vue`, fase B): el interruptor `Tiles | List`, junto a
+  `Order`, guarda la vista en la cuenta. La lista muestra un nivel cada vez (el folder va en la URL,
+  `?in=`): migas con `Up` en la primera columna y el recorrido desde la tercera, el título grande
+  con los recuentos totales, y debajo, sin etiquetas, primero los folders y después los enlaces.
+  Retícula de 12 columnas (nombre 1–8, recuentos o ruta 9–11, acciones 12) y jerarquía por tamaño
+  y peso, sin líneas: solo el borde de la tarjeta y los botones `New folder`, `New category` y
+  `New link` (este solo dentro de folders, porque las categorías no tienen enlaces). Buscar lista
+  coincidencias de todo el Vault con su ruta. Crear un folder es un campo en la propia lista, sin
+  icono (se elige luego en el tapiz). Editar y borrar enlaces sale de `lib/useVaultLinkActions.ts`,
+  que comparten las filas del tapiz y de la lista; los favicons se ven igual en las dos (32 px, en los colores del tema y con los suyos al pasar el ratón; sin favicon, un bloque relleno con la inicial). Alineación óptica (`lib/opticalAlign.ts`, directiva `v-optical-align`): el título y los nombres de carpeta se desplazan lo que mide el hueco de su primera letra, para que el trazo, y no la caja de la letra, caiga en la línea de la retícula junto a la flecha de `Up`, los recuentos y los favicons. `Order` también ordena la lista (folders,
+  enlaces y resultados) por nombre o fecha, en los dos sentidos; al azar y a mano colocan cuadros del
+  tapiz, así que con ellos la lista va por nombre.
 - **Collections** (`CollectionsView.vue`, `CollectionColumn.vue`): una columna por colección, tan
   alta como deja la ventana y en fila con scroll horizontal. El nombre recorre el marco en
   minúscula, con el título en mayúsculas arriba a la izquierda, y dentro van en círculos las
@@ -200,7 +213,7 @@ Todas las rutas van bajo `/api` y exigen sesión.
 | Diseño | Diseño visual de la plataforma. Hecho: cabecera de celdas con la pestaña activa invertida y mosaico a pantalla completa (hasta cinco tarjetas por fila según el ancho, barra de filtros en celdas, acciones View, Edit y Open), todo en Geist Mono (PR #9, 26-oct-2026). Falta: revisar el resto de páginas y definir la paleta | **Aparcada** (2-nov-2026) hasta ver cómo funciona la división entre Mosaic y Vault |
 | Collections | Una columna por colección con su portada y una página por colección, que sustituye al filtro oculto del mosaico | Hecha; renombrar y borrar validados con el Supabase real (17-nov-2026) |
 | Vault | Segundo espacio para guardar marcadores en folders anidados, con selección múltiple y buscador (ver «Vault») | **En curso**: API, tests y front hechos (17-nov-2026): rejilla dispersa de folders que se despliegan, con iconos de Phosphor (fill). Falta validarlo con datos reales y la selección múltiple para mover enlaces |
-| Vault anidado | Plan del 20-nov-2026 (parte 06 del PDF, ver «Vault anidado»). A · anidado en la API · B · vista de lista · C · tercer nivel en el tapiz · D · herramientas (seleccionar, mover, borrar) · E · importar · F · exportar | **En curso**: A hecha (24-nov-2026, API y tests); siguiente, B |
+| Vault anidado | Plan del 20-nov-2026 (parte 06 del PDF, ver «Vault anidado»). A · anidado en la API · B · vista de lista · C · tercer nivel en el tapiz · D · herramientas (seleccionar, mover, borrar) · E · importar · F · exportar | **En curso**: A y B hechas (24-nov-2026); siguiente, C |
 | 2 · Captura | Pantallazo automático al guardar en Mosaic. Planteamiento aprobado el 2-nov-2026: un servicio externo de capturas en lugar de un contenedor con Chromium (parte 05 del PDF). Las webs actuales no cambian | Sin fecha |
 | 3 · Extensión | Extensión de navegador (WXT + Vue) usando la misma API | Planificada |
 | 4 · Componentes | RF-F1: guardar componentes concretos (tabla `components` que apunta a `webs`) | Futuro |
@@ -235,8 +248,10 @@ nombre (`Design / Fonts`) se descartó.
   lo permite; cambian las reglas de la API y sus tests. Los recuentos totales y la ruta los calcula el
   front con el árbol que ya monta (la API sigue dando el `linkCount` propio de cada folder); hasta las
   fases B y C, el front solo muestra los dos primeros niveles.
-- **Vista de lista** (RF-23): alternativa más pequeña al tapiz, un nivel cada vez, elegida junto a
-  `Order` y guardada en la cuenta. El tapiz sigue siendo la vista por defecto.
+- **Vista de lista** (RF-23, hecha): alternativa más pequeña al tapiz, un nivel cada vez, elegida
+  junto a `Order` y guardada en la cuenta. El tapiz sigue siendo la vista por defecto.
+- **Pendiente para C**: el tapiz todavía solo ve dos niveles, también al buscar y en sus recuentos
+  (una búsqueda que solo encuentra enlaces del tercer nivel oculta todas las categorías).
 - **Tercer nivel y siguientes** (RF-24): dentro de un folder abierto, sus subfolders salen a la
   derecha como cuadros más pequeños; al abrir uno, sus enlaces se despliegan debajo con sangría.
 - **Herramientas** (RF-25, solo en la lista de momento): seleccionar enlaces y folders, uno o

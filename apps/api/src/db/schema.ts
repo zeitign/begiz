@@ -113,11 +113,12 @@ export const vaultFolders = pgTable(
   (table) => [index('vault_folders_user_parent_idx').on(table.userId, table.parentId)],
 )
 
-/** How the Vault lays out its tiles. No row until the user changes it: the API answers with the default. */
+/** How the Vault is shown and lays out its tiles. No row until the user changes it: the API answers with the default. */
 export const vaultPreferences = pgTable('vault_preferences', {
   userId: uuid('user_id').primaryKey(),
   order: text().notNull(),
   direction: text().notNull(),
+  view: text().notNull().default('tiles'),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
