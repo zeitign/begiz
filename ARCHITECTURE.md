@@ -49,9 +49,9 @@ tags            id, user_id, name                  (único por usuaria, normaliz
 web_tags        web_id, tag_id
 collections     id, user_id, name, description     (nombre único por usuaria)
 collection_webs collection_id, web_id
-vault_folders   id, user_id, parent_id, name, icon, grid_cell, created_at (parent_id null = categoría;
-                grid_cell = casilla colocada a mano, null hasta entonces)
-vault_links     id, user_id, folder_id, url, title, favicon_url, created_at, updated_at   (folder_id obligatorio)
+vault_folders   id, user_id, parent_id, name, icon, grid_cell, sort_position, created_at (parent_id null = categoría;
+                grid_cell = casilla colocada a mano, null hasta entonces; sort_position = orden propio de la lista)
+vault_links     id, user_id, folder_id, url, title, favicon_url, sort_position, created_at, updated_at   (folder_id obligatorio)
 vault_tags      id, user_id, name                  (único por usuaria, aparte de los del mosaico)
 vault_link_tags link_id, tag_id
 vault_preferences user_id, order, direction, view, updated_at (orden y vista del Vault; sin fila, por nombre y en tapiz)
@@ -75,6 +75,10 @@ vault_preferences user_id, order, direction, view, updated_at (orden y vista del
 - `favicon_url` se lee de la página al guardar un enlace a mano (y otra vez si cambia la URL). Si la
   página no responde, el enlace se guarda sin favicon y el front muestra la inicial. Importar no lo lee,
   para no visitar cada web.
+- `sort_position` del Vault (migración `0009`): el orden propio de la lista, por grupos de hermanos (los
+  folders de un mismo folder, las categorías, los enlaces de un folder). Misma técnica que el mosaico
+  (`lib/sort-positions.ts`, que comparten los tres); la migración los colocó por nombre. Lo nuevo y lo
+  que se mueve a otro folder va al final, como en los marcadores del navegador.
 - `sort_position` guarda el orden propio del mosaico (migración `0003`). Es un número decimal con
   huecos de 1024: mover una web solo cambia su posición, que pasa a estar entre la de sus vecinas. Si
   el hueco se agota, se reparten de nuevo todas las posiciones de la usuaria. Las webs nuevas van
@@ -99,6 +103,8 @@ Todas las rutas van bajo `/api` y exigen sesión.
 | GET / POST | `/vault/links?folder=&search=` | Enlaces de un folder (sin `folder`, todo el Vault). `search` busca en título y URL. Al crear, `folderId` es obligatorio y tiene que ser un folder, no una categoría |
 | GET / PATCH / DELETE | `/vault/links/:id` | Detalle, edición (incluye tags y folder) y borrado |
 | POST | `/vault/links/move` | Mover varios enlaces a la vez a otro folder: `{ linkIds, folderId }`. Si alguno no existe, no se mueve ninguno |
+| PUT | `/vault/folders/:id/position` | Mover un folder entre sus hermanos en el orden propio de la lista: `{ afterFolderId }` (o `null` para ponerlo el primero; tiene que ser un hermano) |
+| PUT | `/vault/links/:id/position` | Mover un enlace dentro de su folder en el orden propio de la lista: `{ afterLinkId }` (o `null`) |
 | PUT | `/vault/folders/grid` | Colocar a mano los cuadros de una rejilla: `{ cells: [{ folderId, gridCell }] }`, todos del mismo nivel y sin repetir casilla |
 | GET / PUT | `/vault/preferences` | Orden y vista del Vault: `{ order: random \| name \| date \| custom, direction, view: tiles \| list }`. Sin guardar, por nombre y en tapiz (`view`, migración `0008`) |
 | GET | `/vault/tags` | Tags del Vault en uso con contador |
@@ -147,8 +153,10 @@ Todas las rutas van bajo `/api` y exigen sesión.
   coincidencias de todo el Vault con su ruta. Crear un folder es un campo en la propia lista, sin
   icono (se elige luego en el tapiz). Editar y borrar enlaces sale de `lib/useVaultLinkActions.ts`,
   que comparten las filas del tapiz y de la lista; los favicons se ven igual en las dos (32 px, en los colores del tema y con los suyos al pasar el ratón; sin favicon, un bloque relleno con la inicial). Alineación óptica (`lib/opticalAlign.ts`, directiva `v-optical-align`): el título y los nombres de carpeta se desplazan lo que mide el hueco de su primera letra, para que el trazo, y no la caja de la letra, caiga en la línea de la retícula junto a la flecha de `Up`, los recuentos y los favicons. `Order` también ordena la lista (folders,
-  enlaces y resultados) por nombre o fecha, en los dos sentidos; al azar y a mano colocan cuadros del
-  tapiz, así que con ellos la lista va por nombre.
+  enlaces y resultados): por nombre o fecha, en los dos sentidos, o a mano arrastrando las filas, como
+  en el mosaico (folders y enlaces cada uno en su grupo; los folders, siempre primero). En la lista no
+  hay orden al azar: si el tapiz lo tiene, la lista va por nombre. Buscando con el orden a mano, los
+  resultados siguen el árbol, porque las posiciones solo comparan dentro de un folder.
 - **Collections** (`CollectionsView.vue`, `CollectionColumn.vue`): una columna por colección, tan
   alta como deja la ventana y en fila con scroll horizontal. El nombre recorre el marco en
   minúscula, con el título en mayúsculas arriba a la izquierda, y dentro van en círculos las
@@ -273,7 +281,7 @@ nombre (`Design / Fonts`) se descartó.
   (`… › Serif`) o entrar en la carpeta, que pasa a ocupar el tapiz con migas para volver. Sin límite
   de niveles en los datos (decidido el 24-nov-2026).
 - **Para más adelante**: herramientas también en el tapiz; revisar la sangría en niveles profundos;
-  orden propio arrastrando y conservar el orden del navegador al importar.
+  conservar el orden del navegador al importar (el orden propio de la lista ya existe: 24-nov-2026).
 
 ### Arranque y sesión
 

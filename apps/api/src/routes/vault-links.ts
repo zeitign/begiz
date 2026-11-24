@@ -1,14 +1,28 @@
 import { and, eq, ilike, inArray, or } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
-import { idParam, vaultLinkCreate, vaultLinkListQuery, vaultLinkMove, vaultLinkUpdate } from '@webs/shared'
+import {
+  idParam,
+  vaultLinkCreate,
+  vaultLinkListQuery,
+  vaultLinkMove,
+  vaultLinkPositionUpdate,
+  vaultLinkUpdate,
+} from '@webs/shared'
 import type { AuthEnv } from '../auth.ts'
 import { db } from '../db/client.ts'
 import { vaultLinks } from '../db/schema.ts'
 import { escapeLikePattern } from '../lib/escape-like-pattern.ts'
 import { fetchPageMeta } from '../lib/preview.ts'
 import { validate } from '../lib/validate.ts'
-import { assertLinkFolder, deleteUnusedVaultTags, findVaultTagNamesByLinkId, replaceVaultTags } from '../lib/vault.ts'
+import { moveAfter, positionAfterAll } from '../lib/sort-positions.ts'
+import {
+  assertLinkFolder,
+  deleteUnusedVaultTags,
+  findVaultTagNamesByLinkId,
+  folderLinks,
+  replaceVaultTags,
+} from '../lib/vault.ts'
 
 function toLinkResponse(link: typeof vaultLinks.$inferSelect, tagNames: string[]) {
   return {
@@ -17,6 +31,7 @@ function toLinkResponse(link: typeof vaultLinks.$inferSelect, tagNames: string[]
     title: link.title,
     folderId: link.folderId,
     faviconUrl: link.faviconUrl,
+    sortPosition: link.sortPosition,
     tags: tagNames,
     createdAt: link.createdAt.toISOString(),
   }
@@ -73,7 +88,8 @@ export const vaultLinksRoutes = new Hono<AuthEnv>()
     const linkId = await db.transaction(async (transaction) => {
       const [createdLink] = await transaction
         .insert(vaultLinks)
-        .values({ userId, ...fields, faviconUrl })
+        // A new link goes last in its folder, as in a browser's bookmarks.
+        .values({ userId, ...fields, faviconUrl, sortPosition: await positionAfterAll(transaction, folderLinks(fields.folderId)) })
         .returning({ id: vaultLinks.id })
       await replaceVaultTags(transaction, userId, createdLink!.id, tagNames)
       return createdLink!.id
@@ -90,10 +106,14 @@ export const vaultLinksRoutes = new Hono<AuthEnv>()
     const changedUrl = fields.url !== undefined && fields.url !== currentLink.url ? fields.url : null
     const faviconChange = changedUrl ? { faviconUrl: await readFaviconUrl(changedUrl) } : {}
 
+    const movesFolder = fields.folderId !== undefined && fields.folderId !== currentLink.folderId
     await db.transaction(async (transaction) => {
+      const lastInNewFolder = movesFolder
+        ? { sortPosition: await positionAfterAll(transaction, folderLinks(fields.folderId!)) }
+        : {}
       await transaction
         .update(vaultLinks)
-        .set({ ...fields, ...faviconChange, updatedAt: new Date() })
+        .set({ ...fields, ...faviconChange, ...lastInNewFolder, updatedAt: new Date() })
         .where(eq(vaultLinks.id, linkId))
       if (tagNames) await replaceVaultTags(transaction, userId, linkId, tagNames)
     })
@@ -112,7 +132,24 @@ export const vaultLinksRoutes = new Hono<AuthEnv>()
         .where(and(eq(vaultLinks.userId, userId), inArray(vaultLinks.id, linkIds)))
         .returning({ id: vaultLinks.id })
       if (movedLinks.length !== linkIds.length) throw new HTTPException(404, { message: 'Link not found' })
+      // They go last in the folder, in the order they were given.
+      for (const linkId of linkIds) {
+        await transaction
+          .update(vaultLinks)
+          .set({ sortPosition: await positionAfterAll(transaction, folderLinks(folderId)) })
+          .where(eq(vaultLinks.id, linkId))
+      }
     })
+    return context.body(null, 204)
+  })
+
+  // Moves a link among the links of its folder in the list's custom order.
+  .put('/:id/position', validate('param', idParam), validate('json', vaultLinkPositionUpdate), async (context) => {
+    const userId = context.get('userId')
+    const { id: linkId } = context.req.valid('param')
+    const { afterLinkId } = context.req.valid('json')
+    const link = await getLinkDetail(userId, linkId)
+    await db.transaction((transaction) => moveAfter(transaction, folderLinks(link.folderId), linkId, afterLinkId))
     return context.body(null, 204)
   })
 

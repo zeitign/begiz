@@ -2957,6 +2957,25 @@ img.vault-favicon {
   list-style: none;
 }
 
+.vault-list-group {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* In the custom order rows are dragged into place, as the mosaic's cards. */
+.vault-list-rows.custom-order .vault-list-row {
+  cursor: grab;
+}
+
+.vault-list-rows .sortable-ghost {
+  opacity: 0.3;
+}
+
+.vault-list-empty {
+  margin: 0;
+}
+
 .vault-list-row {
   align-items: baseline;
   width: 100%;

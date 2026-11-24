@@ -45,7 +45,7 @@ describe('vault categories and folders', () => {
 
     const response = await user.get('/vault/folders')
 
-    const unplaced = { icon: null, gridCell: null, createdAt: expect.any(String) }
+    const unplaced = { icon: null, gridCell: null, sortPosition: expect.any(Number), createdAt: expect.any(String) }
     expect(await response.json()).toEqual([
       { id: design.id, name: 'Design', parentId: null, ...unplaced, linkCount: 0 },
       { id: icons.id, name: 'Icons', parentId: design.id, ...unplaced, linkCount: 2 },
@@ -177,6 +177,7 @@ describe('vault links', () => {
       title: 'Fontshare',
       folderId: typography.id,
       faviconUrl: null,
+      sortPosition: 0,
       tags: ['free fonts'],
       createdAt: expect.any(String),
     })
@@ -304,6 +305,112 @@ describe('vault links', () => {
       { name: 'design', webCount: 1 },
       { name: 'mosaic only', webCount: 1 },
     ])
+  })
+})
+
+describe('vault custom order', () => {
+  /** Names of the folders inside a folder (or the categories), in the custom order. */
+  async function listFolderNamesInOrder(parentId: string | null) {
+    const folders: { name: string; parentId: string | null; sortPosition: number }[] = await (
+      await user.get('/vault/folders')
+    ).json()
+    return folders
+      .filter((folder) => folder.parentId === parentId)
+      .sort((first, second) => first.sortPosition - second.sortPosition)
+      .map((folder) => folder.name)
+  }
+
+  async function listLinkTitlesInOrder(folderId: string) {
+    const links: { title: string; sortPosition: number }[] = await (
+      await user.get(`/vault/links?folder=${folderId}`)
+    ).json()
+    return links.sort((first, second) => first.sortPosition - second.sortPosition).map((link) => link.title)
+  }
+
+  it('puts new folders and links last, as a browser does', async () => {
+    await createFolder('Icons', design.id)
+    await createFolder('Colour', design.id)
+    await createLink({ url: 'https://b.com', title: 'B' })
+    await createLink({ url: 'https://a.com', title: 'A' })
+
+    expect(await listFolderNamesInOrder(design.id)).toEqual(['Typography', 'Icons', 'Colour'])
+    expect(await listLinkTitlesInOrder(typography.id)).toEqual(['B', 'A'])
+  })
+
+  it('moves a folder among its siblings, first or after another', async () => {
+    const icons = await createFolder('Icons', design.id)
+    const colour = await createFolder('Colour', design.id)
+
+    expect((await user.put(`/vault/folders/${colour.id}/position`, { afterFolderId: null })).status).toBe(204)
+    expect(await listFolderNamesInOrder(design.id)).toEqual(['Colour', 'Typography', 'Icons'])
+
+    await user.put(`/vault/folders/${colour.id}/position`, { afterFolderId: typography.id })
+    expect(await listFolderNamesInOrder(design.id)).toEqual(['Typography', 'Colour', 'Icons'])
+
+    await user.put(`/vault/folders/${typography.id}/position`, { afterFolderId: icons.id })
+    expect(await listFolderNamesInOrder(design.id)).toEqual(['Colour', 'Icons', 'Typography'])
+  })
+
+  it('orders the categories too', async () => {
+    const leisure = await createCategory('Leisure')
+
+    await user.put(`/vault/folders/${leisure.id}/position`, { afterFolderId: null })
+
+    expect(await listFolderNamesInOrder(null)).toEqual(['Leisure', 'Design'])
+  })
+
+  it('moves a link among the links of its folder', async () => {
+    const first = await createLink({ url: 'https://one.com', title: 'One' })
+    await createLink({ url: 'https://two.com', title: 'Two' })
+    const third = await createLink({ url: 'https://three.com', title: 'Three' })
+
+    expect((await user.put(`/vault/links/${third.id}/position`, { afterLinkId: null })).status).toBe(204)
+    await user.put(`/vault/links/${first.id}/position`, { afterLinkId: third.id })
+
+    expect(await listLinkTitlesInOrder(typography.id)).toEqual(['Three', 'One', 'Two'])
+  })
+
+  it('only places a row after one of its own list', async () => {
+    const icons = await createFolder('Icons', design.id)
+    const leisure = await createCategory('Leisure')
+    const inTypography = await createLink({ url: 'https://one.com', title: 'One' })
+    const inIcons = await createLink({ url: 'https://two.com', title: 'Two', folderId: icons.id })
+
+    expect((await user.put(`/vault/folders/${icons.id}/position`, { afterFolderId: leisure.id })).status).toBe(400)
+    expect((await user.put(`/vault/links/${inTypography.id}/position`, { afterLinkId: inIcons.id })).status).toBe(400)
+    expect((await user.put(`/vault/folders/${crypto.randomUUID()}/position`, { afterFolderId: null })).status).toBe(404)
+    expect((await user.put(`/vault/links/${crypto.randomUUID()}/position`, { afterLinkId: null })).status).toBe(404)
+  })
+
+  it('puts what moves to another folder last there', async () => {
+    const icons = await createFolder('Icons', design.id)
+    await createLink({ url: 'https://phosphoricons.com', title: 'Phosphor', folderId: icons.id })
+    const lucide = await createLink({ url: 'https://lucide.dev', title: 'Lucide' })
+    const tabler = await createLink({ url: 'https://tabler.io', title: 'Tabler' })
+    const feather = await createLink({ url: 'https://feathericons.com', title: 'Feather' })
+    const leisure = await createCategory('Leisure')
+    await createFolder('Games', leisure.id)
+
+    await user.patch(`/vault/links/${tabler.id}`, { folderId: icons.id })
+    await user.post('/vault/links/move', { linkIds: [feather.id, lucide.id], folderId: icons.id })
+    await user.patch(`/vault/folders/${icons.id}`, { parentId: leisure.id })
+
+    expect(await listLinkTitlesInOrder(icons.id)).toEqual(['Phosphor', 'Tabler', 'Feather', 'Lucide'])
+    expect(await listFolderNamesInOrder(leisure.id)).toEqual(['Games', 'Icons'])
+  })
+
+  it('spreads the positions out when a gap runs out, keeping the order', async () => {
+    const linkA = await createLink({ url: 'https://a.com', title: 'A' })
+    const linkB = await createLink({ url: 'https://b.com', title: 'B' })
+    const linkC = await createLink({ url: 'https://c.com', title: 'C' })
+
+    // Halving the gap between A and B over and over until it runs out.
+    for (let move = 0; move < 40; move++) {
+      const movedLink = move % 2 === 0 ? linkC : linkB
+      await user.put(`/vault/links/${movedLink.id}/position`, { afterLinkId: linkA.id })
+    }
+
+    expect(await listLinkTitlesInOrder(typography.id)).toEqual(['A', 'B', 'C'])
   })
 })
 

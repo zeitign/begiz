@@ -1,10 +1,34 @@
-import { and, eq, inArray, sql } from 'drizzle-orm'
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { HTTPException } from 'hono/http-exception'
 import { db, type Transaction } from '../db/client.ts'
-import { vaultFolders, vaultLinkTags, vaultTags } from '../db/schema.ts'
+import { vaultFolders, vaultLinks, vaultLinkTags, vaultTags } from '../db/schema.ts'
+import type { SortedList } from './sort-positions.ts'
 
 // Categories (folders at the root) hold only folders. Below them, folders nest at any depth and
 // each one can hold links and subfolders at once, as in a browser.
+
+/** The folders inside one folder (or the categories, with null), in the list's custom order. */
+export const siblingFolders = (userId: string, parentId: string | null): SortedList => ({
+  table: vaultFolders,
+  id: vaultFolders.id,
+  sortPosition: vaultFolders.sortPosition,
+  members: and(
+    eq(vaultFolders.userId, userId),
+    parentId === null ? isNull(vaultFolders.parentId) : eq(vaultFolders.parentId, parentId),
+  ),
+  tieBreaker: sql`lower(${vaultFolders.name})`,
+  rowName: 'Folder',
+})
+
+/** The links of one folder, in the list's custom order. The folder is already known to be the user's. */
+export const folderLinks = (folderId: string): SortedList => ({
+  table: vaultLinks,
+  id: vaultLinks.id,
+  sortPosition: vaultLinks.sortPosition,
+  members: eq(vaultLinks.folderId, folderId),
+  tieBreaker: sql`lower(${vaultLinks.title})`,
+  rowName: 'Link',
+})
 
 /** The folder chosen as parent or destination. Unknown is a bad request, not a missing resource. */
 export async function findChosenFolder(userId: string, folderId: string) {

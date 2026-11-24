@@ -93,6 +93,16 @@ export const vaultFolderUpdate = z.object({
   icon: vaultFolderIcon.optional(),
 })
 
+/** Moves a folder in the list's custom order right after a sibling, or first when null. */
+export const vaultFolderPositionUpdate = z.object({
+  afterFolderId: z.uuid().nullable(),
+})
+
+/** Moves a link in the list's custom order right after another of its folder, or first when null. */
+export const vaultLinkPositionUpdate = z.object({
+  afterLinkId: z.uuid().nullable(),
+})
+
 /** Places the tiles of one grid by hand (categories, or the folders of one category): each in its cell. */
 export const vaultGridUpdate = z.object({
   cells: z

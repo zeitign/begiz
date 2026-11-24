@@ -34,6 +34,8 @@ import {
   categoryLinkCount,
   categoryMatches,
   linkMatches,
+  listOrder,
+  listOrders,
   normalizeSearch,
   pluralize,
   sideColumnWidth,
@@ -75,7 +77,11 @@ const { data: savedPreferences, isPending: arePreferencesPending } = useVaultPre
 const preferences = computed(() => savedPreferences.value ?? defaultVaultPreferences)
 // The grid waits for the saved order too, so the tiles appear in their places instead of jumping to them.
 const isPending = computed(() => areFoldersPending.value || areLinksPending.value || arePreferencesPending.value)
-const hasDirection = computed(() => preferences.value.order === 'name' || preferences.value.order === 'date')
+const isListView = computed(() => preferences.value.view === 'list')
+/** The list has no random order: it offers the rest and reads random as name. */
+const shownOrders = computed(() => (isListView.value ? listOrders : vaultOrders))
+const shownOrder = computed(() => (isListView.value ? listOrder(preferences.value.order) : preferences.value.order))
+const hasDirection = computed(() => shownOrder.value === 'name' || shownOrder.value === 'date')
 const saveVaultPreferences = useSaveVaultPreferences()
 const placeVaultTiles = usePlaceVaultTiles()
 const orderError = ref('')
@@ -230,11 +236,11 @@ async function showCreatedCategory(categoryId: string) {
       <div class="filter-frame">
         <div class="filter-cells vault-filter-cells">
           <FilterDropdown label="Order">
-            <label v-for="order in vaultOrders" :key="order" class="filter-option">
+            <label v-for="order in shownOrders" :key="order" class="filter-option">
               <input
                 type="radio"
                 name="vault-order"
-                :checked="preferences.order === order"
+                :checked="shownOrder === order"
                 @change="chooseOrder(order)"
               />
               <span>{{ ORDER_LABELS[order] }}</span>
@@ -250,7 +256,9 @@ async function showCreatedCategory(categoryId: string) {
                 {{ DIRECTION_LABELS[direction] }}
               </button>
             </div>
-            <p v-if="preferences.order === 'custom'" class="filter-option muted">Drag a card to any cell.</p>
+            <p v-if="shownOrder === 'custom'" class="filter-option muted">
+              {{ isListView ? 'Drag a row to reorder.' : 'Drag a card to any cell.' }}
+            </p>
           </FilterDropdown>
           <div class="vault-view-switch" role="group" aria-label="View">
             <button
@@ -273,7 +281,7 @@ async function showCreatedCategory(categoryId: string) {
     <p v-if="loadError" class="error">{{ loadError.message }}</p>
     <p v-else-if="isPending">Loading…</p>
     <VaultList
-      v-else-if="preferences.view === 'list'"
+      v-else-if="isListView"
       :folders="folders ?? []"
       :links="links ?? []"
       :query="query"

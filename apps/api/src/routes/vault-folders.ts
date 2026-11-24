@@ -1,12 +1,13 @@
 import { and, count, eq, inArray } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
-import { idParam, vaultFolderCreate, vaultFolderUpdate, vaultGridUpdate } from '@webs/shared'
+import { idParam, vaultFolderCreate, vaultFolderPositionUpdate, vaultFolderUpdate, vaultGridUpdate } from '@webs/shared'
 import type { AuthEnv } from '../auth.ts'
 import { db } from '../db/client.ts'
 import { vaultFolders, vaultLinks } from '../db/schema.ts'
 import { validate } from '../lib/validate.ts'
-import { deleteUnusedVaultTags, findChosenFolder, isWithinFolder } from '../lib/vault.ts'
+import { moveAfter, positionAfterAll } from '../lib/sort-positions.ts'
+import { deleteUnusedVaultTags, findChosenFolder, isWithinFolder, siblingFolders } from '../lib/vault.ts'
 
 function toFolderResponse(folder: typeof vaultFolders.$inferSelect, linkCount = 0) {
   return {
@@ -15,6 +16,7 @@ function toFolderResponse(folder: typeof vaultFolders.$inferSelect, linkCount = 
     parentId: folder.parentId,
     icon: folder.icon,
     gridCell: folder.gridCell,
+    sortPosition: folder.sortPosition,
     createdAt: folder.createdAt.toISOString(),
     linkCount,
   }
@@ -76,16 +78,21 @@ export const vaultFoldersRoutes = new Hono<AuthEnv>()
     const userId = context.get('userId')
     const input = context.req.valid('json')
     if (input.parentId !== null) await findChosenFolder(userId, input.parentId)
-    const [createdFolder] = await db
-      .insert(vaultFolders)
-      .values({
-        userId,
-        name: input.name,
-        parentId: input.parentId,
-        icon: input.icon,
-      })
-      .returning()
-    return context.json(toFolderResponse(createdFolder!), 201)
+    // A new folder goes last among its siblings, as in a browser's bookmarks.
+    const createdFolder = await db.transaction(async (transaction) => {
+      const [insertedFolder] = await transaction
+        .insert(vaultFolders)
+        .values({
+          userId,
+          name: input.name,
+          parentId: input.parentId,
+          icon: input.icon,
+          sortPosition: await positionAfterAll(transaction, siblingFolders(userId, input.parentId)),
+        })
+        .returning()
+      return insertedFolder!
+    })
+    return context.json(toFolderResponse(createdFolder), 201)
   })
 
   .patch('/:id', validate('param', idParam), validate('json', vaultFolderUpdate), async (context) => {
@@ -93,22 +100,43 @@ export const vaultFoldersRoutes = new Hono<AuthEnv>()
     const { id: folderId } = context.req.valid('param')
     const input = context.req.valid('json')
     if (input.parentId !== undefined) await assertValidNewParent(userId, folderId, input.parentId)
-    const [updatedFolder] = await db
-      .update(vaultFolders)
-      .set({
-        ...(input.name !== undefined && { name: input.name }),
-        // In another grid, its cell means nothing: it goes to the first free one.
-        ...(input.parentId !== undefined && {
-          parentId: input.parentId,
-          gridCell: null,
-        }),
-        ...(input.icon !== undefined && { icon: input.icon }),
-      })
-      .where(and(eq(vaultFolders.id, folderId), eq(vaultFolders.userId, userId)))
-      .returning()
+    const newParentId = input.parentId
+    const updatedFolder = await db.transaction(async (transaction) => {
+      const [folder] = await transaction
+        .update(vaultFolders)
+        .set({
+          ...(input.name !== undefined && { name: input.name }),
+          // In another grid its cell means nothing, so it goes to the first free one, and last in the list.
+          ...(newParentId !== undefined && {
+            parentId: newParentId,
+            gridCell: null,
+            sortPosition: await positionAfterAll(transaction, siblingFolders(userId, newParentId)),
+          }),
+          ...(input.icon !== undefined && { icon: input.icon }),
+        })
+        .where(and(eq(vaultFolders.id, folderId), eq(vaultFolders.userId, userId)))
+        .returning()
+      return folder
+    })
     if (!updatedFolder) throw new HTTPException(404, { message: 'Folder not found' })
     const linkCount = await db.$count(vaultLinks, eq(vaultLinks.folderId, folderId))
     return context.json(toFolderResponse(updatedFolder, linkCount))
+  })
+
+  // Moves a folder among its siblings in the list's custom order.
+  .put('/:id/position', validate('param', idParam), validate('json', vaultFolderPositionUpdate), async (context) => {
+    const userId = context.get('userId')
+    const { id: folderId } = context.req.valid('param')
+    const { afterFolderId } = context.req.valid('json')
+    const [folder] = await db
+      .select({ parentId: vaultFolders.parentId })
+      .from(vaultFolders)
+      .where(and(eq(vaultFolders.id, folderId), eq(vaultFolders.userId, userId)))
+    if (!folder) throw new HTTPException(404, { message: 'Folder not found' })
+    await db.transaction((transaction) =>
+      moveAfter(transaction, siblingFolders(userId, folder.parentId), folderId, afterFolderId),
+    )
+    return context.body(null, 204)
   })
 
   // Places the tiles of one grid by hand. Folders of that grid left out keep their cell.

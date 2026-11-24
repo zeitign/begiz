@@ -1,4 +1,4 @@
-import type { VaultPreferences } from '@webs/shared'
+import { vaultOrders, type VaultOrder, type VaultPreferences } from '@webs/shared'
 import type { VaultFolder, VaultLink } from './api'
 
 // Categories (folders at the root) hold folders, and folders hold links and subfolders at any depth.
@@ -70,6 +70,12 @@ export function buildVaultTree(folders: VaultFolder[], links: VaultLink[]): Vaul
   return { categories: [...categoriesById.values()], categoriesById, foldersById }
 }
 
+/** Orders the list offers: random only shuffles tiles, so the list has name, date and custom. */
+export const listOrders = vaultOrders.filter((order) => order !== 'random')
+
+/** The order the list follows: the saved one, or by name while the tiles are set to random. */
+export const listOrder = (order: VaultOrder): VaultOrder => (order === 'random' ? 'name' : order)
+
 /** By name or by date when the order asks for it; random and custom orders start from the name order. */
 export function sortForOrder<Node extends { name: string; createdAt: string }>(
   nodes: Node[],
@@ -126,6 +132,7 @@ export type NestedFolder = {
   name: string
   parentId: string | null
   createdAt: string
+  sortPosition: number
   subfolders: NestedFolder[]
   links: VaultLink[]
   folderTotal: number
@@ -147,6 +154,7 @@ export function buildNestedVault(folders: VaultFolder[], links: VaultLink[]): Ne
         name: folder.name,
         parentId: folder.parentId,
         createdAt: folder.createdAt,
+        sortPosition: folder.sortPosition,
         subfolders: [],
         links: [],
         folderTotal: 0,
