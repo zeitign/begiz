@@ -154,7 +154,10 @@ Todas las rutas van bajo `/api` y exigen sesión.
   icono (se elige luego en el tapiz). Editar y borrar enlaces sale de `lib/useVaultLinkActions.ts`,
   que comparten las filas del tapiz y de la lista; los favicons se ven igual en las dos (32 px, en los colores del tema y con los suyos al pasar el ratón; sin favicon, un bloque relleno con la inicial). Alineación óptica (`lib/opticalAlign.ts`, directiva `v-optical-align`): el título y los nombres de carpeta se desplazan lo que mide el hueco de su primera letra, para que el trazo, y no la caja de la letra, caiga en la línea de la retícula junto a la flecha de `Up`, los recuentos y los favicons. `Order` también ordena la lista (folders,
   enlaces y resultados): por nombre o fecha, en los dos sentidos, o a mano arrastrando las filas, como
-  en el mosaico (folders y enlaces cada uno en su grupo; los folders, siempre primero). En la lista no
+  en el mosaico (folders y enlaces cada uno en su grupo; los folders, siempre primero). Con el orden a mano, el título (nombre del folder o del
+  enlace) se pulsa para abrirlo y el resto de la fila es el asa para arrastrar. Al pasar el ratón,
+  nombres, títulos y migas se invierten (fondo del color del texto), como las celdas de la app;
+  los títulos de enlace del tapiz, igual. En la lista no
   hay orden al azar: si el tapiz lo tiene, la lista va por nombre. Buscando con el orden a mano, los
   resultados siguen el árbol, porque las posiciones solo comparan dentro de un folder.
 - **Collections** (`CollectionsView.vue`, `CollectionColumn.vue`): una columna por colección, tan

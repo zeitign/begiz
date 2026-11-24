@@ -210,14 +210,21 @@ watch(currentFolder, () => (isCreatingFolder.value = false))
           :delay-on-touch-only="true"
           @end="saveFolderPosition"
         >
-          <li v-for="folder in orderedFolders" :key="folder.id">
-            <button type="button" class="vault-list-row vault-list-folder" @click="openFolder(folder.id)">
-              <span v-optical-align class="vault-list-main vault-list-folder-name">{{ folder.name }}</span>
-              <span class="vault-list-meta">{{ contentsLabel(folder.folderTotal, folder.linkTotal) }}</span>
-              <span class="vault-list-end vault-list-chevron" aria-hidden="true">
-                <svg viewBox="0 0 24 24" width="18" height="18"><path d="M9 6l6 6-6 6" /></svg>
-              </span>
-            </button>
+          <li
+            v-for="folder in orderedFolders"
+            :key="folder.id"
+            class="vault-list-row vault-list-folder"
+            @click="!isCustomOrder && openFolder(folder.id)"
+          >
+            <span class="vault-list-main">
+              <button v-optical-align type="button" class="vault-list-folder-name" @click.stop="openFolder(folder.id)">
+                {{ folder.name }}
+              </button>
+            </span>
+            <span class="vault-list-meta">{{ contentsLabel(folder.folderTotal, folder.linkTotal) }}</span>
+            <span class="vault-list-end vault-list-chevron" aria-hidden="true">
+              <svg viewBox="0 0 24 24" width="18" height="18"><path d="M9 6l6 6-6 6" /></svg>
+            </span>
           </li>
         </VueDraggable>
         <VueDraggable
@@ -247,14 +254,21 @@ watch(currentFolder, () => (isCreatingFolder.value = false))
         </div>
       </header>
       <ul class="vault-list-rows">
-        <li v-for="result in searchResults.folders" :key="result.folder.id">
-          <button type="button" class="vault-list-row vault-list-folder" @click="openFolder(result.folder.id)">
-            <span v-optical-align class="vault-list-main vault-list-folder-name">{{ result.folder.name }}</span>
-            <span class="vault-list-meta">{{ result.location || 'Category' }}</span>
-            <span class="vault-list-end vault-list-chevron" aria-hidden="true">
-              <svg viewBox="0 0 24 24" width="18" height="18"><path d="M9 6l6 6-6 6" /></svg>
-            </span>
-          </button>
+        <li
+          v-for="result in searchResults.folders"
+          :key="result.folder.id"
+          class="vault-list-row vault-list-folder"
+          @click="openFolder(result.folder.id)"
+        >
+          <span class="vault-list-main">
+            <button v-optical-align type="button" class="vault-list-folder-name" @click.stop="openFolder(result.folder.id)">
+              {{ result.folder.name }}
+            </button>
+          </span>
+          <span class="vault-list-meta">{{ result.location || 'Category' }}</span>
+          <span class="vault-list-end vault-list-chevron" aria-hidden="true">
+            <svg viewBox="0 0 24 24" width="18" height="18"><path d="M9 6l6 6-6 6" /></svg>
+          </span>
         </li>
         <VaultListLinkRow
           v-for="result in searchResults.links"

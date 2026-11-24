@@ -2632,8 +2632,13 @@ img.vault-favicon {
   white-space: nowrap;
 }
 
-.vault-link-title:hover {
-  text-decoration: underline;
+/* Inverted on hover, as the list's titles and the app's cells. */
+.vault-link-title:hover,
+.vault-link-title:focus-visible {
+  background: var(--color-text);
+  color: var(--color-background);
+  box-shadow: 0 0 0 4px var(--color-text);
+  outline: none;
 }
 
 .vault-link-url {
@@ -2888,10 +2893,19 @@ img.vault-favicon {
   font-weight: 800;
 }
 
-.vault-list-crumb:not(:disabled):hover {
-  color: var(--color-text);
-  text-decoration: underline;
-  text-underline-offset: 3px;
+/* Names and crumbs invert on hover, as the app's cells do. The shadow widens the highlight around the
+   text without moving the text off the grid line. */
+.vault-list-crumb:not(:disabled):hover,
+.vault-list-crumb:focus-visible,
+.vault-list-folder-name:hover,
+.vault-list-folder-name:focus-visible,
+.vault-list-link-title:hover,
+.vault-list-link-title:focus-visible,
+.vault-list-rows:not(.custom-order) .vault-list-folder:hover .vault-list-folder-name {
+  background: var(--color-text);
+  color: var(--color-background);
+  box-shadow: 0 0 0 4px var(--color-text);
+  outline: none;
 }
 
 .vault-list-up:disabled {
@@ -3006,28 +3020,29 @@ img.vault-favicon {
   justify-content: flex-end;
 }
 
-/* A folder is a whole-row button: its name underlines and its arrow nudges on hover. */
+/* Its name is the button that opens a folder. Outside the custom order the whole row opens it too; in
+   the custom order the rest of the row is where it is held to drag it. */
 .vault-list-folder {
-  border: none;
-  background: none;
-  color: inherit;
-  font: inherit;
-  text-align: left;
+  cursor: pointer;
+}
+
+.vault-list-folder-name,
+.vault-list-link-title {
+  cursor: pointer;
 }
 
 .vault-list-folder-name {
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+  font-family: inherit;
+  text-align: left;
   font-size: 26px;
   font-weight: 800;
   line-height: 1.1;
   letter-spacing: -0.02em;
   overflow-wrap: anywhere;
-}
-
-.vault-list-folder:hover .vault-list-folder-name,
-.vault-list-folder:focus-visible .vault-list-folder-name {
-  text-decoration: underline;
-  text-decoration-thickness: 2px;
-  text-underline-offset: 5px;
 }
 
 .vault-list-chevron svg {
@@ -3078,10 +3093,6 @@ img.vault-favicon {
   text-decoration: none;
   text-overflow: ellipsis;
   white-space: nowrap;
-}
-
-.vault-list-link-title:hover {
-  text-decoration: underline;
 }
 
 /* The URL gives way first, so the title keeps as much room as it can. */

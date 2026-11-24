@@ -39,7 +39,8 @@ onBeforeUnmount(() => document.removeEventListener('pointerdown', closeOnOutside
     </button>
     <div :id="panelId" class="filter-panel">
       <div class="filter-panel-content">
-        <slot />
+        <!-- close lets a choice fold the menu, as Escape does. -->
+        <slot :close="closeAndRestoreFocus" />
       </div>
     </div>
   </div>

@@ -81,7 +81,8 @@ const isListView = computed(() => preferences.value.view === 'list')
 /** The list has no random order: it offers the rest and reads random as name. */
 const shownOrders = computed(() => (isListView.value ? listOrders : vaultOrders))
 const shownOrder = computed(() => (isListView.value ? listOrder(preferences.value.order) : preferences.value.order))
-const hasDirection = computed(() => shownOrder.value === 'name' || shownOrder.value === 'date')
+const offersDirection = (order: VaultOrder) => order === 'name' || order === 'date'
+const hasDirection = computed(() => offersDirection(shownOrder.value))
 const saveVaultPreferences = useSaveVaultPreferences()
 const placeVaultTiles = usePlaceVaultTiles()
 const orderError = ref('')
@@ -98,6 +99,12 @@ async function savePreferences(changes: Partial<VaultPreferences>) {
 /** A new order starts in its usual direction, as in the mosaic: names A→Z, newest first. */
 const chooseOrder = (order: VaultOrder) =>
   savePreferences({ order, direction: order === 'date' ? defaultSortDirection.date : defaultSortDirection.title })
+
+/** Picking an order folds the menu, unless it still asks for a direction: then choosing one folds it. */
+function pickOrder(order: VaultOrder, closeMenu: () => void) {
+  chooseOrder(order)
+  if (!offersDirection(order)) closeMenu()
+}
 
 /** Each view keeps its own place in the URL, so switching starts the other one from its top. */
 function chooseView(view: VaultView) {
@@ -235,13 +242,13 @@ async function showCreatedCategory(categoryId: string) {
       </div>
       <div class="filter-frame">
         <div class="filter-cells vault-filter-cells">
-          <FilterDropdown label="Order">
+          <FilterDropdown v-slot="{ close }" label="Order">
             <label v-for="order in shownOrders" :key="order" class="filter-option">
               <input
                 type="radio"
                 name="vault-order"
                 :checked="shownOrder === order"
-                @change="chooseOrder(order)"
+                @change="pickOrder(order, close)"
               />
               <span>{{ ORDER_LABELS[order] }}</span>
             </label>
@@ -251,7 +258,7 @@ async function showCreatedCategory(categoryId: string) {
                 :key="direction"
                 type="button"
                 :aria-pressed="preferences.direction === direction"
-                @click="savePreferences({ direction })"
+                @click="savePreferences({ direction }); close()"
               >
                 {{ DIRECTION_LABELS[direction] }}
               </button>
