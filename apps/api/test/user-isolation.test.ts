@@ -91,8 +91,12 @@ describe('isolation between users', () => {
     expect((await stranger.get(`/vault/links/${ownerLink.id}`)).status).toBe(404)
     expect((await stranger.patch(`/vault/links/${ownerLink.id}`, { title: 'Hacked' })).status).toBe(404)
     expect((await stranger.delete(`/vault/links/${ownerLink.id}`)).status).toBe(404)
-    const strangerMove = await stranger.post('/vault/links/move', { linkIds: [ownerLink.id], folderId: strangerFolder.id })
+    const strangerMove = await stranger.post('/vault/move', { linkIds: [ownerLink.id], folderId: strangerFolder.id })
     expect(strangerMove.status).toBe(404)
+    const strangerFolderPick = await stranger.post('/vault/move', { folderIds: [ownerFolder.id], folderId: strangerFolder.id })
+    expect(strangerFolderPick.status).toBe(404)
+    expect((await stranger.post('/vault/delete', { folderIds: [ownerFolder.id] })).status).toBe(404)
+    expect((await stranger.post('/vault/delete', { linkIds: [ownerLink.id] })).status).toBe(404)
 
     expect((await stranger.patch(`/vault/folders/${ownerFolder.id}`, { name: 'Hacked' })).status).toBe(404)
     expect((await stranger.delete(`/vault/folders/${ownerFolder.id}`)).status).toBe(404)

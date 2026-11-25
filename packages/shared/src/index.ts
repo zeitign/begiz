@@ -155,15 +155,25 @@ export const vaultLinkListQuery = z.object({
   search: z.string().trim().max(200).optional(),
 })
 
-/** Moves several links at once to another folder. */
-export const vaultLinkMove = z.object({
-  linkIds: z
-    .array(z.uuid())
-    .min(1)
-    .max(1000)
-    .transform((linkIds) => [...new Set(linkIds)]),
-  folderId: z.uuid(),
-})
+/** Ids picked together in the list; one picked twice counts once. */
+const vaultPickedIds = z
+  .array(z.uuid())
+  .max(1000)
+  .default([])
+  .transform((ids) => [...new Set(ids)])
+
+/** What was picked in the list: folders and links together. */
+const vaultSelection = z.object({ folderIds: vaultPickedIds, linkIds: vaultPickedIds })
+const hasPicks = (selection: z.infer<typeof vaultSelection>) =>
+  selection.folderIds.length + selection.linkIds.length > 0
+
+/** Moves everything picked into one folder, or makes the picked folders categories with null. */
+export const vaultMove = vaultSelection
+  .extend({ folderId: vaultParentId })
+  .refine(hasPicks, 'Pick at least one folder or link')
+
+/** Deletes everything picked, folders with all they hold. */
+export const vaultDelete = vaultSelection.refine(hasPicks, 'Pick at least one folder or link')
 
 export type WebCreate = z.input<typeof webCreate>
 export type WebUpdate = z.input<typeof webUpdate>

@@ -2922,7 +2922,7 @@ img.vault-favicon {
 }
 
 .vault-list-heading {
-  grid-column: 1 / 10;
+  grid-column: 1 / 9;
   display: flex;
   flex-direction: column;
   gap: 10px;
@@ -2938,7 +2938,7 @@ img.vault-favicon {
 }
 
 .vault-list-adds {
-  grid-column: 10 / -1;
+  grid-column: 9 / -1;
   display: flex;
   flex-wrap: wrap;
   justify-content: flex-end;
@@ -3164,6 +3164,405 @@ img.vault-favicon {
   color: var(--color-muted);
 }
 
+/* Select mode: a tap on a row picks it. The square hangs in the frame's margin, outside the grid, so
+   picking never moves a row; picked rows carry the app's stripes, bleeding a little past the text. */
+.vault-list-row {
+  position: relative;
+  isolation: isolate;
+}
+
+.vault-list-row.picked::before {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 0 -14px;
+  background: var(--color-stripe);
+  mask: url("./assets/dashed-stripes.svg");
+  animation: vault-pick-unfold 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes vault-pick-unfold {
+  from {
+    clip-path: inset(0 100% 0 0);
+  }
+}
+
+.vault-list-rows.selecting .vault-list-row {
+  cursor: pointer;
+}
+
+.vault-list-check {
+  position: absolute;
+  top: 50%;
+  left: -26px;
+  display: grid;
+  place-items: center;
+  width: 18px;
+  height: 18px;
+  border: 1px solid var(--color-border);
+  background: var(--color-background);
+  translate: 0 -50%;
+  animation: vault-check-in 0.15s ease-out;
+}
+
+.vault-list-row:hover .vault-list-check {
+  outline: 1px solid var(--color-border);
+  outline-offset: 2px;
+}
+
+.vault-list-row.picked .vault-list-check {
+  background: var(--color-text);
+}
+
+.vault-list-row.picked .vault-list-check::after {
+  content: "";
+  width: 9px;
+  height: 5px;
+  border-bottom: 2px solid var(--color-background);
+  border-left: 2px solid var(--color-background);
+  translate: 0 -1px;
+  rotate: -45deg;
+}
+
+@keyframes vault-check-in {
+  from {
+    opacity: 0;
+    translate: 8px -50%;
+  }
+}
+
+.vault-list-button[aria-pressed="true"] {
+  background: var(--color-text);
+  color: var(--color-background);
+}
+
+/* The chevron always opens its folder, also while selecting, when a tap on the row picks it. */
+.vault-list-chevron {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  margin: -8px 0;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+.vault-list-chevron:hover,
+.vault-list-chevron:focus-visible {
+  background: var(--color-text);
+  color: var(--color-background);
+  outline: none;
+}
+
+button.vault-list-link-title {
+  padding: 0;
+  border: none;
+  background: none;
+  font-family: inherit;
+  text-align: left;
+}
+
+/* Room below the last rows, so the tray never hides them. */
+.vault-list.has-tray {
+  padding-bottom: 400px;
+}
+
+/* Tray (VaultTray.vue): what was picked waits here, floating over the list, in a card with sheets
+   peeking out from under it, one per extra pick. It stays put while the list changes folder. */
+.vault-tray {
+  /* A soft spring: quick to arrive, settling with a hint of overshoot. */
+  --tray-spring: linear(
+    0, 0.006, 0.025 2.8%, 0.101 6.1%, 0.539 18.9%, 0.721 25.3%, 0.849 31.5%, 0.937 38.1%, 0.968 41.8%,
+    0.991 45.7%, 1.006 50.1%, 1.015 55%, 1.017 63.9%, 1.001
+  );
+  --tray-ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  position: fixed;
+  z-index: 10;
+  right: 32px;
+  bottom: 32px;
+  width: min(420px, calc(100vw - 48px));
+  transform-origin: bottom right;
+}
+
+.vault-tray-sheet,
+.vault-tray-card {
+  border: 1px solid var(--color-border);
+  border-radius: 0 16px 16px 16px;
+  background: var(--color-background);
+}
+
+.vault-tray-sheet {
+  position: absolute;
+  inset: 0;
+  transition:
+    translate 0.45s var(--tray-spring),
+    opacity 0.2s ease-out;
+}
+
+.vault-tray-sheet.sheet-1 {
+  z-index: 1;
+  translate: 6px 6px;
+}
+
+.vault-tray-sheet.sheet-2 {
+  translate: 12px 12px;
+}
+
+/* Sheets slide out from under the card, and back under it when picks go. */
+.vault-tray-sheet-enter-from,
+.vault-tray-sheet-leave-to {
+  opacity: 0;
+  translate: 0 0;
+}
+
+.vault-tray-card {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  clip-path: inset(0 round 0 16px 16px 16px);
+  transform-origin: bottom right;
+}
+
+/* Arriving, once the first picked row's striped box has unfolded (0.3s): the card rises and grows from
+   its corner while its outline opens, then the sheets fan out from under it. Leaving is quicker and
+   plainer: it sinks back into the corner. */
+.vault-tray-enter-active .vault-tray-card {
+  transition:
+    transform 0.6s var(--tray-spring) 0.3s,
+    clip-path 0.5s var(--tray-ease-out) 0.3s,
+    opacity 0.2s ease-out 0.3s;
+}
+
+.vault-tray-enter-from .vault-tray-card {
+  opacity: 0;
+  transform: translateY(28px) scale(0.9);
+  clip-path: inset(35% 0 0 35% round 0 16px 16px 16px);
+}
+
+.vault-tray-enter-active .vault-tray-sheet {
+  transition-delay: 0.48s;
+}
+
+.vault-tray-enter-active .vault-tray-sheet.sheet-2 {
+  transition-delay: 0.54s;
+}
+
+.vault-tray-enter-from .vault-tray-sheet {
+  opacity: 0;
+  translate: 0 0;
+}
+
+.vault-tray-leave-active {
+  transition:
+    transform 0.3s cubic-bezier(0.4, 0, 1, 1),
+    opacity 0.25s ease-in 0.05s;
+}
+
+.vault-tray-leave-to {
+  opacity: 0;
+  transform: translateY(20px) scale(0.94);
+}
+
+.vault-tray-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 20px 20px 10px;
+}
+
+.vault-tray-title {
+  margin: 0;
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.vault-tray-text-button {
+  padding: 0 4px;
+  border: none;
+  background: none;
+  color: var(--color-muted);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.vault-tray-text-button:hover,
+.vault-tray-text-button:focus-visible {
+  background: var(--color-text);
+  color: var(--color-background);
+  outline: none;
+}
+
+.vault-tray-items {
+  max-height: 240px;
+  margin: 0;
+  padding: 0 20px 16px;
+  overflow: auto;
+  list-style: none;
+}
+
+.vault-tray-item {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  padding: 5px 0;
+  font-size: 16px;
+}
+
+.vault-tray-kind {
+  flex: none;
+  width: 14px;
+  color: var(--color-muted);
+  text-align: center;
+}
+
+.vault-tray-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.vault-tray-origin {
+  margin-left: auto;
+  color: var(--color-muted);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.vault-tray-question {
+  margin: 0;
+  padding: 14px 20px;
+}
+
+.vault-tray-actions {
+  display: flex;
+}
+
+.vault-tray-actions + .vault-tray-actions,
+.vault-tray-question + .vault-tray-actions {
+  border-top: 1px solid var(--color-border);
+}
+
+.vault-tray-action {
+  flex: 1;
+  min-height: 50px;
+  padding: 0 20px;
+  border: none;
+  background: none;
+  color: var(--color-text);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.vault-tray-action + .vault-tray-action {
+  flex: none;
+  border-left: 1px solid var(--color-border);
+}
+
+.vault-tray-action:not(:disabled):hover,
+.vault-tray-action:focus-visible {
+  background: var(--color-text);
+  color: var(--color-background);
+  outline: none;
+}
+
+.vault-tray-action:disabled {
+  color: var(--color-muted);
+  cursor: default;
+}
+
+.vault-tray-tree {
+  max-height: 340px;
+  padding: 0 8px 10px;
+  overflow: auto;
+}
+
+.vault-tray-error {
+  margin: 0;
+  padding: 8px 16px;
+}
+
+/* Folder tree (VaultFolderTree.vue): folders unfold with the arrow; the name chooses the folder. */
+.vault-tree {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.vault-tree-row {
+  display: flex;
+  align-items: center;
+  min-height: 32px;
+}
+
+.vault-tree-toggle {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 26px;
+  height: 32px;
+  padding: 0;
+  border: none;
+  background: none;
+  color: inherit;
+}
+
+.vault-tree-toggle svg {
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  transition: rotate 0.15s;
+}
+
+.vault-tree-toggle[aria-expanded="true"] svg {
+  rotate: 90deg;
+}
+
+.vault-tree-target {
+  flex: 1;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 6px 8px;
+  border: none;
+  background: none;
+  color: var(--color-text);
+  font-family: inherit;
+  text-align: left;
+}
+
+.vault-tree-target:not(:disabled):hover,
+.vault-tree-target:focus-visible {
+  background: var(--color-text);
+  color: var(--color-background);
+  outline: none;
+}
+
+.vault-tree-target:disabled {
+  color: var(--color-muted);
+  cursor: default;
+}
+
+.vault-tree-category {
+  font-weight: 800;
+}
+
+.vault-tree-note {
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 @media (max-width: 720px) {
   .vault-list {
     padding: 20px 16px 28px;
@@ -3201,11 +3600,35 @@ img.vault-favicon {
   .vault-list-end {
     grid-column: 11 / -1;
   }
+
+  /* The frame's margin is narrower here: the square shrinks to fit in it. */
+  .vault-list-check {
+    left: -15px;
+    width: 12px;
+    height: 12px;
+  }
+
+  .vault-tray {
+    right: 16px;
+    bottom: 16px;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .vault-list-chevron svg,
-  .vault-list-actions {
+  .vault-list-actions,
+  .vault-tree-toggle svg {
+    transition: none;
+  }
+
+  .vault-list-check,
+  .vault-list-row.picked::before {
+    animation: none;
+  }
+
+  .vault-tray-sheet,
+  .vault-tray-leave-active,
+  .vault-tray-enter-active .vault-tray-card {
     transition: none;
   }
 }

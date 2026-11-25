@@ -7,7 +7,7 @@ import { db } from '../db/client.ts'
 import { vaultFolders, vaultLinks } from '../db/schema.ts'
 import { validate } from '../lib/validate.ts'
 import { moveAfter, positionAfterAll } from '../lib/sort-positions.ts'
-import { deleteUnusedVaultTags, findChosenFolder, isWithinFolder, siblingFolders } from '../lib/vault.ts'
+import { assertValidNewParent, deleteUnusedVaultTags, findChosenFolder, placeLastIn, siblingFolders } from '../lib/vault.ts'
 
 function toFolderResponse(folder: typeof vaultFolders.$inferSelect, linkCount = 0) {
   return {
@@ -32,31 +32,6 @@ async function assertSameGrid(userId: string, folderIds: string[]) {
   if (new Set(folders.map((folder) => folder.parentId)).size > 1) {
     throw new HTTPException(400, {
       message: 'The folders must be in the same grid',
-    })
-  }
-}
-
-/** A folder can go inside any other, except itself or its own subfolders (it would leave the tree).
- * It only becomes a category without links of its own, since categories only hold folders. */
-async function assertValidNewParent(userId: string, folderId: string, newParentId: string | null) {
-  const [folder] = await db
-    .select({ id: vaultFolders.id })
-    .from(vaultFolders)
-    .where(and(eq(vaultFolders.id, folderId), eq(vaultFolders.userId, userId)))
-  if (!folder) throw new HTTPException(404, { message: 'Folder not found' })
-
-  if (newParentId === null) {
-    if (await db.$count(vaultLinks, eq(vaultLinks.folderId, folderId))) {
-      throw new HTTPException(400, {
-        message: 'A folder with links cannot become a category',
-      })
-    }
-    return
-  }
-  await findChosenFolder(userId, newParentId)
-  if (await isWithinFolder(newParentId, folderId)) {
-    throw new HTTPException(400, {
-      message: 'A folder cannot be moved inside itself or its subfolders',
     })
   }
 }
@@ -106,12 +81,7 @@ export const vaultFoldersRoutes = new Hono<AuthEnv>()
         .update(vaultFolders)
         .set({
           ...(input.name !== undefined && { name: input.name }),
-          // In another grid its cell means nothing, so it goes to the first free one, and last in the list.
-          ...(newParentId !== undefined && {
-            parentId: newParentId,
-            gridCell: null,
-            sortPosition: await positionAfterAll(transaction, siblingFolders(userId, newParentId)),
-          }),
+          ...(newParentId !== undefined && (await placeLastIn(transaction, userId, newParentId))),
           ...(input.icon !== undefined && { icon: input.icon }),
         })
         .where(and(eq(vaultFolders.id, folderId), eq(vaultFolders.userId, userId)))
