@@ -108,16 +108,19 @@ export const vaultFolders = pgTable(
     icon: text(),
     /** Cell of its grid where the user placed it, in reading order. Null until placed by hand. */
     gridCell: integer('grid_cell'),
+    /** Position among its sibling folders in the list's custom order (ascending, fractional). */
+    sortPosition: doublePrecision('sort_position').notNull().default(0),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (table) => [index('vault_folders_user_parent_idx').on(table.userId, table.parentId)],
 )
 
-/** How the Vault lays out its tiles. No row until the user changes it: the API answers with the default. */
+/** How the Vault is shown and lays out its tiles. No row until the user changes it: the API answers with the default. */
 export const vaultPreferences = pgTable('vault_preferences', {
   userId: uuid('user_id').primaryKey(),
   order: text().notNull(),
   direction: text().notNull(),
+  view: text().notNull().default('tiles'),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 })
 
@@ -134,6 +137,8 @@ export const vaultLinks = pgTable(
     title: text().notNull(),
     /** Read from the page when the link is saved by hand. Null when the page could not be read. */
     faviconUrl: text('favicon_url'),
+    /** Position among the links of its folder in the list's custom order (ascending, fractional). */
+    sortPosition: doublePrecision('sort_position').notNull().default(0),
     createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
     updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
   },

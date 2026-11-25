@@ -45,7 +45,7 @@ describe('vault categories and folders', () => {
 
     const response = await user.get('/vault/folders')
 
-    const unplaced = { icon: null, gridCell: null, createdAt: expect.any(String) }
+    const unplaced = { icon: null, gridCell: null, sortPosition: expect.any(Number), createdAt: expect.any(String) }
     expect(await response.json()).toEqual([
       { id: design.id, name: 'Design', parentId: null, ...unplaced, linkCount: 0 },
       { id: icons.id, name: 'Icons', parentId: design.id, ...unplaced, linkCount: 2 },
@@ -71,10 +71,16 @@ describe('vault categories and folders', () => {
     expect(response.status).toBe(400)
   })
 
-  it('only creates folders inside a category, never a third level', async () => {
-    const response = await user.post('/vault/folders', { name: 'Serif', parentId: typography.id })
+  it('creates folders inside folders, at any depth', async () => {
+    const serif = await createFolder('Serif', typography.id)
+    const display = await createFolder('Display', serif.id)
 
-    expect(response.status).toBe(400)
+    expect(await (await user.get('/vault/folders')).json()).toMatchObject([
+      { id: design.id, parentId: null },
+      { id: display.id, parentId: serif.id },
+      { id: serif.id, parentId: typography.id },
+      { id: typography.id, parentId: design.id },
+    ])
   })
 
   it('moves a folder to another category, or makes an empty one a category', async () => {
@@ -87,17 +93,50 @@ describe('vault categories and folders', () => {
     expect(await madeCategory.json()).toMatchObject({ parentId: null })
   })
 
-  it('never moves a folder in a way that breaks the two levels', async () => {
+  it('moves a folder with everything inside it into any other folder', async () => {
     const leisure = await createCategory('Leisure')
+    const games = await createFolder('Games', leisure.id)
+    const serif = await createFolder('Serif', typography.id)
+
+    const moved = await user.patch(`/vault/folders/${design.id}`, { parentId: games.id })
+
+    expect(await moved.json()).toMatchObject({ parentId: games.id })
+    expect(await (await user.get('/vault/folders')).json()).toMatchObject([
+      { id: design.id, parentId: games.id },
+      { id: games.id, parentId: leisure.id },
+      { id: leisure.id, parentId: null },
+      { id: serif.id, parentId: typography.id },
+      { id: typography.id, parentId: design.id },
+    ])
+  })
+
+  it('never moves a folder inside itself or its subfolders, nor makes one with links a category', async () => {
+    const serif = await createFolder('Serif', typography.id)
     await createLink({ url: 'https://fontshare.com', title: 'Fontshare' })
 
     // A folder with links cannot become a category, which only holds folders.
     expect((await user.patch(`/vault/folders/${typography.id}`, { parentId: null })).status).toBe(400)
-    // A category with folders cannot go inside another category: its folders would be a third level.
-    expect((await user.patch(`/vault/folders/${design.id}`, { parentId: leisure.id })).status).toBe(400)
-    // Nothing goes inside a folder, nor inside itself.
-    expect((await user.patch(`/vault/folders/${leisure.id}`, { parentId: typography.id })).status).toBe(400)
-    expect((await user.patch(`/vault/folders/${leisure.id}`, { parentId: leisure.id })).status).toBe(400)
+    // Inside itself or below itself, it would leave the tree.
+    expect((await user.patch(`/vault/folders/${design.id}`, { parentId: design.id })).status).toBe(400)
+    expect((await user.patch(`/vault/folders/${design.id}`, { parentId: typography.id })).status).toBe(400)
+    expect((await user.patch(`/vault/folders/${design.id}`, { parentId: serif.id })).status).toBe(400)
+    expect(await (await user.get('/vault/folders')).json()).toMatchObject([
+      { id: design.id, parentId: null },
+      { id: serif.id, parentId: typography.id },
+      { id: typography.id, parentId: design.id },
+    ])
+  })
+
+  it('deletes a folder with all its subfolders and their links, at any depth', async () => {
+    const serif = await createFolder('Serif', typography.id)
+    const display = await createFolder('Display', serif.id)
+    await createLink({ url: 'https://klim.co.nz', title: 'Klim', folderId: display.id, tags: ['foundry'] })
+
+    expect((await user.delete(`/vault/folders/${typography.id}`)).status).toBe(204)
+
+    expect(await (await user.get('/vault/folders')).json()).toMatchObject([{ id: design.id }])
+    expect(await listLinkTitles()).toEqual([])
+    expect(await (await user.get('/vault/tags')).json()).toEqual([])
   })
 
   it('deletes a category with its folders, their links and the tags left unused', async () => {
@@ -138,6 +177,7 @@ describe('vault links', () => {
       title: 'Fontshare',
       folderId: typography.id,
       faviconUrl: null,
+      sortPosition: 0,
       tags: ['free fonts'],
       createdAt: expect.any(String),
     })
@@ -149,6 +189,17 @@ describe('vault links', () => {
 
     expect(inCategory.status).toBe(400)
     expect(withoutFolder.status).toBe(400)
+  })
+
+  it('saves and moves links in folders at any depth, next to their subfolders', async () => {
+    const serif = await createFolder('Serif', typography.id)
+    const display = await createFolder('Display', serif.id)
+    const klim = await createLink({ url: 'https://klim.co.nz', title: 'Klim', folderId: serif.id })
+
+    const moved = await user.post('/vault/links/move', { linkIds: [klim.id], folderId: display.id })
+
+    expect(moved.status).toBe(204)
+    expect(await listLinkTitles(`?folder=${display.id}`)).toEqual(['Klim'])
   })
 
   it('reads the favicon of the page, and saves the link anyway when the page cannot be read', async () => {
@@ -257,6 +308,112 @@ describe('vault links', () => {
   })
 })
 
+describe('vault custom order', () => {
+  /** Names of the folders inside a folder (or the categories), in the custom order. */
+  async function listFolderNamesInOrder(parentId: string | null) {
+    const folders: { name: string; parentId: string | null; sortPosition: number }[] = await (
+      await user.get('/vault/folders')
+    ).json()
+    return folders
+      .filter((folder) => folder.parentId === parentId)
+      .sort((first, second) => first.sortPosition - second.sortPosition)
+      .map((folder) => folder.name)
+  }
+
+  async function listLinkTitlesInOrder(folderId: string) {
+    const links: { title: string; sortPosition: number }[] = await (
+      await user.get(`/vault/links?folder=${folderId}`)
+    ).json()
+    return links.sort((first, second) => first.sortPosition - second.sortPosition).map((link) => link.title)
+  }
+
+  it('puts new folders and links last, as a browser does', async () => {
+    await createFolder('Icons', design.id)
+    await createFolder('Colour', design.id)
+    await createLink({ url: 'https://b.com', title: 'B' })
+    await createLink({ url: 'https://a.com', title: 'A' })
+
+    expect(await listFolderNamesInOrder(design.id)).toEqual(['Typography', 'Icons', 'Colour'])
+    expect(await listLinkTitlesInOrder(typography.id)).toEqual(['B', 'A'])
+  })
+
+  it('moves a folder among its siblings, first or after another', async () => {
+    const icons = await createFolder('Icons', design.id)
+    const colour = await createFolder('Colour', design.id)
+
+    expect((await user.put(`/vault/folders/${colour.id}/position`, { afterFolderId: null })).status).toBe(204)
+    expect(await listFolderNamesInOrder(design.id)).toEqual(['Colour', 'Typography', 'Icons'])
+
+    await user.put(`/vault/folders/${colour.id}/position`, { afterFolderId: typography.id })
+    expect(await listFolderNamesInOrder(design.id)).toEqual(['Typography', 'Colour', 'Icons'])
+
+    await user.put(`/vault/folders/${typography.id}/position`, { afterFolderId: icons.id })
+    expect(await listFolderNamesInOrder(design.id)).toEqual(['Colour', 'Icons', 'Typography'])
+  })
+
+  it('orders the categories too', async () => {
+    const leisure = await createCategory('Leisure')
+
+    await user.put(`/vault/folders/${leisure.id}/position`, { afterFolderId: null })
+
+    expect(await listFolderNamesInOrder(null)).toEqual(['Leisure', 'Design'])
+  })
+
+  it('moves a link among the links of its folder', async () => {
+    const first = await createLink({ url: 'https://one.com', title: 'One' })
+    await createLink({ url: 'https://two.com', title: 'Two' })
+    const third = await createLink({ url: 'https://three.com', title: 'Three' })
+
+    expect((await user.put(`/vault/links/${third.id}/position`, { afterLinkId: null })).status).toBe(204)
+    await user.put(`/vault/links/${first.id}/position`, { afterLinkId: third.id })
+
+    expect(await listLinkTitlesInOrder(typography.id)).toEqual(['Three', 'One', 'Two'])
+  })
+
+  it('only places a row after one of its own list', async () => {
+    const icons = await createFolder('Icons', design.id)
+    const leisure = await createCategory('Leisure')
+    const inTypography = await createLink({ url: 'https://one.com', title: 'One' })
+    const inIcons = await createLink({ url: 'https://two.com', title: 'Two', folderId: icons.id })
+
+    expect((await user.put(`/vault/folders/${icons.id}/position`, { afterFolderId: leisure.id })).status).toBe(400)
+    expect((await user.put(`/vault/links/${inTypography.id}/position`, { afterLinkId: inIcons.id })).status).toBe(400)
+    expect((await user.put(`/vault/folders/${crypto.randomUUID()}/position`, { afterFolderId: null })).status).toBe(404)
+    expect((await user.put(`/vault/links/${crypto.randomUUID()}/position`, { afterLinkId: null })).status).toBe(404)
+  })
+
+  it('puts what moves to another folder last there', async () => {
+    const icons = await createFolder('Icons', design.id)
+    await createLink({ url: 'https://phosphoricons.com', title: 'Phosphor', folderId: icons.id })
+    const lucide = await createLink({ url: 'https://lucide.dev', title: 'Lucide' })
+    const tabler = await createLink({ url: 'https://tabler.io', title: 'Tabler' })
+    const feather = await createLink({ url: 'https://feathericons.com', title: 'Feather' })
+    const leisure = await createCategory('Leisure')
+    await createFolder('Games', leisure.id)
+
+    await user.patch(`/vault/links/${tabler.id}`, { folderId: icons.id })
+    await user.post('/vault/links/move', { linkIds: [feather.id, lucide.id], folderId: icons.id })
+    await user.patch(`/vault/folders/${icons.id}`, { parentId: leisure.id })
+
+    expect(await listLinkTitlesInOrder(icons.id)).toEqual(['Phosphor', 'Tabler', 'Feather', 'Lucide'])
+    expect(await listFolderNamesInOrder(leisure.id)).toEqual(['Games', 'Icons'])
+  })
+
+  it('spreads the positions out when a gap runs out, keeping the order', async () => {
+    const linkA = await createLink({ url: 'https://a.com', title: 'A' })
+    const linkB = await createLink({ url: 'https://b.com', title: 'B' })
+    const linkC = await createLink({ url: 'https://c.com', title: 'C' })
+
+    // Halving the gap between A and B over and over until it runs out.
+    for (let move = 0; move < 40; move++) {
+      const movedLink = move % 2 === 0 ? linkC : linkB
+      await user.put(`/vault/links/${movedLink.id}/position`, { afterLinkId: linkA.id })
+    }
+
+    expect(await listLinkTitlesInOrder(typography.id)).toEqual(['A', 'B', 'C'])
+  })
+})
+
 describe('vault layout', () => {
   async function listGridCells() {
     const folders: { name: string; gridCell: number | null }[] = await (await user.get('/vault/folders')).json()
@@ -312,20 +469,23 @@ describe('vault layout', () => {
     expect((await listGridCells()).Typography).toBeNull()
   })
 
-  it('remembers the order chosen, starting by name', async () => {
-    expect(await (await user.get('/vault/preferences')).json()).toEqual({ order: 'name', direction: 'asc' })
+  it('remembers the order and the view chosen, starting by name in tiles', async () => {
+    const byNameInTiles = { order: 'name', direction: 'asc', view: 'tiles' }
+    expect(await (await user.get('/vault/preferences')).json()).toEqual(byNameInTiles)
 
-    expect((await user.put('/vault/preferences', { order: 'custom', direction: 'asc' })).status).toBe(200)
-    expect((await user.put('/vault/preferences', { order: 'date', direction: 'desc' })).status).toBe(200)
+    expect((await user.put('/vault/preferences', { order: 'custom', direction: 'asc', view: 'tiles' })).status).toBe(200)
+    expect((await user.put('/vault/preferences', { order: 'date', direction: 'desc', view: 'list' })).status).toBe(200)
 
-    expect(await (await user.get('/vault/preferences')).json()).toEqual({ order: 'date', direction: 'desc' })
+    expect(await (await user.get('/vault/preferences')).json()).toEqual({ order: 'date', direction: 'desc', view: 'list' })
     const stranger = await createUserClient()
-    expect(await (await stranger.get('/vault/preferences')).json()).toEqual({ order: 'name', direction: 'asc' })
+    expect(await (await stranger.get('/vault/preferences')).json()).toEqual(byNameInTiles)
   })
 
-  it('only accepts known orders', async () => {
-    const response = await user.put('/vault/preferences', { order: 'size', direction: 'asc' })
+  it('only accepts known orders and views', async () => {
+    const unknownOrder = await user.put('/vault/preferences', { order: 'size', direction: 'asc', view: 'tiles' })
+    const unknownView = await user.put('/vault/preferences', { order: 'name', direction: 'asc', view: 'columns' })
 
-    expect(response.status).toBe(400)
+    expect(unknownOrder.status).toBe(400)
+    expect(unknownView.status).toBe(400)
   })
 })

@@ -1,12 +1,7 @@
-import { and, asc, desc, eq, gt, min, ne, sql, type SQL } from 'drizzle-orm'
-import { HTTPException } from 'hono/http-exception'
+import { asc, desc, eq, sql, type SQL } from 'drizzle-orm'
 import { defaultSortDirection, type SortDirection, type WebSortMode } from '@webs/shared'
-import type { Transaction } from '../db/client.ts'
 import { webs } from '../db/schema.ts'
-
-const SORT_POSITION_SPACING = 1024
-/** Below this gap, halving it again would lose precision, so positions are spread out first. */
-const MIN_POSITION_GAP = 1e-6
+import type { SortedList } from './sort-positions.ts'
 
 const lowercaseTitle = sql`lower(${webs.title})`
 
@@ -25,79 +20,12 @@ export function webOrderBy(sortMode: WebSortMode, requestedDirection?: SortDirec
   }
 }
 
-async function findLowestPosition(transaction: Transaction, userId: string, exceptWebId?: string) {
-  const conditions = [eq(webs.userId, userId)]
-  if (exceptWebId) conditions.push(ne(webs.id, exceptWebId))
-  const [aggregate] = await transaction
-    .select({ lowestPosition: min(webs.sortPosition) })
-    .from(webs)
-    .where(and(...conditions))
-  return aggregate?.lowestPosition ?? null
-}
-
-/** New webs go first in the custom order. */
-export async function positionBeforeAllWebs(transaction: Transaction, userId: string) {
-  const lowestPosition = await findLowestPosition(transaction, userId)
-  return lowestPosition === null ? 0 : lowestPosition - SORT_POSITION_SPACING
-}
-
-/** Position right after `afterWebId` (or before every web when null). null when there is no room left. */
-async function findPositionAfter(
-  transaction: Transaction,
-  userId: string,
-  movedWebId: string,
-  afterWebId: string | null,
-) {
-  if (afterWebId === null) {
-    const lowestPosition = await findLowestPosition(transaction, userId, movedWebId)
-    return lowestPosition === null ? 0 : lowestPosition - SORT_POSITION_SPACING
-  }
-
-  const otherWebsOfUser = and(eq(webs.userId, userId), ne(webs.id, movedWebId))
-  const [previousWeb] = await transaction
-    .select({ sortPosition: webs.sortPosition })
-    .from(webs)
-    .where(and(otherWebsOfUser, eq(webs.id, afterWebId)))
-  if (!previousWeb) throw new HTTPException(400, { message: 'Web not found' })
-
-  const [aggregate] = await transaction
-    .select({ nextPosition: min(webs.sortPosition) })
-    .from(webs)
-    .where(and(otherWebsOfUser, gt(webs.sortPosition, previousWeb.sortPosition)))
-  const nextPosition = aggregate?.nextPosition ?? null
-  if (nextPosition === null) return previousWeb.sortPosition + SORT_POSITION_SPACING
-  if (nextPosition - previousWeb.sortPosition < MIN_POSITION_GAP) return null
-  return (previousWeb.sortPosition + nextPosition) / 2
-}
-
-/** Rewrites every position of a user with even spacing, keeping the current order. */
-async function spreadSortPositions(transaction: Transaction, userId: string) {
-  await transaction.execute(sql`
-    update ${webs} set sort_position = ranked.row_number * ${SORT_POSITION_SPACING}
-    from (
-      select id, row_number() over (order by sort_position, created_at desc) as row_number
-      from ${webs}
-      where user_id = ${userId}
-    ) as ranked
-    where ${webs.id} = ranked.id
-  `)
-}
-
-/**
- * Places a web right after another one in the custom order. Only the moved web changes position,
- * unless the gap is exhausted and the positions need to be spread out again.
- */
-export async function moveWebAfter(
-  transaction: Transaction,
-  userId: string,
-  movedWebId: string,
-  afterWebId: string | null,
-) {
-  let newPosition = await findPositionAfter(transaction, userId, movedWebId, afterWebId)
-  if (newPosition === null) {
-    await spreadSortPositions(transaction, userId)
-    newPosition = await findPositionAfter(transaction, userId, movedWebId, afterWebId)
-  }
-  if (newPosition === null) throw new Error('Could not find a sort position after spreading them out')
-  await transaction.update(webs).set({ sortPosition: newPosition }).where(eq(webs.id, movedWebId))
-}
+/** The mosaic of a user, in its custom order. New webs go first. */
+export const userWebs = (userId: string): SortedList => ({
+  table: webs,
+  id: webs.id,
+  sortPosition: webs.sortPosition,
+  members: eq(webs.userId, userId),
+  tieBreaker: sql`${webs.createdAt} desc`,
+  rowName: 'Web',
+})

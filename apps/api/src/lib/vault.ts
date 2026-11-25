@@ -1,12 +1,37 @@
-import { and, eq, inArray, sql } from 'drizzle-orm'
+import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { HTTPException } from 'hono/http-exception'
 import { db, type Transaction } from '../db/client.ts'
-import { vaultFolders, vaultLinkTags, vaultTags } from '../db/schema.ts'
+import { vaultFolders, vaultLinks, vaultLinkTags, vaultTags } from '../db/schema.ts'
+import type { SortedList } from './sort-positions.ts'
 
-// The Vault has exactly two levels: categories (folders at the root) hold only folders,
-// and the folders inside a category hold only links.
+// Categories (folders at the root) hold only folders. Below them, folders nest at any depth and
+// each one can hold links and subfolders at once, as in a browser.
 
-async function findChosenFolder(userId: string, folderId: string) {
+/** The folders inside one folder (or the categories, with null), in the list's custom order. */
+export const siblingFolders = (userId: string, parentId: string | null): SortedList => ({
+  table: vaultFolders,
+  id: vaultFolders.id,
+  sortPosition: vaultFolders.sortPosition,
+  members: and(
+    eq(vaultFolders.userId, userId),
+    parentId === null ? isNull(vaultFolders.parentId) : eq(vaultFolders.parentId, parentId),
+  ),
+  tieBreaker: sql`lower(${vaultFolders.name})`,
+  rowName: 'Folder',
+})
+
+/** The links of one folder, in the list's custom order. The folder is already known to be the user's. */
+export const folderLinks = (folderId: string): SortedList => ({
+  table: vaultLinks,
+  id: vaultLinks.id,
+  sortPosition: vaultLinks.sortPosition,
+  members: eq(vaultLinks.folderId, folderId),
+  tieBreaker: sql`lower(${vaultLinks.title})`,
+  rowName: 'Link',
+})
+
+/** The folder chosen as parent or destination. Unknown is a bad request, not a missing resource. */
+export async function findChosenFolder(userId: string, folderId: string) {
   const [folder] = await db
     .select({ id: vaultFolders.id, parentId: vaultFolders.parentId })
     .from(vaultFolders)
@@ -15,13 +40,24 @@ async function findChosenFolder(userId: string, folderId: string) {
   return folder
 }
 
-/** Rejects a parent that is not one of the user's categories. */
-export async function assertCategory(userId: string, folderId: string) {
-  const folder = await findChosenFolder(userId, folderId)
-  if (folder.parentId !== null) throw new HTTPException(400, { message: 'Folders can only go inside a category' })
+/** True when the folder is the other one or one of its subfolders, at any depth. */
+export async function isWithinFolder(folderId: string, ancestorId: string) {
+  const folderAndItsAncestorIds = sql`(
+    with recursive ancestors as (
+      select id, parent_id from ${vaultFolders} where id = ${folderId}
+      union all
+      select parent.id, parent.parent_id from ${vaultFolders} parent join ancestors on parent.id = ancestors.parent_id
+    )
+    select id from ancestors
+  )`
+  const matchCount = await db.$count(
+    vaultFolders,
+    and(eq(vaultFolders.id, ancestorId), sql`${vaultFolders.id} in ${folderAndItsAncestorIds}`),
+  )
+  return matchCount > 0
 }
 
-/** Rejects a destination for links that is not a folder inside a category. */
+/** Rejects a destination for links that is a category: categories only hold folders. */
 export async function assertLinkFolder(userId: string, folderId: string) {
   const folder = await findChosenFolder(userId, folderId)
   if (folder.parentId === null) {

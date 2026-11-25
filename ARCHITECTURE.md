@@ -49,12 +49,12 @@ tags            id, user_id, name                  (único por usuaria, normaliz
 web_tags        web_id, tag_id
 collections     id, user_id, name, description     (nombre único por usuaria)
 collection_webs collection_id, web_id
-vault_folders   id, user_id, parent_id, name, icon, grid_cell, created_at (parent_id null = categoría;
-                grid_cell = casilla colocada a mano, null hasta entonces)
-vault_links     id, user_id, folder_id, url, title, favicon_url, created_at, updated_at   (folder_id obligatorio)
+vault_folders   id, user_id, parent_id, name, icon, grid_cell, sort_position, created_at (parent_id null = categoría;
+                grid_cell = casilla colocada a mano, null hasta entonces; sort_position = orden propio de la lista)
+vault_links     id, user_id, folder_id, url, title, favicon_url, sort_position, created_at, updated_at   (folder_id obligatorio)
 vault_tags      id, user_id, name                  (único por usuaria, aparte de los del mosaico)
 vault_link_tags link_id, tag_id
-vault_preferences user_id, order, direction, updated_at (orden del Vault; sin fila, por nombre)
+vault_preferences user_id, order, direction, view, updated_at (orden y vista del Vault; sin fila, por nombre y en tapiz)
 ```
 
 - `user_id` es el id de `auth.users` de Supabase. No es clave foránea, para no atar el esquema a Supabase.
@@ -62,9 +62,12 @@ vault_preferences user_id, order, direction, updated_at (orden del Vault; sin fi
   `full_key` es la imagen original subida a mano, que puede ser una captura de página completa.
 - Los tags sin webs se borran solos.
 - Filtrar por varios tags devuelve las webs que tienen **alguno** (O).
-- Vault: **dos niveles exactos**. Las categorías (folders sin `parent_id`) solo contienen folders, y
-  los folders de dentro solo contienen enlaces (nunca un tercer nivel ni enlaces sueltos). Lo exige la
-  API al crear, editar y mover; `folder_id` es obligatorio en la base de datos (migración `0006`).
+- Vault: **folders anidados** (fase A del plan del 20-nov). Las categorías (folders sin `parent_id`)
+  solo contienen folders; por debajo, los folders anidan a cualquier profundidad y cada uno puede
+  tener enlaces y subfolders a la vez. Lo exige la API al crear, editar y mover: un folder no puede
+  ir dentro de sí mismo ni de sus subfolders (lo comprueba una consulta recursiva por sus
+  antepasados), ni hacerse categoría si tiene enlaces. `folder_id` es obligatorio en la base de datos
+  (migración `0006`): no hay enlaces sueltos.
 - Vault (migración `0004`): borrar un folder borra en cascada sus subfolders y sus enlaces; los
   tags del Vault sin enlaces también se borran solos. Folders y enlaces se ordenan por nombre.
 - `icon` (migración `0005`) guarda el nombre de un icono de Phosphor elegido en el front; `null` es el
@@ -72,6 +75,10 @@ vault_preferences user_id, order, direction, updated_at (orden del Vault; sin fi
 - `favicon_url` se lee de la página al guardar un enlace a mano (y otra vez si cambia la URL). Si la
   página no responde, el enlace se guarda sin favicon y el front muestra la inicial. Importar no lo lee,
   para no visitar cada web.
+- `sort_position` del Vault (migración `0009`): el orden propio de la lista, por grupos de hermanos (los
+  folders de un mismo folder, las categorías, los enlaces de un folder). Misma técnica que el mosaico
+  (`lib/sort-positions.ts`, que comparten los tres); la migración los colocó por nombre. Lo nuevo y lo
+  que se mueve a otro folder va al final, como en los marcadores del navegador.
 - `sort_position` guarda el orden propio del mosaico (migración `0003`). Es un número decimal con
   huecos de 1024: mover una web solo cambia su posición, que pasa a estar entre la de sus vecinas. Si
   el hueco se agota, se reparten de nuevo todas las posiciones de la usuaria. Las webs nuevas van
@@ -91,13 +98,15 @@ Todas las rutas van bajo `/api` y exigen sesión.
 | GET / POST | `/collections` | Listar (con contador y `coverWebs`, las cuatro primeras webs en el orden propio, para la portada) y crear |
 | PATCH / DELETE | `/collections/:id` | Renombrar y borrar (las webs no se borran) |
 | GET | `/tags` | Tags en uso con contador, ordenados por uso |
-| GET / POST | `/vault/folders` | Todos los folders en lista plana (`parentId`, `icon` y `linkCount` propio; el front monta el árbol) y crear (sin `parentId`, una categoría; con él, un folder dentro de esa categoría) |
-| PATCH / DELETE | `/vault/folders/:id` | Renombrar, cambiar el icono o mover (`parentId`, siempre respetando los dos niveles) y borrar con todo su contenido |
+| GET / POST | `/vault/folders` | Todos los folders en lista plana (`parentId`, `icon` y `linkCount` propio; el front monta el árbol) y crear (sin `parentId`, una categoría; con él, un folder dentro de ese folder, de cualquier nivel) |
+| PATCH / DELETE | `/vault/folders/:id` | Renombrar, cambiar el icono o mover (`parentId`: a cualquier folder salvo él mismo o sus subfolders) y borrar con todo su contenido |
 | GET / POST | `/vault/links?folder=&search=` | Enlaces de un folder (sin `folder`, todo el Vault). `search` busca en título y URL. Al crear, `folderId` es obligatorio y tiene que ser un folder, no una categoría |
 | GET / PATCH / DELETE | `/vault/links/:id` | Detalle, edición (incluye tags y folder) y borrado |
 | POST | `/vault/links/move` | Mover varios enlaces a la vez a otro folder: `{ linkIds, folderId }`. Si alguno no existe, no se mueve ninguno |
+| PUT | `/vault/folders/:id/position` | Mover un folder entre sus hermanos en el orden propio de la lista: `{ afterFolderId }` (o `null` para ponerlo el primero; tiene que ser un hermano) |
+| PUT | `/vault/links/:id/position` | Mover un enlace dentro de su folder en el orden propio de la lista: `{ afterLinkId }` (o `null`) |
 | PUT | `/vault/folders/grid` | Colocar a mano los cuadros de una rejilla: `{ cells: [{ folderId, gridCell }] }`, todos del mismo nivel y sin repetir casilla |
-| GET / PUT | `/vault/preferences` | Orden del Vault: `{ order: random \| name \| date \| custom, direction }`. Sin guardar, por nombre |
+| GET / PUT | `/vault/preferences` | Orden y vista del Vault: `{ order: random \| name \| date \| custom, direction, view: tiles \| list }`. Sin guardar, por nombre y en tapiz (`view`, migración `0008`) |
 | GET | `/vault/tags` | Tags del Vault en uso con contador |
 
 ## Front
@@ -132,7 +141,25 @@ Todas las rutas van bajo `/api` y exigen sesión.
   seguidos, sin los huecos de la rejilla dispersa. Editar cambia nombre
   e icono, con un selector que busca entre los ~1.500 de la librería (el catálogo se descarga al
   abrir el editor), y borra con el recuento de lo que contiene. `Save web` (`/vault/new`) guarda URL,
-  título y folder, con los folders agrupados por categoría.
+  título y folder, con los folders de cualquier nivel agrupados por categoría y nombrados por su ruta
+  (`Typography › Serif`); al guardar vuelve al folder en la vista elegida.
+- **Vista de lista del Vault** (`VaultList.vue`, fase B): el interruptor `Tiles | List`, junto a
+  `Order`, guarda la vista en la cuenta. La lista muestra un nivel cada vez (el folder va en la URL,
+  `?in=`): migas con `Up` en la primera columna y el recorrido desde la tercera, el título grande
+  con los recuentos totales, y debajo, sin etiquetas, primero los folders y después los enlaces.
+  Retícula de 12 columnas (nombre 1–8, recuentos o ruta 9–11, acciones 12) y jerarquía por tamaño
+  y peso, sin líneas: solo el borde de la tarjeta y los botones `New folder`, `New category` y
+  `New link` (este solo dentro de folders, porque las categorías no tienen enlaces). Buscar lista
+  coincidencias de todo el Vault con su ruta. Crear un folder es un campo en la propia lista, sin
+  icono (se elige luego en el tapiz). Editar y borrar enlaces sale de `lib/useVaultLinkActions.ts`,
+  que comparten las filas del tapiz y de la lista; los favicons se ven igual en las dos (32 px, en los colores del tema y con los suyos al pasar el ratón; sin favicon, un bloque relleno con la inicial). Alineación óptica (`lib/opticalAlign.ts`, directiva `v-optical-align`): el título y los nombres de carpeta se desplazan lo que mide el hueco de su primera letra, para que el trazo, y no la caja de la letra, caiga en la línea de la retícula junto a la flecha de `Up`, los recuentos y los favicons. `Order` también ordena la lista (folders,
+  enlaces y resultados): por nombre o fecha, en los dos sentidos, o a mano arrastrando las filas, como
+  en el mosaico (folders y enlaces cada uno en su grupo; los folders, siempre primero). Con el orden a mano, el título (nombre del folder o del
+  enlace) se pulsa para abrirlo y el resto de la fila es el asa para arrastrar. Al pasar el ratón,
+  nombres, títulos y migas se invierten (fondo del color del texto), como las celdas de la app;
+  los títulos de enlace del tapiz, igual. En la lista no
+  hay orden al azar: si el tapiz lo tiene, la lista va por nombre. Buscando con el orden a mano, los
+  resultados siguen el árbol, porque las posiciones solo comparan dentro de un folder.
 - **Collections** (`CollectionsView.vue`, `CollectionColumn.vue`): una columna por colección, tan
   alta como deja la ventana y en fila con scroll horizontal. El nombre recorre el marco en
   minúscula, con el título en mayúsculas arriba a la izquierda, y dentro van en círculos las
@@ -197,7 +224,7 @@ Todas las rutas van bajo `/api` y exigen sesión.
 | Diseño | Diseño visual de la plataforma. Hecho: cabecera de celdas con la pestaña activa invertida y mosaico a pantalla completa (hasta cinco tarjetas por fila según el ancho, barra de filtros en celdas, acciones View, Edit y Open), todo en Geist Mono (PR #9, 26-oct-2026). Falta: revisar el resto de páginas y definir la paleta | **Aparcada** (2-nov-2026) hasta ver cómo funciona la división entre Mosaic y Vault |
 | Collections | Una columna por colección con su portada y una página por colección, que sustituye al filtro oculto del mosaico | Hecha; renombrar y borrar validados con el Supabase real (17-nov-2026) |
 | Vault | Segundo espacio para guardar marcadores en folders anidados, con selección múltiple y buscador (ver «Vault») | **En curso**: API, tests y front hechos (17-nov-2026): rejilla dispersa de folders que se despliegan, con iconos de Phosphor (fill). Falta validarlo con datos reales y la selección múltiple para mover enlaces |
-| Vault anidado | Plan del 20-nov-2026 (parte 06 del PDF, ver «Vault anidado»). A · anidado en la API · B · vista de lista · C · tercer nivel en el tapiz · D · herramientas (seleccionar, mover, borrar) · E · importar · F · exportar | **Siguiente**: A |
+| Vault anidado | Plan del 20-nov-2026 (parte 06 del PDF, ver «Vault anidado»). A · anidado en la API · B · vista de lista · C · tercer nivel en el tapiz · D · herramientas (seleccionar, mover, borrar) · E · importar · F · exportar | **En curso**: A, B y C hechas (24-nov-2026); siguiente, D |
 | 2 · Captura | Pantallazo automático al guardar en Mosaic. Planteamiento aprobado el 2-nov-2026: un servicio externo de capturas en lugar de un contenedor con Chromium (parte 05 del PDF). Las webs actuales no cambian | Sin fecha |
 | 3 · Extensión | Extensión de navegador (WXT + Vue) usando la misma API | Planificada |
 | 4 · Componentes | RF-F1: guardar componentes concretos (tabla `components` que apunta a `webs`) | Futuro |
@@ -229,21 +256,42 @@ nombre (`Design / Fonts`) se descartó.
   cualquier nivel, pueden tener enlaces y subfolders a la vez. Mover un folder dentro de sí mismo o
   de un descendiente se rechaza (bucle). Recuentos totales, incluidos los subfolders. El buscador
   muestra la ruta de cada resultado. Todo se ordena por nombre. No cambia el esquema: `parent_id` ya
-  lo permite; cambian las reglas de la API y sus tests.
-- **Vista de lista** (RF-23): alternativa más pequeña al tapiz, un nivel cada vez, elegida junto a
-  `Order` y guardada en la cuenta. El tapiz sigue siendo la vista por defecto.
+  lo permite; cambian las reglas de la API y sus tests. Los recuentos totales y la ruta los calcula el
+  front con el árbol que ya monta (la API sigue dando el `linkCount` propio de cada folder); hasta las
+  fases B y C, el front solo muestra los dos primeros niveles.
+- **Vista de lista** (RF-23, hecha): alternativa más pequeña al tapiz, un nivel cada vez, elegida
+  junto a `Order` y guardada en la cuenta. El tapiz sigue siendo la vista por defecto.
+- **Tercer nivel en el tapiz** (RF-24, hecho con la propuesta «C · Pila» del lienzo,
+  `VaultFolderStack.vue`): dentro de un folder abierto, sus subcarpetas son tarjetas y debajo van los
+  enlaces de la carpeta en la que se está. Abrir una tarjeta que tiene carpetas añade su nivel debajo,
+  con las tarjetas entrando una tras otra; los niveles de arriba se encogen con una transición (a
+  tarjetas medianas y después a tiras con solo el nombre), así que el más hondo siempre tiene el sitio.
+  Pulsar una tarjeta de arriba vuelve a ese nivel; pulsar la abierta la cierra. Sin animación si el
+  sistema pide reducir el movimiento. Ordena tarjetas y enlaces como la lista. Cada nodo del tapiz
+  lleva su subárbol completo (`nested`), así que los recuentos de los cuadros y la búsqueda cuentan
+  todos los niveles.
 - **Tercer nivel y siguientes** (RF-24): dentro de un folder abierto, sus subfolders salen a la
   derecha como cuadros más pequeños; al abrir uno, sus enlaces se despliegan debajo con sangría.
 - **Herramientas** (RF-25, solo en la lista de momento): seleccionar enlaces y folders, uno o
   varios; moverlos arrastrando o eligiendo destino; borrar varios; crear subfolders. Retoma la
   propuesta de «Move to» sin que la barra desplace la lista. RF-26: el selector de folder de
   `Save web` muestra el árbol.
-- **Importar**: el front sube el archivo y la API lo lee y lo guarda en una transacción (máximo
-  ~5 MB). Cada importación crea una categoría «Imported <fecha>» con el árbol tal cual (las
-  carpetas raíz del navegador son sus folders); los enlaces fuera de carpetas van a «Unsorted».
-  Deshacer = borrar la categoría.
+- **Importar** (revisado el 24-nov-2026, sustituye a la categoría única «Imported <fecha>»): en dos
+  tiempos. Antes de importar, la usuaria marca qué carpetas del archivo son categorías (vienen
+  marcadas las de debajo de la raíz del navegador, sin «Bookmarks bar»); después, la app la lleva a
+  la vista de lista con lo importado señalado, para organizar el resto con las herramientas de
+  siempre. La pantalla de importación solo elige categorías: no hay un segundo organizador. La API
+  tiene dos llamadas: vista previa (lee el archivo y devuelve el árbol y los repetidos, sin guardar
+  nada) e importar (recibe otra vez el archivo con las elecciones y lo guarda en una transacción;
+  máximo ~5 MB). Los enlaces fuera de carpetas van a «Unsorted».
+  Pendiente para la fase E: qué pasa con lo no marcado (¿categoría «Imported <fecha>» o no se
+  importa?), si una categoría marcada coincide con una existente (¿se juntan?) y si se pueden marcar
+  carpetas anidadas a la vez (`Design` y `Design › Type`).
+- **Sangría** (fase C): pequeña y con tope de 3–4 niveles en el tapiz; más abajo, la ruta
+  (`… › Serif`) o entrar en la carpeta, que pasa a ocupar el tapiz con migas para volver. Sin límite
+  de niveles en los datos (decidido el 24-nov-2026).
 - **Para más adelante**: herramientas también en el tapiz; revisar la sangría en niveles profundos;
-  orden propio arrastrando y conservar el orden del navegador al importar.
+  conservar el orden del navegador al importar (el orden propio de la lista ya existe: 24-nov-2026).
 
 ### Arranque y sesión
 

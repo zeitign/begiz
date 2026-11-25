@@ -4,14 +4,18 @@ import {
   defaultVaultPreferences,
   sortDirections,
   vaultOrders,
+  vaultViews,
   type SortDirection,
   type VaultOrder,
+  type VaultPreferences,
+  type VaultView,
 } from '@webs/shared'
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import FilterDropdown from '../components/FilterDropdown.vue'
 import VaultCategoryPanel from '../components/VaultCategoryPanel.vue'
 import VaultFaviconFilter from '../components/VaultFaviconFilter.vue'
+import VaultList from '../components/VaultList.vue'
 import VaultNewCategoryCard from '../components/VaultNewCategoryCard.vue'
 import VaultTileGrid, { type PlacedCell, type VaultTile } from '../components/VaultTileGrid.vue'
 import { errorMessage } from '../lib/api'
@@ -27,9 +31,10 @@ import { useTileExpansion } from '../lib/useTileExpansion'
 import { useTypewriter } from '../lib/typewriter'
 import {
   buildVaultTree,
-  categoryLinkCount,
-  categoryMatches,
-  linkMatches,
+  contentsCountLabel,
+  listOrder,
+  listOrders,
+  nestedMatches,
   normalizeSearch,
   pluralize,
   sideColumnWidth,
@@ -62,19 +67,29 @@ const DIRECTION_LABELS: Record<SortDirection, string> = {
   desc: '↓ Desc',
 }
 
+const VIEW_LABELS: Record<VaultView, string> = {
+  tiles: 'Tiles',
+  list: 'List',
+}
+
 const { data: savedPreferences, isPending: arePreferencesPending } = useVaultPreferences()
 const preferences = computed(() => savedPreferences.value ?? defaultVaultPreferences)
 // The grid waits for the saved order too, so the tiles appear in their places instead of jumping to them.
 const isPending = computed(() => areFoldersPending.value || areLinksPending.value || arePreferencesPending.value)
-const hasDirection = computed(() => preferences.value.order === 'name' || preferences.value.order === 'date')
+const isListView = computed(() => preferences.value.view === 'list')
+/** The list has no random order: it offers the rest and reads random as name. */
+const shownOrders = computed(() => (isListView.value ? listOrders : vaultOrders))
+const shownOrder = computed(() => (isListView.value ? listOrder(preferences.value.order) : preferences.value.order))
+const offersDirection = (order: VaultOrder) => order === 'name' || order === 'date'
+const hasDirection = computed(() => offersDirection(shownOrder.value))
 const saveVaultPreferences = useSaveVaultPreferences()
 const placeVaultTiles = usePlaceVaultTiles()
 const orderError = ref('')
 
-async function savePreferences(order: VaultOrder, direction: SortDirection) {
+async function savePreferences(changes: Partial<VaultPreferences>) {
   orderError.value = ''
   try {
-    await saveVaultPreferences({ order, direction })
+    await saveVaultPreferences({ ...preferences.value, ...changes })
   } catch (error) {
     orderError.value = errorMessage(error)
   }
@@ -82,7 +97,20 @@ async function savePreferences(order: VaultOrder, direction: SortDirection) {
 
 /** A new order starts in its usual direction, as in the mosaic: names A→Z, newest first. */
 const chooseOrder = (order: VaultOrder) =>
-  savePreferences(order, order === 'date' ? defaultSortDirection.date : defaultSortDirection.title)
+  savePreferences({ order, direction: order === 'date' ? defaultSortDirection.date : defaultSortDirection.title })
+
+/** Picking an order folds the menu, unless it still asks for a direction: then choosing one folds it. */
+function pickOrder(order: VaultOrder, closeMenu: () => void) {
+  chooseOrder(order)
+  if (!offersDirection(order)) closeMenu()
+}
+
+/** Each view keeps its own place in the URL, so switching starts the other one from its top. */
+function chooseView(view: VaultView) {
+  router.replace({ query: {} })
+  categoryExpansion.reset()
+  savePreferences({ view })
+}
 
 /** Shared by both grids: tiles dropped in a new cell. */
 async function placeTiles(cells: PlacedCell[]) {
@@ -98,22 +126,13 @@ const searchPlaceholder = useTypewriter(['THAT FONT SITE?', 'THAT TOOL?', 'THE A
 const searchInput = ref('')
 const query = computed(() => normalizeSearch(searchInput.value))
 
-function categoryTile(category: CategoryNode): VaultTile {
-  const linkCount = categoryLinkCount(category)
-  const matchingLinkCount = category.folders.reduce(
-    (total, folder) => total + folder.links.filter((link) => linkMatches(link, query.value)).length,
-    0,
-  )
-  return {
-    id: category.id,
-    name: category.name,
-    icon: category.icon,
-    gridCell: category.gridCell,
-    countLabel: query.value
-      ? `${matchingLinkCount} of ${pluralize(linkCount, 'link')}`
-      : `${pluralize(category.folders.length, 'folder')} · ${pluralize(linkCount, 'link')}`,
-  }
-}
+const categoryTile = (category: CategoryNode): VaultTile => ({
+  id: category.id,
+  name: category.name,
+  icon: category.icon,
+  gridCell: category.gridCell,
+  countLabel: contentsCountLabel(category.nested, query.value),
+})
 
 const categoryTiles = computed(() => sortForOrder(vaultTree.value.categories, preferences.value).map(categoryTile))
 const categoryCountLabel = computed(() => pluralize(vaultTree.value.categories.length, 'category', 'categories'))
@@ -121,7 +140,7 @@ const matchingCategoryIds = computed(
   () =>
     new Set(
       vaultTree.value.categories
-        .filter((category) => categoryMatches(category, query.value))
+        .filter((category) => nestedMatches(category.nested, query.value))
         .map((category) => category.id),
     ),
 )
@@ -213,13 +232,13 @@ async function showCreatedCategory(categoryId: string) {
       </div>
       <div class="filter-frame">
         <div class="filter-cells vault-filter-cells">
-          <FilterDropdown label="Order">
-            <label v-for="order in vaultOrders" :key="order" class="filter-option">
+          <FilterDropdown v-slot="{ close }" label="Order">
+            <label v-for="order in shownOrders" :key="order" class="filter-option">
               <input
                 type="radio"
                 name="vault-order"
-                :checked="preferences.order === order"
-                @change="chooseOrder(order)"
+                :checked="shownOrder === order"
+                @change="pickOrder(order, close)"
               />
               <span>{{ ORDER_LABELS[order] }}</span>
             </label>
@@ -229,13 +248,26 @@ async function showCreatedCategory(categoryId: string) {
                 :key="direction"
                 type="button"
                 :aria-pressed="preferences.direction === direction"
-                @click="savePreferences(preferences.order, direction)"
+                @click="savePreferences({ direction }); close()"
               >
                 {{ DIRECTION_LABELS[direction] }}
               </button>
             </div>
-            <p v-if="preferences.order === 'custom'" class="filter-option muted">Drag a card to any cell.</p>
+            <p v-if="shownOrder === 'custom'" class="filter-option muted">
+              {{ isListView ? 'Drag a row to reorder.' : 'Drag a card to any cell.' }}
+            </p>
           </FilterDropdown>
+          <div class="vault-view-switch" role="group" aria-label="View">
+            <button
+              v-for="view in vaultViews"
+              :key="view"
+              type="button"
+              :aria-pressed="preferences.view === view"
+              @click="chooseView(view)"
+            >
+              {{ VIEW_LABELS[view] }}
+            </button>
+          </div>
           <p class="filter-count">{{ categoryCountLabel }}</p>
         </div>
         <span class="filter-stripes" aria-hidden="true"></span>
@@ -245,6 +277,14 @@ async function showCreatedCategory(categoryId: string) {
 
     <p v-if="loadError" class="error">{{ loadError.message }}</p>
     <p v-else-if="isPending">Loading…</p>
+    <VaultList
+      v-else-if="isListView"
+      :folders="folders ?? []"
+      :links="links ?? []"
+      :query="query"
+      :preferences="preferences"
+      @clear-search="searchInput = ''"
+    />
     <VaultTileGrid
       v-else
       ref="categoryGrid"

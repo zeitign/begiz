@@ -78,7 +78,7 @@ const vaultFolderIcon = z
   .max(60)
   .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, 'Must be an icon name such as "book-open"')
   .nullable()
-/** The category a folder goes in, or null to make it a category. */
+/** The folder a folder goes in (a category or any folder below it), or null to make it a category. */
 const vaultParentId = z.uuid().nullable()
 
 export const vaultFolderCreate = z.object({
@@ -91,6 +91,16 @@ export const vaultFolderUpdate = z.object({
   name: vaultFolderName.optional(),
   parentId: vaultParentId.optional(),
   icon: vaultFolderIcon.optional(),
+})
+
+/** Moves a folder in the list's custom order right after a sibling, or first when null. */
+export const vaultFolderPositionUpdate = z.object({
+  afterFolderId: z.uuid().nullable(),
+})
+
+/** Moves a link in the list's custom order right after another of its folder, or first when null. */
+export const vaultLinkPositionUpdate = z.object({
+  afterLinkId: z.uuid().nullable(),
 })
 
 /** Places the tiles of one grid by hand (categories, or the folders of one category): each in its cell. */
@@ -107,15 +117,21 @@ export const vaultGridUpdate = z.object({
 export const vaultOrders = ['random', 'name', 'date', 'custom'] as const
 export type VaultOrder = (typeof vaultOrders)[number]
 
+/** Tiles: the grid of categories that open into frames. List: one level at a time, at any depth. */
+export const vaultViews = ['tiles', 'list'] as const
+export type VaultView = (typeof vaultViews)[number]
+
 export const vaultPreferencesUpdate = z.object({
   order: z.enum(vaultOrders),
   direction: z.enum(sortDirections),
+  view: z.enum(vaultViews),
 })
 export type VaultPreferences = z.infer<typeof vaultPreferencesUpdate>
 
 export const defaultVaultPreferences: VaultPreferences = {
   order: 'name',
   direction: 'asc',
+  view: 'tiles',
 }
 
 export const vaultLinkCreate = z.object({

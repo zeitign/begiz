@@ -51,6 +51,12 @@ function changeSortMode(nextSortMode: WebSortMode) {
   updateFilters({ sort: nextSortMode === 'custom' ? '' : nextSortMode, direction: '' })
 }
 
+/** Picking an order folds the menu, unless it still asks for a direction: then choosing one folds it. */
+function pickSortMode(nextSortMode: WebSortMode, closeMenu: () => void) {
+  changeSortMode(nextSortMode)
+  if (nextSortMode === 'custom') closeMenu()
+}
+
 function updateFilters(changedFilters: LocationQueryRaw) {
   const nextQuery = { ...route.query, ...changedFilters }
   for (const key of Object.keys(nextQuery)) if (!nextQuery[key]) delete nextQuery[key]
@@ -168,9 +174,9 @@ async function saveDroppedPosition(event: DraggableEvent) {
             </label>
             <p v-if="!tags?.length" class="filter-option muted">No tags yet.</p>
           </FilterDropdown>
-          <FilterDropdown label="Order">
+          <FilterDropdown v-slot="{ close }" label="Order">
             <label v-for="mode in webSortModes" :key="mode" class="filter-option">
-              <input type="radio" name="web-order" :checked="sortMode === mode" @change="changeSortMode(mode)" />
+              <input type="radio" name="web-order" :checked="sortMode === mode" @change="pickSortMode(mode, close)" />
               <span>{{ SORT_MODE_LABELS[mode] }}</span>
             </label>
             <div v-if="!isCustomOrder" class="order-direction" role="group" aria-label="Direction">
@@ -179,7 +185,7 @@ async function saveDroppedPosition(event: DraggableEvent) {
                 :key="direction"
                 type="button"
                 :aria-pressed="sortDirection === direction"
-                @click="updateFilters({ direction })"
+                @click="updateFilters({ direction }); close()"
               >
                 {{ SORT_DIRECTION_LABELS[direction] }}
               </button>

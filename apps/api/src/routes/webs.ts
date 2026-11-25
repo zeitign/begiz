@@ -16,7 +16,8 @@ import {
 } from '../lib/preview.ts'
 import { escapeLikePattern } from '../lib/escape-like-pattern.ts'
 import { validate } from '../lib/validate.ts'
-import { moveWebAfter, positionBeforeAllWebs, webOrderBy } from '../lib/web-order.ts'
+import { moveAfter, positionBeforeAll } from '../lib/sort-positions.ts'
+import { userWebs, webOrderBy } from '../lib/web-order.ts'
 import { deleteQuietly, fileUrl, storage } from '../storage/index.ts'
 
 type WebRow = typeof webs.$inferSelect
@@ -202,7 +203,7 @@ export const websRoutes = new Hono<AuthEnv>()
           faviconUrl: pageMeta?.faviconUrl ?? null,
           previewKey,
           previewSource: previewKey ? 'og' : null,
-          sortPosition: await positionBeforeAllWebs(transaction, userId),
+          sortPosition: await positionBeforeAll(transaction, userWebs(userId)),
         })
         await replaceTags(transaction, userId, webId, input.tags)
         await replaceCollections(transaction, userId, webId, input.collectionIds)
@@ -236,7 +237,7 @@ export const websRoutes = new Hono<AuthEnv>()
     const { id: webId } = context.req.valid('param')
     const { afterWebId } = context.req.valid('json')
     await findOwnedWeb(userId, webId)
-    await db.transaction((transaction) => moveWebAfter(transaction, userId, webId, afterWebId))
+    await db.transaction((transaction) => moveAfter(transaction, userWebs(userId), webId, afterWebId))
     return context.body(null, 204)
   })
 

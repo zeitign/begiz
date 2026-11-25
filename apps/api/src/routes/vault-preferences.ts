@@ -12,6 +12,7 @@ export const vaultPreferencesRoutes = new Hono<AuthEnv>()
       .select({
         order: vaultPreferences.order,
         direction: vaultPreferences.direction,
+        view: vaultPreferences.view,
       })
       .from(vaultPreferences)
       .where(eq(vaultPreferences.userId, context.get('userId')))
