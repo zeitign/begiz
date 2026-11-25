@@ -151,6 +151,7 @@ const deletePicked = () =>
         <VaultFolderTree
           class="vault-tray-tree"
           :vault="vault"
+          root-label="Vault · as categories"
           :refusal-of="refusalOf"
           :open-ids="openFolderIds"
           @choose="moveTo"

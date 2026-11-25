@@ -141,9 +141,20 @@ Todas las rutas van bajo `/api` y exigen sesión.
   filtra al escribir: mientras se busca, solo quedan los cuadros que coinciden, en orden y
   seguidos, sin los huecos de la rejilla dispersa. Editar cambia nombre
   e icono, con un selector que busca entre los ~1.500 de la librería (el catálogo se descarga al
-  abrir el editor), y borra con el recuento de lo que contiene. `Save web` (`/vault/new`) guarda URL,
-  título y folder, con los folders de cualquier nivel agrupados por categoría y nombrados por su ruta
-  (`Typography › Serif`); al guardar vuelve al folder en la vista elegida.
+  abrir el editor), y borra con el recuento de lo que contiene. `Save web` (`/vault/new`,
+  `VaultNewLinkView.vue`): casi centrado (columnas 2–5 y 7–11 de la retícula, más bajo cuanto más
+  alta es la ventana); a la izquierda el título y una leyenda de cómo guarda el Vault; a la
+  derecha una hoja cuya sombra dura se dibuja con el rayado del header (como la del panel de los
+  filtros), con tres secciones numeradas sin líneas entre ellas (01 URL, 02 Title, 03 Folder) y al pie
+  solo el botón `Save` (y el error, si lo hay). El folder se elige como en un
+  selector: cerrado es un campo subrayado como los otros; al pulsarlo, ese campo pasa a ser la
+  cabecera de una caja con borde y el árbol del Vault se despliega dentro, en una sola pieza
+  (`VaultFolderTree.vue`, el mismo de la bandeja); al elegir, se recoge. Lleva `Add folder` en cada fila y
+  `+ New category` al pie; lo recién creado queda elegido. Las categorías encabezan su rama pero no
+  se pueden elegir: su nombre las despliega, como la flecha, y no llevan nota. Si aún no hay ningún folder donde guardar, la sección es un aviso con rayas que
+  guía en dos pasos: crear la categoría y, después, su primer folder. Al guardar vuelve al folder en
+  la vista elegida. Crear un folder en cualquier sitio (lista, árbol, aviso) usa
+  `VaultNewFolderForm.vue`.
 - **Vista de lista del Vault** (`VaultList.vue`, fase B): el interruptor `Tiles | List`, junto a
   `Order`, guarda la vista en la cuenta. La lista muestra un nivel cada vez (el folder va en la URL,
   `?in=`): migas con `Up` en la primera columna y el recorrido desde la tercera, el título grande
@@ -289,7 +300,7 @@ nombre (`Design / Fonts`) se descartó.
 - **Herramientas** (RF-25, solo en la lista de momento): seleccionar enlaces y folders, uno o
   varios; moverlos arrastrando o eligiendo destino; borrar varios; crear subfolders. Retoma la
   propuesta de «Move to» sin que la barra desplace la lista. RF-26: el selector de folder de
-  `Save web` muestra el árbol.
+  `Save web` muestra el árbol (hecho el 25-nov-2026, con creación de folders y categorías en él).
 - **Importar** (revisado el 24-nov-2026, sustituye a la categoría única «Imported <fecha>»): en dos
   tiempos. Antes de importar, la usuaria marca qué carpetas del archivo son categorías (vienen
   marcadas las de debajo de la raíz del navegador, sin «Bookmarks bar»); después, la app la lleva a
