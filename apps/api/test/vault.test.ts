@@ -30,6 +30,14 @@ async function listLinkTitles(query = '') {
   return links.map((link) => link.title)
 }
 
+/** Titles of the links in a folder, in the custom order. */
+async function listLinkTitlesInOrder(folderId: string) {
+  const links: { title: string; sortPosition: number }[] = await (
+    await user.get(`/vault/links?folder=${folderId}`)
+  ).json()
+  return links.sort((first, second) => first.sortPosition - second.sortPosition).map((link) => link.title)
+}
+
 beforeEach(async () => {
   user = await createUserClient()
   design = await createCategory('Design')
@@ -196,7 +204,7 @@ describe('vault links', () => {
     const display = await createFolder('Display', serif.id)
     const klim = await createLink({ url: 'https://klim.co.nz', title: 'Klim', folderId: serif.id })
 
-    const moved = await user.post('/vault/links/move', { linkIds: [klim.id], folderId: display.id })
+    const moved = await user.post('/vault/move', { linkIds: [klim.id], folderId: display.id })
 
     expect(moved.status).toBe(204)
     expect(await listLinkTitles(`?folder=${display.id}`)).toEqual(['Klim'])
@@ -264,11 +272,11 @@ describe('vault links', () => {
     const phosphor = await createLink({ url: 'https://phosphoricons.com', title: 'Phosphor' })
     const lucide = await createLink({ url: 'https://lucide.dev', title: 'Lucide' })
 
-    const moveToIcons = await user.post('/vault/links/move', { linkIds: [phosphor.id, lucide.id], folderId: icons.id })
+    const moveToIcons = await user.post('/vault/move', { linkIds: [phosphor.id, lucide.id], folderId: icons.id })
     expect(moveToIcons.status).toBe(204)
     expect(await listLinkTitles(`?folder=${icons.id}`)).toEqual(['Lucide', 'Phosphor'])
 
-    const moveWithUnknown = await user.post('/vault/links/move', {
+    const moveWithUnknown = await user.post('/vault/move', {
       linkIds: [phosphor.id, crypto.randomUUID()],
       folderId: typography.id,
     })
@@ -282,8 +290,8 @@ describe('vault links', () => {
 
     expect((await user.patch(`/vault/links/${link.id}`, { folderId: unknownId })).status).toBe(400)
     expect((await user.patch(`/vault/links/${link.id}`, { folderId: design.id })).status).toBe(400)
-    expect((await user.post('/vault/links/move', { linkIds: [link.id], folderId: unknownId })).status).toBe(400)
-    expect((await user.post('/vault/links/move', { linkIds: [link.id], folderId: design.id })).status).toBe(400)
+    expect((await user.post('/vault/move', { linkIds: [link.id], folderId: unknownId })).status).toBe(400)
+    expect((await user.post('/vault/move', { linkIds: [link.id], folderId: design.id })).status).toBe(400)
   })
 
   it('deletes a link with the tags left unused', async () => {
@@ -308,6 +316,101 @@ describe('vault links', () => {
   })
 })
 
+describe('vault tray: moving and deleting what was picked', () => {
+  it('moves folders and links together into one folder, leaving what is already there in place', async () => {
+    const serif = await createFolder('Serif', typography.id)
+    const icons = await createFolder('Icons', design.id)
+    const display = await createFolder('Display', icons.id)
+    const klim = await createLink({ url: 'https://klim.co.nz', title: 'Klim' })
+    await createLink({ url: 'https://lucide.dev', title: 'Lucide', folderId: serif.id })
+    const phosphor = await createLink({ url: 'https://phosphoricons.com', title: 'Phosphor', folderId: serif.id })
+
+    const moved = await user.post('/vault/move', {
+      folderIds: [icons.id],
+      linkIds: [klim.id, phosphor.id],
+      folderId: serif.id,
+    })
+
+    expect(moved.status).toBe(204)
+    expect(await listLinkTitlesInOrder(serif.id)).toEqual(['Lucide', 'Phosphor', 'Klim'])
+    expect(await (await user.get('/vault/folders')).json()).toMatchObject([
+      { id: design.id, parentId: null },
+      { id: display.id, parentId: icons.id },
+      { id: icons.id, parentId: serif.id },
+      { id: serif.id, parentId: typography.id },
+      { id: typography.id, parentId: design.id },
+    ])
+  })
+
+  it('makes picked folders without links categories, but never links', async () => {
+    const serif = await createFolder('Serif', typography.id)
+    const link = await createLink({ url: 'https://klim.co.nz', title: 'Klim', folderId: serif.id })
+
+    expect((await user.post('/vault/move', { folderIds: [typography.id], folderId: null })).status).toBe(204)
+    expect(await (await user.get(`/vault/folders`)).json()).toMatchObject([
+      { id: design.id, parentId: null },
+      { id: serif.id, parentId: typography.id },
+      { id: typography.id, parentId: null },
+    ])
+    expect((await user.post('/vault/move', { folderIds: [serif.id], folderId: null })).status).toBe(400)
+    expect((await user.post('/vault/move', { linkIds: [link.id], folderId: null })).status).toBe(400)
+  })
+
+  it('moves nothing when one of the picks cannot go to the destination', async () => {
+    const serif = await createFolder('Serif', typography.id)
+    const leisure = await createCategory('Leisure')
+    const games = await createFolder('Games', leisure.id)
+    const link = await createLink({ url: 'https://klim.co.nz', title: 'Klim' })
+    const everythingBefore = await (await user.get('/vault/folders')).json()
+
+    // Typography cannot go inside its own subfolder, so Games stays too.
+    const intoItself = await user.post('/vault/move', { folderIds: [games.id, typography.id], folderId: serif.id })
+    // Links cannot go in a category, so the folder stays too.
+    const linkInCategory = await user.post('/vault/move', { folderIds: [serif.id], linkIds: [link.id], folderId: leisure.id })
+    const withUnknown = await user.post('/vault/move', { linkIds: [link.id, crypto.randomUUID()], folderId: serif.id })
+
+    expect(intoItself.status).toBe(400)
+    expect(linkInCategory.status).toBe(400)
+    expect(withUnknown.status).toBe(404)
+    expect(await (await user.get('/vault/folders')).json()).toEqual(everythingBefore)
+    expect(await listLinkTitles(`?folder=${typography.id}`)).toEqual(['Klim'])
+  })
+
+  it('deletes folders with all they hold and links together, with the tags left unused', async () => {
+    const serif = await createFolder('Serif', typography.id)
+    const display = await createFolder('Display', serif.id)
+    const leisure = await createCategory('Leisure')
+    const games = await createFolder('Games', leisure.id)
+    await createLink({ url: 'https://klim.co.nz', title: 'Klim', folderId: display.id, tags: ['foundry'] })
+    const fontshare = await createLink({ url: 'https://fontshare.com', title: 'Fontshare', tags: ['free'] })
+    await createLink({ url: 'https://itch.io', title: 'Itch.io', folderId: games.id, tags: ['free'] })
+
+    // Display is inside Serif: picking both is fine.
+    const deleted = await user.post('/vault/delete', { folderIds: [serif.id, display.id], linkIds: [fontshare.id] })
+
+    expect(deleted.status).toBe(204)
+    expect(await (await user.get('/vault/folders')).json()).toMatchObject([
+      { id: design.id },
+      { id: games.id },
+      { id: leisure.id },
+      { id: typography.id },
+    ])
+    expect(await listLinkTitles()).toEqual(['Itch.io'])
+    expect(await (await user.get('/vault/tags')).json()).toEqual([{ name: 'free', linkCount: 1 }])
+  })
+
+  it('deletes nothing when one of the picks is unknown, and needs at least one pick', async () => {
+    const link = await createLink({ url: 'https://fontshare.com', title: 'Fontshare' })
+
+    const withUnknown = await user.post('/vault/delete', { folderIds: [crypto.randomUUID()], linkIds: [link.id] })
+
+    expect(withUnknown.status).toBe(404)
+    expect(await listLinkTitles()).toEqual(['Fontshare'])
+    expect((await user.post('/vault/delete', {})).status).toBe(400)
+    expect((await user.post('/vault/move', { folderId: typography.id })).status).toBe(400)
+  })
+})
+
 describe('vault custom order', () => {
   /** Names of the folders inside a folder (or the categories), in the custom order. */
   async function listFolderNamesInOrder(parentId: string | null) {
@@ -318,13 +421,6 @@ describe('vault custom order', () => {
       .filter((folder) => folder.parentId === parentId)
       .sort((first, second) => first.sortPosition - second.sortPosition)
       .map((folder) => folder.name)
-  }
-
-  async function listLinkTitlesInOrder(folderId: string) {
-    const links: { title: string; sortPosition: number }[] = await (
-      await user.get(`/vault/links?folder=${folderId}`)
-    ).json()
-    return links.sort((first, second) => first.sortPosition - second.sortPosition).map((link) => link.title)
   }
 
   it('puts new folders and links last, as a browser does', async () => {
@@ -392,7 +488,7 @@ describe('vault custom order', () => {
     await createFolder('Games', leisure.id)
 
     await user.patch(`/vault/links/${tabler.id}`, { folderId: icons.id })
-    await user.post('/vault/links/move', { linkIds: [feather.id, lucide.id], folderId: icons.id })
+    await user.post('/vault/move', { linkIds: [feather.id, lucide.id], folderId: icons.id })
     await user.patch(`/vault/folders/${icons.id}`, { parentId: leisure.id })
 
     expect(await listLinkTitlesInOrder(icons.id)).toEqual(['Phosphor', 'Tabler', 'Feather', 'Lucide'])

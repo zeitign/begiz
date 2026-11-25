@@ -102,7 +102,8 @@ Todas las rutas van bajo `/api` y exigen sesión.
 | PATCH / DELETE | `/vault/folders/:id` | Renombrar, cambiar el icono o mover (`parentId`: a cualquier folder salvo él mismo o sus subfolders) y borrar con todo su contenido |
 | GET / POST | `/vault/links?folder=&search=` | Enlaces de un folder (sin `folder`, todo el Vault). `search` busca en título y URL. Al crear, `folderId` es obligatorio y tiene que ser un folder, no una categoría |
 | GET / PATCH / DELETE | `/vault/links/:id` | Detalle, edición (incluye tags y folder) y borrado |
-| POST | `/vault/links/move` | Mover varios enlaces a la vez a otro folder: `{ linkIds, folderId }`. Si alguno no existe, no se mueve ninguno |
+| POST | `/vault/move` | Mover lo que hay en la bandeja de la lista (folders y enlaces juntos) a un folder: `{ folderIds, linkIds, folderId }`; con `folderId: null`, los folders pasan a ser categorías (sin enlaces propios). Todo o nada: si algo no existe o no puede ir ahí, no se mueve nada. Lo que ya está en el destino conserva su sitio; el resto va al final |
+| POST | `/vault/delete` | Borrar lo que hay en la bandeja: `{ folderIds, linkIds }`, los folders con todo su contenido. Todo o nada |
 | PUT | `/vault/folders/:id/position` | Mover un folder entre sus hermanos en el orden propio de la lista: `{ afterFolderId }` (o `null` para ponerlo el primero; tiene que ser un hermano) |
 | PUT | `/vault/links/:id/position` | Mover un enlace dentro de su folder en el orden propio de la lista: `{ afterLinkId }` (o `null`) |
 | PUT | `/vault/folders/grid` | Colocar a mano los cuadros de una rejilla: `{ cells: [{ folderId, gridCell }] }`, todos del mismo nivel y sin repetir casilla |
@@ -160,6 +161,19 @@ Todas las rutas van bajo `/api` y exigen sesión.
   los títulos de enlace del tapiz, igual. En la lista no
   hay orden al azar: si el tapiz lo tiene, la lista va por nombre. Buscando con el orden a mano, los
   resultados siguen el árbol, porque las posiciones solo comparan dentro de un folder.
+- **Seleccionar, mover y borrar en la lista** (fase D): el botón `Select` (pasa a `Done`) convierte
+  tocar una fila en cogerla; la casilla cuelga en el margen de la tarjeta, fuera de la retícula, y
+  las filas cogidas llevan las rayas de la app. La flecha de cada folder sigue abriéndolo. Lo cogido
+  espera en una bandeja que flota abajo a la derecha, sobre la lista (`VaultTray.vue`, con una hoja
+  asomando por cada elemento de más, hasta dos). La fila elegida despliega su cuadro de rayas de
+  izquierda a derecha y, cuando termina, entra la bandeja con un muelle suave: la tarjeta sube y crece
+  desde su esquina mientras se abre su contorno, y luego las hojas salen de debajo; cada elemento
+  nuevo le da un pequeño salto, y al irse se hunde hacia la esquina. Se mantiene mientras se navega y
+  no se pierde al pulsar `Done`. Desde la bandeja
+  se mueve todo a la vez con `Move to…` (árbol de folders, `VaultFolderTree.vue`, reutilizable para
+  elegir folder al guardar) o con `Move here` al folder abierto, y se borra con una pregunta que
+  cuenta lo que hay dentro. Los destinos imposibles salen en gris con el motivo (`moveRefusal` en
+  `lib/vaultTree.ts`, las mismas reglas que la API). Mientras se selecciona, arrastrar está apagado.
 - **Collections** (`CollectionsView.vue`, `CollectionColumn.vue`): una columna por colección, tan
   alta como deja la ventana y en fila con scroll horizontal. El nombre recorre el marco en
   minúscula, con el título en mayúsculas arriba a la izquierda, y dentro van en círculos las
@@ -224,7 +238,7 @@ Todas las rutas van bajo `/api` y exigen sesión.
 | Diseño | Diseño visual de la plataforma. Hecho: cabecera de celdas con la pestaña activa invertida y mosaico a pantalla completa (hasta cinco tarjetas por fila según el ancho, barra de filtros en celdas, acciones View, Edit y Open), todo en Geist Mono (PR #9, 26-oct-2026). Falta: revisar el resto de páginas y definir la paleta | **Aparcada** (2-nov-2026) hasta ver cómo funciona la división entre Mosaic y Vault |
 | Collections | Una columna por colección con su portada y una página por colección, que sustituye al filtro oculto del mosaico | Hecha; renombrar y borrar validados con el Supabase real (17-nov-2026) |
 | Vault | Segundo espacio para guardar marcadores en folders anidados, con selección múltiple y buscador (ver «Vault») | **En curso**: API, tests y front hechos (17-nov-2026): rejilla dispersa de folders que se despliegan, con iconos de Phosphor (fill). Falta validarlo con datos reales y la selección múltiple para mover enlaces |
-| Vault anidado | Plan del 20-nov-2026 (parte 06 del PDF, ver «Vault anidado»). A · anidado en la API · B · vista de lista · C · tercer nivel en el tapiz · D · herramientas (seleccionar, mover, borrar) · E · importar · F · exportar | **En curso**: A, B y C hechas (24-nov-2026); siguiente, D |
+| Vault anidado | Plan del 20-nov-2026 (parte 06 del PDF, ver «Vault anidado»). A · anidado en la API · B · vista de lista · C · tercer nivel en el tapiz · D · herramientas (seleccionar, mover, borrar) · E · importar · F · exportar | **En curso**: A, B y C hechas (24-nov-2026); D hecha (25-nov-2026); siguiente, E |
 | 2 · Captura | Pantallazo automático al guardar en Mosaic. Planteamiento aprobado el 2-nov-2026: un servicio externo de capturas en lugar de un contenedor con Chromium (parte 05 del PDF). Las webs actuales no cambian | Sin fecha |
 | 3 · Extensión | Extensión de navegador (WXT + Vue) usando la misma API | Planificada |
 | 4 · Componentes | RF-F1: guardar componentes concretos (tabla `components` que apunta a `webs`) | Futuro |

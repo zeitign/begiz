@@ -7,7 +7,11 @@ const props = defineProps<{
   link: VaultLink
   /** Where the link lives, shown when it comes from a search. */
   location?: string
+  /** While selecting, a tap anywhere on the row picks it instead of opening the link. */
+  isSelecting?: boolean
+  isPicked?: boolean
 }>()
+const emit = defineEmits<{ pick: [] }>()
 
 const hasFaviconFailed = ref(false)
 const { isEditing, isSaving, draftTitle, draftUrl, actionError, startEditing, saveLink, deleteLink } =
@@ -15,7 +19,12 @@ const { isEditing, isSaving, draftTitle, draftUrl, actionError, startEditing, sa
 </script>
 
 <template>
-  <li class="vault-list-row vault-list-link">
+  <li
+    class="vault-list-row vault-list-link"
+    :class="{ picked: isPicked }"
+    @click="isSelecting && !isEditing && emit('pick')"
+  >
+    <span v-if="isSelecting && !isEditing" class="vault-list-check" aria-hidden="true"></span>
     <form v-if="isEditing" class="vault-list-link-form" @submit.prevent="saveLink">
       <input v-model="draftTitle" required maxlength="200" aria-label="Title" />
       <input v-model="draftUrl" type="url" required aria-label="URL" />
@@ -35,11 +44,16 @@ const { isEditing, isSaving, draftTitle, draftUrl, actionError, startEditing, sa
           @error="hasFaviconFailed = true"
         />
         <span v-else class="vault-list-initial" aria-hidden="true">{{ link.title.charAt(0).toUpperCase() }}</span>
-        <a :href="link.url" target="_blank" rel="noopener noreferrer" class="vault-list-link-title">{{ link.title }}</a>
+        <button v-if="isSelecting" type="button" class="vault-list-link-title" :aria-pressed="isPicked">
+          {{ link.title }}
+        </button>
+        <a v-else :href="link.url" target="_blank" rel="noopener noreferrer" class="vault-list-link-title">
+          {{ link.title }}
+        </a>
         <span class="vault-list-url">{{ displayUrl(link.url) }}</span>
       </span>
       <span class="vault-list-meta">{{ location }}</span>
-      <span class="vault-list-end vault-list-actions">
+      <span v-if="!isSelecting" class="vault-list-end vault-list-actions">
         <button type="button" class="vault-link-action" title="Edit" :aria-label="`Edit ${link.title}`" @click="startEditing">
           <svg viewBox="0 0 24 24" width="15" height="15" aria-hidden="true">
             <path d="M4 20h4L19 9l-4-4L4 16z" />

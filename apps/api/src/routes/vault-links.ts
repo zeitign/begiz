@@ -1,11 +1,10 @@
-import { and, eq, ilike, inArray, or } from 'drizzle-orm'
+import { and, eq, ilike, or } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { HTTPException } from 'hono/http-exception'
 import {
   idParam,
   vaultLinkCreate,
   vaultLinkListQuery,
-  vaultLinkMove,
   vaultLinkPositionUpdate,
   vaultLinkUpdate,
 } from '@webs/shared'
@@ -118,29 +117,6 @@ export const vaultLinksRoutes = new Hono<AuthEnv>()
       if (tagNames) await replaceVaultTags(transaction, userId, linkId, tagNames)
     })
     return context.json(await getLinkDetail(userId, linkId))
-  })
-
-  // Moves the selected links together. If any of them is not found, none is moved.
-  .post('/move', validate('json', vaultLinkMove), async (context) => {
-    const userId = context.get('userId')
-    const { linkIds, folderId } = context.req.valid('json')
-    await assertLinkFolder(userId, folderId)
-    await db.transaction(async (transaction) => {
-      const movedLinks = await transaction
-        .update(vaultLinks)
-        .set({ folderId, updatedAt: new Date() })
-        .where(and(eq(vaultLinks.userId, userId), inArray(vaultLinks.id, linkIds)))
-        .returning({ id: vaultLinks.id })
-      if (movedLinks.length !== linkIds.length) throw new HTTPException(404, { message: 'Link not found' })
-      // They go last in the folder, in the order they were given.
-      for (const linkId of linkIds) {
-        await transaction
-          .update(vaultLinks)
-          .set({ sortPosition: await positionAfterAll(transaction, folderLinks(folderId)) })
-          .where(eq(vaultLinks.id, linkId))
-      }
-    })
-    return context.body(null, 204)
   })
 
   // Moves a link among the links of its folder in the list's custom order.

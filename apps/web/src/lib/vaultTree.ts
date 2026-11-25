@@ -252,3 +252,34 @@ export function searchNestedVault(vault: NestedVault, query: string): SearchResu
   for (const category of vault.categories) visit(category, [])
   return results
 }
+
+/** What is picked in the list's tray, in the order it was picked. */
+export type VaultPicks = { folderIds: string[]; linkIds: string[] }
+
+/** Why the picks cannot go into a folder (null = among the categories), following the API's rules:
+ * `here` when they all live there already, `itself` for a picked folder or one inside it, `noLinks` for
+ * links among the categories or in a category, `hasLinks` for a folder with links becoming a category. */
+export type MoveRefusal = 'here' | 'itself' | 'noLinks' | 'hasLinks'
+
+export function moveRefusal(
+  vault: NestedVault,
+  links: VaultLink[],
+  picks: VaultPicks,
+  destinationId: string | null,
+): MoveRefusal | null {
+  const pickedLinks = links.filter((link) => picks.linkIds.includes(link.id))
+  const currentParentIds = [
+    ...picks.folderIds.map((folderId) => vault.foldersById.get(folderId)?.parentId ?? null),
+    ...pickedLinks.map((link) => link.folderId),
+  ]
+  if (currentParentIds.every((parentId) => parentId === destinationId)) return 'here'
+  if (destinationId === null) {
+    if (pickedLinks.length) return 'noLinks'
+    const hasOwnLinks = picks.folderIds.some((folderId) => vault.foldersById.get(folderId)?.links.length)
+    return hasOwnLinks ? 'hasLinks' : null
+  }
+  const destinationTrail = folderTrail(destinationId, vault)
+  if (destinationTrail.some((folder) => picks.folderIds.includes(folder.id))) return 'itself'
+  if (pickedLinks.length && destinationTrail.length === 1) return 'noLinks'
+  return null
+}

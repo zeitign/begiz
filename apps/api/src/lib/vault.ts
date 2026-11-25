@@ -2,7 +2,7 @@ import { and, eq, inArray, isNull, sql } from 'drizzle-orm'
 import { HTTPException } from 'hono/http-exception'
 import { db, type Transaction } from '../db/client.ts'
 import { vaultFolders, vaultLinks, vaultLinkTags, vaultTags } from '../db/schema.ts'
-import type { SortedList } from './sort-positions.ts'
+import { positionAfterAll, type SortedList } from './sort-positions.ts'
 
 // Categories (folders at the root) hold only folders. Below them, folders nest at any depth and
 // each one can hold links and subfolders at once, as in a browser.
@@ -55,6 +55,43 @@ export async function isWithinFolder(folderId: string, ancestorId: string) {
     and(eq(vaultFolders.id, ancestorId), sql`${vaultFolders.id} in ${folderAndItsAncestorIds}`),
   )
   return matchCount > 0
+}
+
+/** A folder can go inside any other, except itself or its own subfolders (it would leave the tree).
+ * It only becomes a category without links of its own, since categories only hold folders.
+ * Returns the folder, with the parent it has now. */
+export async function assertValidNewParent(userId: string, folderId: string, newParentId: string | null) {
+  const [folder] = await db
+    .select({ id: vaultFolders.id, parentId: vaultFolders.parentId })
+    .from(vaultFolders)
+    .where(and(eq(vaultFolders.id, folderId), eq(vaultFolders.userId, userId)))
+  if (!folder) throw new HTTPException(404, { message: 'Folder not found' })
+
+  if (newParentId === null) {
+    if (await db.$count(vaultLinks, eq(vaultLinks.folderId, folderId))) {
+      throw new HTTPException(400, {
+        message: 'A folder with links cannot become a category',
+      })
+    }
+    return folder
+  }
+  await findChosenFolder(userId, newParentId)
+  if (await isWithinFolder(newParentId, folderId)) {
+    throw new HTTPException(400, {
+      message: 'A folder cannot be moved inside itself or its subfolders',
+    })
+  }
+  return folder
+}
+
+/** Where a folder lands in another parent: last in the list, and without its grid cell, which means
+ * nothing in another grid (it takes the first free one). */
+export async function placeLastIn(transaction: Transaction, userId: string, parentId: string | null) {
+  return {
+    parentId,
+    gridCell: null,
+    sortPosition: await positionAfterAll(transaction, siblingFolders(userId, parentId)),
+  }
 }
 
 /** Rejects a destination for links that is a category: categories only hold folders. */
