@@ -3132,14 +3132,17 @@ img.vault-favicon {
   gap: 8px;
 }
 
-.vault-list-link-form input {
-  flex: 1 1 200px;
-  min-width: 0;
+/* New folder form (VaultNewFolderForm.vue): the name is typed in place, bold and underlined like the
+   new category card's name; each place sets its size. */
+.vault-new-folder {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
 }
 
-/* Typed in place with the weight of a folder name, underlined like the new category card's name. */
-.vault-list-new-folder .vault-list-folder-name {
-  flex: 1 1 240px;
+.vault-new-folder-input {
+  flex: 1 1 160px;
   min-width: 0;
   padding: 0 0 4px;
   border: none;
@@ -3147,11 +3150,30 @@ img.vault-favicon {
   background: none;
   color: inherit;
   font-family: inherit;
+  font-weight: 800;
 }
 
-.vault-list-new-folder .vault-list-folder-name:focus {
+.vault-new-folder-input:focus {
   outline: none;
   box-shadow: inset 0 -1px 0 var(--color-border);
+}
+
+.vault-new-folder-error {
+  flex-basis: 100%;
+  margin: 0;
+}
+
+.vault-list-link-form input {
+  flex: 1 1 200px;
+  min-width: 0;
+}
+
+/* In the list, with the size of a folder name. */
+.vault-list-new-folder .vault-new-folder-input {
+  flex-basis: 240px;
+  font-size: 26px;
+  line-height: 1.1;
+  letter-spacing: -0.02em;
 }
 
 .vault-list-error {
@@ -3540,15 +3562,24 @@ button.vault-list-link-title {
   text-align: left;
 }
 
-.vault-tree-target:not(:disabled):hover,
+.vault-tree-target:not(.refused):not(:disabled):hover,
 .vault-tree-target:focus-visible {
   background: var(--color-text);
   color: var(--color-background);
   outline: none;
 }
 
-.vault-tree-target:disabled {
+.vault-tree-target.refused {
   color: var(--color-muted);
+}
+
+/* Its name unfolds it: underlined on hover, as the list's crumbs. */
+.vault-tree-target.refused:not(:disabled):hover {
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.vault-tree-target:disabled {
   cursor: default;
 }
 
@@ -3561,6 +3592,489 @@ button.vault-list-link-title {
   font-weight: 400;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+}
+
+.vault-tree-target[aria-pressed="true"] {
+  background: var(--color-text);
+  color: var(--color-background);
+}
+
+/* Add folder shows on the row's hover, to make a folder right inside it. */
+.vault-tree-add {
+  flex: none;
+  padding: 6px 8px;
+  border: none;
+  background: none;
+  color: var(--color-text);
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  opacity: 0;
+}
+
+.vault-tree-row:hover .vault-tree-add,
+.vault-tree-add:focus-visible {
+  opacity: 1;
+}
+
+.vault-tree-add:hover,
+.vault-tree-add:focus-visible {
+  background: var(--color-text);
+  color: var(--color-background);
+  outline: none;
+}
+
+.vault-tree-new-folder {
+  min-height: 40px;
+  padding-block: 4px;
+  animation: vault-tree-grow-in 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.vault-tree-new-folder .vault-list-button {
+  min-height: 32px;
+  padding: 0 12px;
+}
+
+@keyframes vault-tree-grow-in {
+  from {
+    opacity: 0;
+    translate: 0 -6px;
+  }
+}
+
+/* Save a link (VaultNewLinkView.vue): the intro on the left and a framed sheet on the right, on the
+   app's 12-column grid. The sheet's three numbered sections carry the order, without rules between
+   them; the save bar sits at its foot. */
+.save-link {
+  display: grid;
+  grid-template-columns: repeat(12, minmax(0, 1fr));
+  column-gap: 24px;
+  align-items: start;
+  /* Drawn in towards the middle: a column in from each side, and lower with taller windows. */
+  padding-top: clamp(48px, 14vh, 160px);
+  padding-bottom: 64px;
+}
+
+.save-link-intro {
+  grid-column: 2 / 6;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+}
+
+.save-link-title {
+  margin: 0;
+  font-size: 64px;
+  font-weight: 800;
+  line-height: 0.92;
+  letter-spacing: -0.045em;
+}
+
+.save-link-lede {
+  max-width: 34ch;
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 15px;
+  line-height: 1.6;
+}
+
+.save-link-key {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 56px;
+}
+
+.save-link-key-heading {
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.save-link-key p {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.save-link-number {
+  font-size: 13px;
+  font-weight: 800;
+  font-variant-numeric: tabular-nums;
+}
+
+.save-link-sheet {
+  grid-column: 7 / 12;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  padding-top: 24px;
+  position: relative;
+  border: 1px solid var(--color-border);
+  border-radius: 0 24px 24px 24px;
+  background: var(--color-background);
+}
+
+/* Its hard shadow is drawn with the header's stripes, like the filter panel's. */
+.save-link-sheet::before,
+.save-link-sheet::after {
+  content: "";
+  position: absolute;
+  z-index: -1;
+  inset: 9px -9px -9px 9px;
+  border-radius: 0 24px 24px 24px;
+}
+
+.save-link-sheet::before {
+  border: 1px solid var(--color-border);
+  background: var(--color-background);
+}
+
+.save-link-sheet::after {
+  background: var(--color-stripe);
+  mask: url("./assets/dashed-stripes.svg");
+}
+
+.save-link-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 32px;
+}
+
+.save-link-label {
+  display: grid;
+  grid-template-columns: 40px 1fr;
+  align-items: baseline;
+}
+
+.save-link-name {
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+/* Fields, the folder selector and the notice all start after the numbers' column. */
+.save-link-input,
+.save-link-picker,
+.save-link-warning,
+.save-link-indented {
+  margin-left: 40px;
+}
+
+.save-link-input {
+  width: calc(100% - 40px);
+  padding: 8px 0;
+  border: none;
+  border-bottom: 1px solid var(--color-border);
+  background: none;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 20px;
+  line-height: 1.2;
+}
+
+.save-link-input:focus {
+  padding-bottom: 7px;
+  border-bottom-width: 2px;
+  outline: none;
+}
+
+.save-link-input::placeholder {
+  color: var(--color-muted);
+}
+
+/* The folder selector: closed, an underlined field like the others; open, the same field heads a
+   framed box and the tree unfolds under it, all one piece. */
+.save-link-picker {
+  border: 1px solid transparent;
+  border-bottom-color: var(--color-border);
+  border-radius: 0;
+  transition:
+    border-color 0.25s ease,
+    border-radius 0.25s ease;
+}
+
+.save-link-picker.open {
+  border-color: var(--color-border);
+  border-radius: 0 16px 16px 16px;
+}
+
+.save-link-chosen {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+  padding: 8px 0;
+  border: none;
+  background: none;
+  color: var(--color-text);
+  font-family: inherit;
+  font-size: 20px;
+  line-height: 1.2;
+  text-align: left;
+  transition: padding 0.25s ease;
+}
+
+.save-link-picker.open .save-link-chosen {
+  padding: 12px 16px 8px;
+}
+
+.save-link-chosen:focus-visible {
+  outline: 2px solid var(--color-text);
+  outline-offset: 2px;
+}
+
+.save-link-chosen-trail {
+  font-weight: 800;
+}
+
+/* Like the fields' placeholders. */
+.save-link-chosen-placeholder {
+  color: var(--color-muted);
+}
+
+.save-link-chevron {
+  flex: none;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.5;
+  transition: rotate 0.25s ease;
+}
+
+.save-link-picker.open .save-link-chevron {
+  rotate: 180deg;
+}
+
+/* The tree unfolds from under the field (grid rows between 0fr and 1fr). */
+.save-link-picker-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.save-link-picker.open .save-link-picker-body {
+  grid-template-rows: 1fr;
+}
+
+.save-link-tree {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.save-link-tree-list {
+  max-height: 330px;
+  padding: 0 8px 8px;
+  overflow: auto;
+}
+
+/* Categories cannot hold the link, but here they head their folders: they keep the text colour. */
+.save-link-tree .vault-tree-category.refused {
+  color: var(--color-text);
+  opacity: 1;
+}
+
+.save-link-tree-foot {
+  flex: none;
+  min-height: 40px;
+  padding: 0 16px;
+  border: none;
+  border-top: 1px solid var(--color-border);
+  background: none;
+  color: var(--color-text);
+  font-size: 11px;
+  letter-spacing: 0.14em;
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.save-link-tree-foot:hover,
+.save-link-tree-foot:focus-visible {
+  background: var(--color-text);
+  color: var(--color-background);
+  outline: none;
+}
+
+/* Empty Vault: the folder section turns into a notice with the way out in it. */
+.save-link-warning {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-border);
+  border-radius: 0 16px 16px 16px;
+  overflow: hidden;
+  animation: vault-tree-grow-in 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.save-link-warning-band {
+  height: 16px;
+  border-bottom: 1px solid var(--color-border);
+  background: repeating-linear-gradient(135deg, var(--color-text) 0 6px, transparent 6px 12px);
+}
+
+.save-link-warning-body {
+  display: grid;
+  grid-template-columns: 32px 1fr;
+  column-gap: 16px;
+  padding: 16px;
+}
+
+.save-link-warning-mark {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  background: var(--color-text);
+  color: var(--color-background);
+  font-size: 18px;
+  font-weight: 800;
+}
+
+.save-link-warning-text {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.save-link-warning-title {
+  margin: 0;
+  font-size: 20px;
+  font-weight: 800;
+  line-height: 1.2;
+  letter-spacing: -0.01em;
+}
+
+.save-link-warning-hint {
+  margin: 0;
+  color: var(--color-muted);
+  font-size: 13px;
+  line-height: 1.6;
+}
+
+.save-link-warning-action {
+  align-self: flex-start;
+  min-height: 40px;
+  margin-top: 8px;
+  padding: 0 16px;
+  border: none;
+  background: var(--color-text);
+  color: var(--color-background);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.save-link-warning-action:hover,
+.save-link-warning-action:focus-visible {
+  background: none;
+  color: var(--color-text);
+  box-shadow: inset 0 0 0 1px var(--color-border);
+  outline: none;
+}
+
+.save-link-warning .vault-new-folder {
+  margin-top: 8px;
+}
+
+.save-link-foot {
+  display: flex;
+  flex-direction: column;
+  margin-top: 8px;
+}
+
+.save-link-foot-bar {
+  display: flex;
+  min-height: 56px;
+  border-top: 1px solid var(--color-border);
+}
+
+.save-link-status {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  padding: 0 24px;
+  font-size: 12px;
+}
+
+.save-link-save {
+  display: inline-flex;
+  align-items: center;
+  gap: 16px;
+  padding: 0 32px;
+  border: none;
+  border-left: 1px solid var(--color-border);
+  /* The sheet's rounded corner, which it sits in. */
+  border-bottom-right-radius: 23px;
+  background: var(--color-text);
+  color: var(--color-background);
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.save-link-save:disabled {
+  background: none;
+  color: var(--color-muted);
+  cursor: default;
+}
+
+/* With less width, the columns take the whole grid again. */
+@media (max-width: 1200px) {
+  .save-link-intro {
+    grid-column: 1 / 6;
+  }
+
+  .save-link-sheet {
+    grid-column: 7 / -1;
+  }
+}
+
+@media (max-width: 900px) {
+  .save-link {
+    row-gap: 40px;
+    padding-top: 24px;
+  }
+
+  .save-link-intro,
+  .save-link-sheet {
+    grid-column: 1 / -1;
+  }
+
+  .save-link-title {
+    font-size: 44px;
+  }
+
+  .save-link-key {
+    padding-top: 0;
+  }
+}
+
+@media (max-width: 520px) {
+  .save-link-section {
+    padding: 0 16px;
+  }
+
+  .save-link-label {
+    grid-template-columns: 32px 1fr;
+  }
+
+  .save-link-input,
+  .save-link-picker,
+  .save-link-warning,
+  .save-link-indented {
+    margin-left: 0;
+  }
+
+  .save-link-input {
+    width: 100%;
+  }
 }
 
 @media (max-width: 720px) {
@@ -3622,8 +4136,17 @@ button.vault-list-link-title {
   }
 
   .vault-list-check,
-  .vault-list-row.picked::before {
+  .vault-list-row.picked::before,
+  .vault-tree-new-folder,
+  .save-link-warning {
     animation: none;
+  }
+
+  .save-link-picker,
+  .save-link-chosen,
+  .save-link-chevron,
+  .save-link-picker-body {
+    transition: none;
   }
 
   .vault-tray-sheet,

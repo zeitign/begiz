@@ -1,10 +1,15 @@
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import VaultFolderTree from '../components/VaultFolderTree.vue'
+import VaultNewFolderForm from '../components/VaultNewFolderForm.vue'
 import { api, errorMessage, responseBody } from '../lib/api'
 import { useInvalidateVault, useVaultFolders, useVaultPreferences } from '../lib/queries'
-import { buildNestedVault, trailLabel, type NestedFolder } from '../lib/vaultTree'
+import { buildNestedVault, folderTrail, trailLabel, type MoveRefusal } from '../lib/vaultTree'
 
+// A framed sheet with three numbered sections: the URL, the title and the folder, chosen in the Vault's
+// tree, where new folders and categories can be made. With no folder to hold links yet, the folder
+// section is a notice that walks through making the first category and its first folder.
 const route = useRoute()
 const router = useRouter()
 const invalidateVault = useInvalidateVault()
@@ -12,29 +17,51 @@ const invalidateVault = useInvalidateVault()
 const { data: folders, isPending: areFoldersPending } = useVaultFolders()
 const { data: preferences } = useVaultPreferences()
 
-/** Every folder below a category, at any depth, named by its trail from the category down. */
-function folderOptions(folder: NestedFolder, trail: NestedFolder[]): { id: string; label: string }[] {
-  const trailWithFolder = [...trail, folder]
-  return [
-    { id: folder.id, label: trailLabel(trailWithFolder) },
-    ...folder.subfolders.flatMap((subfolder) => folderOptions(subfolder, trailWithFolder)),
-  ]
-}
-
-/** Links can only go in a folder, so the select groups the folders by category and skips empty categories. */
-const categoriesWithFolders = computed(() =>
-  buildNestedVault(folders.value ?? [], [])
-    .categories.filter((category) => category.subfolders.length > 0)
-    .map((category) => ({
-      id: category.id,
-      name: category.name,
-      folders: category.subfolders.flatMap((folder) => folderOptions(folder, [])),
-    })),
-)
+const vault = computed(() => buildNestedVault(folders.value ?? [], []))
+/** Links only go in folders, so a Vault with categories but no folder in them still cannot hold one. */
+const hasLinkFolders = computed(() => vault.value.categories.some((category) => category.subfolders.length > 0))
+const firstCategory = computed(() => vault.value.categories[0])
 
 const url = ref('')
 const title = ref('')
-const folderId = ref(typeof route.query.folder === 'string' ? route.query.folder : '')
+const chosenFolderId = ref<string | null>(typeof route.query.folder === 'string' ? route.query.folder : null)
+/** The folder selector opens only when its field is pressed. */
+const isTreeOpen = ref(false)
+const folderTree = ref<InstanceType<typeof VaultFolderTree>>()
+
+const chosenTrail = computed(() =>
+  chosenFolderId.value ? trailLabel(folderTrail(chosenFolderId.value, vault.value)) : '',
+)
+const openFolderIds = computed(() =>
+  chosenFolderId.value ? folderTrail(chosenFolderId.value, vault.value).map((folder) => folder.id) : [],
+)
+const categoryRefusal = (folderId: string | null): MoveRefusal | null =>
+  folderId === null || vault.value.foldersById.get(folderId)?.parentId === null ? 'noLinks' : null
+
+function chooseFolder(folderId: string | null) {
+  chosenFolderId.value = folderId
+  isTreeOpen.value = false
+}
+
+/** A folder just made is where the link goes. */
+function onFolderCreated(folder: { id: string; parentId: string | null }) {
+  if (folder.parentId !== null) chosenFolderId.value = folder.id
+}
+
+function startCategory() {
+  isTreeOpen.value = true
+  folderTree.value?.startCategory()
+}
+
+/** In the empty Vault notice: what is being named, a category or the first folder of one. */
+const emptyVaultStep = ref<'category' | 'folder' | null>(null)
+
+/** After the category comes its first folder; once that exists, it is chosen and the tree stays closed. */
+function onFirstFolderCreated(folder: { id: string; parentId: string | null }) {
+  emptyVaultStep.value = folder.parentId === null ? 'folder' : null
+  isTreeOpen.value = false
+  onFolderCreated(folder)
+}
 
 const isSaving = ref(false)
 const saveError = ref('')
@@ -48,11 +75,12 @@ function savedLinkPlace(folderId: string) {
 }
 
 async function saveLink() {
+  if (!chosenFolderId.value) return
   isSaving.value = true
   saveError.value = ''
   try {
     const savedLink = await responseBody(
-      api.vault.links.$post({ json: { url: url.value.trim(), title: title.value, folderId: folderId.value } }),
+      api.vault.links.$post({ json: { url: url.value.trim(), title: title.value, folderId: chosenFolderId.value } }),
     )
     await invalidateVault()
     await router.push({ name: 'vault', query: savedLinkPlace(savedLink.folderId) })
@@ -65,31 +93,129 @@ async function saveLink() {
 </script>
 
 <template>
-  <main class="page narrow">
-    <p v-if="!areFoldersPending && !categoriesWithFolders.length">
-      Links are saved in folders, and there are none yet.
-      <RouterLink :to="{ name: 'vault' }">Create a category and a folder in it</RouterLink> first.
-    </p>
-    <form v-else class="stack" @submit.prevent="saveLink">
-      <label>
-        URL
-        <input v-model="url" type="url" placeholder="https://…" required />
+  <main class="page wide save-link">
+    <div class="save-link-intro">
+      <h1 class="save-link-title">Save a link.</h1>
+      <p class="save-link-lede">
+        Paste it, name it, and choose where it lives. A folder that doesn’t exist yet can be made right here.
+      </p>
+      <div class="save-link-key">
+        <span class="save-link-key-heading">How the Vault holds it</span>
+        <p><span class="save-link-number">01</span>Categories group your folders. They hold no links.</p>
+        <p><span class="save-link-number">02</span>Folders hold the links, and more folders if you like.</p>
+        <p><span class="save-link-number">03</span>Hover a folder in the tree and press Add folder to make one inside.</p>
+      </div>
+    </div>
+
+    <form class="save-link-sheet" aria-label="New link" @submit.prevent="saveLink">
+      <label class="save-link-section">
+        <span class="save-link-label">
+          <span class="save-link-number">01</span><span class="save-link-name">URL</span>
+        </span>
+        <input v-model="url" class="save-link-input" type="url" placeholder="https://…" required />
       </label>
-      <label>
-        Title
-        <input v-model="title" required maxlength="200" />
+      <label class="save-link-section">
+        <span class="save-link-label">
+          <span class="save-link-number">02</span><span class="save-link-name">Title</span>
+        </span>
+        <input v-model="title" class="save-link-input" placeholder="Name it" required maxlength="200" />
       </label>
-      <label>
-        Folder
-        <select v-model="folderId" required>
-          <option value="" disabled>Choose a folder</option>
-          <optgroup v-for="category in categoriesWithFolders" :key="category.id" :label="category.name">
-            <option v-for="folder in category.folders" :key="folder.id" :value="folder.id">{{ folder.label }}</option>
-          </optgroup>
-        </select>
-      </label>
-      <button type="submit" :disabled="isSaving">{{ isSaving ? 'Saving…' : 'Save' }}</button>
-      <p v-if="saveError" class="error">{{ saveError }}</p>
+
+      <div class="save-link-section save-link-folder">
+        <span class="save-link-label">
+          <span class="save-link-number">03</span><span class="save-link-name">Folder</span>
+        </span>
+
+        <template v-if="areFoldersPending">
+          <p class="save-link-indented muted">Loading…</p>
+        </template>
+
+        <div v-else-if="!hasLinkFolders" class="save-link-warning" role="status">
+          <span class="save-link-warning-band" aria-hidden="true"></span>
+          <div class="save-link-warning-body">
+            <span class="save-link-warning-mark" aria-hidden="true">!</span>
+            <div class="save-link-warning-text">
+              <template v-if="firstCategory">
+                <p class="save-link-warning-title">Almost there. Now a folder!</p>
+                <p class="save-link-warning-hint">
+                  {{ firstCategory.name }} is ready. Links live in folders, so name the one this link goes in.
+                </p>
+              </template>
+              <template v-else>
+                <p class="save-link-warning-title">Nothing here yet.</p>
+                <p class="save-link-warning-hint">
+                  Links live in folders, and folders live in a category. Start with the category; the folder
+                  comes right after.
+                </p>
+              </template>
+              <VaultNewFolderForm
+                v-if="emptyVaultStep"
+                :parent-id="firstCategory && emptyVaultStep === 'folder' ? firstCategory.id : null"
+                :placeholder="
+                  firstCategory && emptyVaultStep === 'folder' ? `Name a folder in ${firstCategory.name}` : 'Name the category'
+                "
+                @created="onFirstFolderCreated"
+                @cancel="emptyVaultStep = null"
+              />
+              <button
+                v-else-if="firstCategory"
+                type="button"
+                class="save-link-warning-action"
+                @click="emptyVaultStep = 'folder'"
+              >
+                + Folder in {{ firstCategory.name }}
+              </button>
+              <button v-else type="button" class="save-link-warning-action" @click="emptyVaultStep = 'category'">
+                + Create one! · New category
+              </button>
+            </div>
+          </div>
+        </div>
+
+        <!-- A selector: the field is the head of a box that unfolds with the tree under it, as one piece. -->
+        <div v-else class="save-link-picker" :class="{ open: isTreeOpen }">
+          <button
+            type="button"
+            class="save-link-chosen"
+            :aria-expanded="isTreeOpen"
+            @click="isTreeOpen = !isTreeOpen"
+          >
+            <span :class="chosenTrail ? 'save-link-chosen-trail' : 'save-link-chosen-placeholder'">
+              {{ chosenTrail || 'Choose a folder' }}
+            </span>
+            <svg class="save-link-chevron" viewBox="0 0 24 24" width="16" height="16" aria-hidden="true">
+              <path d="M6 9l6 6 6-6" />
+            </svg>
+          </button>
+          <div class="save-link-picker-body" :inert="!isTreeOpen">
+            <div class="save-link-tree">
+              <VaultFolderTree
+                ref="folderTree"
+                class="save-link-tree-list"
+                :vault="vault"
+                :refusal-of="categoryRefusal"
+                :open-ids="openFolderIds"
+                :chosen-id="chosenFolderId"
+                can-create-folders
+                hides-notes
+                @choose="chooseFolder"
+                @created="onFolderCreated"
+              />
+              <button type="button" class="save-link-tree-foot" @click="startCategory">+ New category</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="save-link-foot">
+        <span class="filter-stripes" aria-hidden="true"></span>
+        <div class="save-link-foot-bar">
+          <span class="save-link-status error" role="alert">{{ saveError }}</span>
+          <button type="submit" class="save-link-save" :disabled="!chosenFolderId || isSaving">
+            {{ isSaving ? 'Saving…' : 'Save' }} <span aria-hidden="true">→</span>
+          </button>
+        </div>
+      </div>
     </form>
   </main>
 </template>

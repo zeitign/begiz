@@ -19,7 +19,7 @@ import {
   type VaultPicks,
 } from '../lib/vaultTree'
 import VaultListLinkRow from './VaultListLinkRow.vue'
-import VaultListNewFolder from './VaultListNewFolder.vue'
+import VaultNewFolderForm from './VaultNewFolderForm.vue'
 import VaultTray from './VaultTray.vue'
 
 // The list view shows one level at a time: the categories, or the subfolders and links of the folder
@@ -227,6 +227,7 @@ const headingMeta = computed(() => {
             + New link
           </RouterLink>
           <button
+            v-if="shownFolders.length || shownLinks.length || isSelecting"
             type="button"
             class="vault-list-button"
             :aria-pressed="isSelecting"
@@ -239,7 +240,14 @@ const headingMeta = computed(() => {
 
       <div class="vault-list-rows" :class="{ 'custom-order': isCustomOrder && !isSelecting, selecting: isSelecting }">
         <ul v-if="isCreatingFolder" class="vault-list-group">
-          <VaultListNewFolder :parent-id="currentFolder?.id ?? null" @done="isCreatingFolder = false" />
+          <li class="vault-list-row">
+            <VaultNewFolderForm
+              class="vault-list-new-folder"
+              :parent-id="currentFolder?.id ?? null"
+              @created="isCreatingFolder = false"
+              @cancel="isCreatingFolder = false"
+            />
+          </li>
         </ul>
         <!-- Folders and links reorder apart: folders always come first. -->
         <VueDraggable
